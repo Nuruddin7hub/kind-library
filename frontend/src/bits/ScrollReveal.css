@@ -1,0 +1,20 @@
+/* ScrollReveal — vendored from React Bits, ChatGPT round B 2026-11-02. Plays once on entry. */
+.rb-scroll-reveal { margin: 0; }
+.rb-scroll-reveal-text { margin: 0; }
+.rb-scroll-reveal-word {
+  display: inline-block;
+  opacity: var(--sr-base-opacity, 0.15);
+  filter: var(--sr-blur, none);
+  transform: var(--sr-rotate, none);
+  transform-origin: left bottom;
+  transition: opacity 480ms var(--ease-premium), filter 480ms var(--ease-premium), transform 480ms var(--ease-premium);
+  will-change: opacity, filter, transform;
+}
+.rb-scroll-reveal-word.is-visible {
+  opacity: 1;
+  filter: blur(0px);
+  transform: rotate(0deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb-scroll-reveal-word { opacity: 1 !important; filter: none !important; transform: none !important; transition: none; }
+}

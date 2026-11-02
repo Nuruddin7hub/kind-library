@@ -1,0 +1,21 @@
+.rb-tilt {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 350ms cubic-bezier(.22,1,.36,1);
+  will-change: transform;
+}
+
+.rb-tilt__glare {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 350ms cubic-bezier(.22,1,.36,1);
+  background: radial-gradient(
+    320px circle at var(--gx, 50%) var(--gy, 50%),
+    rgba(255,255,255,0.10),
+    transparent 65%
+  );
+}
+.rb-tilt:hover .rb-tilt__glare { opacity: 1; }
