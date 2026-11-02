@@ -1,0 +1,31 @@
+/* Carousel — vendored from React Bits, ChatGPT round B 2026-11-02. Swipe + snap, no autoplay. */
+.rb-carousel { width: 100%; }
+.rb-carousel-track {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 4px 18px 8px;
+  margin: 0 -18px;
+}
+.rb-carousel-track::-webkit-scrollbar { display: none; }
+.rb-carousel-card { flex: 0 0 auto; scroll-snap-align: start; min-width: 0; }
+.rb-carousel-end { flex: 0 0 6px; }
+.rb-carousel-arrows { display: flex; gap: 8px; margin-top: 8px; }
+.rb-carousel-arrows button {
+  min-width: 44px; min-height: 44px; border-radius: 12px;
+  background: var(--panel); border: 1px solid var(--line); color: var(--ke-text);
+  font-size: 20px; line-height: 1;
+}
+.rb-carousel-arrows button:disabled { opacity: 0.3; }
+.rb-carousel-dots { display: flex; gap: 6px; justify-content: center; margin-top: 10px; }
+.rb-carousel-dots span {
+  width: 6px; height: 6px; border-radius: 999px;
+  background: rgba(255,255,255,0.18); transition: all 200ms var(--ease-premium);
+}
+.rb-carousel-dots span.on { width: 18px; background: var(--digital); }
+@media (prefers-reduced-motion: reduce) {
+  .rb-carousel-track { scroll-snap-type: none; }
+}

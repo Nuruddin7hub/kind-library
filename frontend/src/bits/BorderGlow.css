@@ -1,0 +1,26 @@
+.rb-border-glow {
+  position: relative;
+  isolation: isolate;
+}
+
+.rb-border-glow::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1.5px;
+  pointer-events: none;
+  z-index: 2;
+  background: radial-gradient(
+    260px circle at var(--bgx, 50%) var(--bgy, 50%),
+    var(--glow-color, #6B9DFF),
+    transparent 70%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: calc(0.55 * var(--glow-intensity, 1));
+  transition: opacity 350ms cubic-bezier(.22,1,.36,1);
+}
+.rb-border-glow:hover::before { opacity: calc(1 * var(--glow-intensity, 1)); }
