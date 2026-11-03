@@ -1,0 +1,94 @@
+/* 4-destination mobile navigation dock — ChatGPT Round B shared component.
+   All classes md- prefixed. */
+
+.md-dock {
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace; /* Round B P0: mobile metadata */
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  height: 64px;
+  bottom: calc(8px + env(safe-area-inset-bottom));
+  border-radius: 22px;
+  background: rgba(13, 21, 33, 0.94);
+  border: 1px solid #263447;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 100;
+  display: flex;
+  align-items: stretch;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Four equal tabs; each fills the full 64px dock height (well above the
+   44px minimum tap target). */
+.md-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 6px 4px;
+  border: 0;
+  background: none;
+  color: #8995a9;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition: color 0.25s ease;
+}
+
+.md-tab--active {
+  color: #38d5c1;
+}
+
+.md-tab:focus-visible {
+  outline: 2px solid #38d5c1;
+  outline-offset: -2px;
+  border-radius: 16px;
+}
+
+/* Icon above the label; constrained to the 19–21px window regardless of the
+   icon the parent passes (Hugeicons). */
+.md-icon {
+  display: grid;
+  place-items: center;
+  line-height: 0;
+}
+
+.md-icon svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.md-label {
+  font-family: var(--font-ui); /* Inter */
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Turquoise active indicator: glides between tabs on the same ease-out curve
+   as PillNav's sliding indicator (compact adaptation). */
+.md-indicator {
+  position: absolute;
+  bottom: 6px;
+  left: 0;
+  width: 24px;
+  height: 2px;
+  border-radius: 2px;
+  background: #38d5c1;
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md-indicator,
+  .md-tab {
+    transition: none;
+  }
+}

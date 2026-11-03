@@ -1,0 +1,389 @@
+/* K/IND mobile engine — MOBILE HOME styles (ChatGPT Round B, 2026-11-03).
+ * Mobile home screen only. 18px page gutter. Page bg (#080B12) comes from parent. */
+
+.mh {
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace; /* Round B P0: mobile metadata */
+  padding-left: 18px;
+  padding-right: 18px;
+  /* nav clearance: shared .mobile-page rule (index.css) — counted once there */
+  color: #F2F4F8;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* :where() keeps the reset at zero specificity so component classes
+ * always win for the properties they set (backgrounds, padding, …). */
+.mh :where(button) {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.mh button:focus-visible,
+.mh input:focus-visible {
+  outline: 2px solid #38D5C1;
+  outline-offset: 2px;
+}
+
+/* ——— 1. Header ——— */
+.mh-header {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.mh-wordmark {
+  font-family: 'Instrument Serif', serif;
+  font-size: 21px;
+  letter-spacing: 0.02em;
+}
+.mh-micro {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: rgba(242, 244, 248, 0.5);
+}
+
+/* ——— 2–6. Hero (Round C P1: ~15–20% leaner — action sooner) ——— */
+.mh-hero {
+  position: relative;
+  padding-top: 16px;
+  padding-bottom: 2px;
+}
+.mh-aurora {
+  position: absolute;
+  top: 0;
+  left: -18px;
+  right: -18px;
+  height: 230px;
+  opacity: 0.35;
+  pointer-events: none;
+  overflow: hidden;
+}
+/* dark overlay gradient for headline readability */
+.mh-aurora::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+    rgba(8, 11, 18, 0) 0%,
+    rgba(8, 11, 18, 0.55) 55%,
+    #080B12 100%);
+}
+.mh-orbit {
+  position: absolute;
+  top: 8px;
+  right: -18px;
+  width: 56%;
+  max-width: 220px;
+  height: auto;
+  opacity: 0.45;
+  pointer-events: none;
+}
+.mh-orbit-spin {
+  animation: mh-orbit-spin 40s linear infinite;
+  transform-origin: 120px 100px;
+}
+@keyframes mh-orbit-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mh-orbit-spin { animation: none; }
+}
+
+.mh-hero-copy {
+  position: relative;
+  z-index: 1;
+}
+.mh-eyebrow {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: rgba(242, 244, 248, 0.55);
+  margin: 0 0 10px;
+}
+.mh-headline {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(36px, 10.2vw, 42px);
+  line-height: 1.04;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: #F2F4F8;
+}
+/* BlurText renders <p>; kill its flex defaults inside headline lines */
+.mh-hero-copy .mh-headline {
+  margin: 0;
+}
+.mh-supporting {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: rgba(242, 244, 248, 0.6);
+  margin: 10px 0 0;
+  max-width: 30ch;
+}
+
+/* search — integrated control: full-width input + 42px arrow button inside the right edge */
+.mh-search {
+  position: relative;
+  margin-top: 14px;
+}
+.mh-search-input {
+  width: 100%;
+  height: 50px;
+  padding: 0 60px 0 16px;
+  font-size: 16px; /* no iOS zoom */
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #F2F4F8;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+}
+.mh-search-input::placeholder {
+  color: rgba(242, 244, 248, 0.35);
+}
+.mh-search-go {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  font-size: 20px;
+  line-height: 1;
+  color: #05211D;
+  background: #38D5C1;
+  display: grid;
+  place-items: center;
+}
+.mh-search-go:active { transform: translateY(-50%) scale(0.94); }
+
+/* three compact stat figures (real counts) */
+.mh-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 18px;
+}
+.mh-stat {
+  padding: 10px 6px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+}
+.mh-stat-num {
+  display: block;
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 22px;
+  line-height: 1.1;
+  color: #F2F4F8;
+}
+.mh-stat-label {
+  display: block;
+  margin-top: 3px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: rgba(242, 244, 248, 0.5);
+}
+
+/* ——— sections ——— */
+.mh-section {
+  margin-top: 26px;
+}
+.mh-section-head {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: rgba(242, 244, 248, 0.45);
+  margin: 0 0 12px;
+  font-weight: 500;
+}
+
+/* ——— 7. Discipline tiles ——— */
+.mh-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.mh-tile {
+  position: relative;
+  overflow: hidden;
+  min-height: 158px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 14px;
+  text-align: left;
+  background: #0D1521;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+}
+/* 3px subject-colored bottom edge */
+.mh-tile::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--sc);
+}
+.mh-motif {
+  position: absolute;
+  right: -12px;
+  bottom: 8px;
+  width: 118px;
+  height: 98px;
+  opacity: 0.3;
+  pointer-events: none;
+}
+.mh-tile-num {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: rgba(242, 244, 248, 0.4);
+}
+.mh-tile-short {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+.mh-tile-name {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #F2F4F8;
+}
+.mh-tile-count {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: rgba(242, 244, 248, 0.45);
+  margin-top: 4px;
+}
+
+/* ——— 8. Resume card ——— */
+.mh-resume {
+  width: 100%;
+  min-height: 110px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  text-align: left;
+  background: #0D1521;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+}
+.mh-resume-thumb {
+  flex: 0 0 auto;
+  width: 54px;
+  height: 76px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+}
+.mh-resume-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mh-resume-eyebrow {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+}
+.mh-resume-title {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.mh-resume-meta {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: rgba(242, 244, 248, 0.5);
+}
+.mh-resume-bar {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.mh-resume-fill {
+  display: block;
+  height: 100%;
+  background: var(--sc);
+}
+.mh-resume-cta {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--sc);
+}
+
+/* ——— 9. Recently explored ——— */
+.mh-recent {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  margin: 0 -18px;
+  padding: 2px 18px 10px;
+}
+.mh-recent::-webkit-scrollbar {
+  display: none;
+}
+.mh-recent-card {
+  width: 100%;
+  min-height: 190px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  text-align: left;
+  background: #0D1521;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+}
+.mh-recent-thumb {
+  width: 48px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.05);
+}
+.mh-recent-title {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.mh-recent-time {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(242, 244, 248, 0.45);
+  margin-top: auto;
+}
