@@ -1,0 +1,221 @@
+/* K/IND desktop sidebar — ChatGPT Round A. All classes kiA- prefixed. */
+
+.kiA-sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: var(--sidebar-width);
+  height: 100dvh;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 30px 20px 20px;
+  background: var(--surface);
+  border-right: 1px solid var(--border-subtle);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* brand */
+.kiA-brand-mark {
+  font-family: var(--font-display);
+  font-size: 30px;
+  line-height: 1;
+  color: var(--text);
+  letter-spacing: 0.01em;
+}
+
+.kiA-brand-sub {
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  color: var(--text-muted);
+}
+
+/* main nav — vendored LineSidebar skin */
+.kiA-mainnav {
+  margin: 0 -20px;
+  padding: 0 20px;
+}
+
+.kiA-linesidebar ul {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* inner label span of the vendored component: uppercase, letter-spaced, Inter */
+.kiA-linesidebar li > span > span {
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-weight: 600;
+  font-family: var(--font-ui);
+}
+
+/* active item — v2.0 refined: tinted background, 2px accent line, subtle glow */
+.kiA-linesidebar li[aria-current='true'] {
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 0 24px -12px rgba(240, 237, 229, 0.25);
+}
+
+.kiA-linesidebar li[aria-current='true']::after {
+  content: '';
+  position: absolute;
+  left: -14px;
+  top: 3px;
+  bottom: 3px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--text);
+  box-shadow: 0 0 10px rgba(240, 237, 229, 0.55);
+}
+
+/* disciplines */
+.kiA-section-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  padding: 0 4px;
+}
+
+.kiA-subjects {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kiA-subj {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 8px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition);
+}
+
+.kiA-subj:hover {
+  background: var(--surface-raised);
+}
+
+.kiA-subj-num {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  min-width: 18px;
+}
+
+.kiA-subj-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--subj);
+  box-shadow: 0 0 8px var(--subj);
+  flex: none;
+}
+
+.kiA-subj-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.kiA-subj-code {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text);
+}
+
+.kiA-subj-name {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kiA-subj-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  transition: color var(--transition);
+}
+
+.kiA-subj:hover .kiA-subj-count {
+  color: var(--subj);
+}
+
+/* hover line-grow — subject-colored underline that sweeps in */
+.kiA-subj::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 4px;
+  height: 1px;
+  background: var(--subj);
+  opacity: 0.7;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--transition);
+  pointer-events: none;
+}
+
+.kiA-subj:hover::after {
+  transform: scaleX(1);
+}
+
+/* status — pinned to the bottom */
+.kiA-status {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 4px 2px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.kiA-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #34d399; /* literal status green — not a discipline color */
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.8);
+  flex: none;
+  animation: kiA-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes kiA-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+.kiA-status-text {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--text-secondary);
+}
+
+.kiA-status-count {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}

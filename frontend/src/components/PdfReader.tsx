@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { consumeReaderStartPage } from '../readerStart';
+import { v2SubjectColor } from '../shared';
+import AnimatedContent from '../bits/AnimatedContent';
+import '../styles/reader-env.css';
 
 interface ReaderFile {
   key: string;
@@ -269,18 +272,16 @@ export default function PdfReader({
     setNoteDraft('');
   }, [noteDraft, visiblePage]);
 
-  // subject accent — exact Round A afternoon tokens
-  const subjectAccent = {
-    em2: '#568BFF', signals: '#B18AFF', fis: '#F0B86B', digital: '#36D8C1',
-  }[file.subj] || '#36D8C1';
+  // subject accent — Obsidian Archive v2.0 identity tokens (desktop)
+  const subjectAccent = v2SubjectColor(file.subj);
   const subjectLabel = SUBJECT_LABELS[file.subj] || file.subj;
   const panelsHidden = readingMode;
   const showLeft = leftOpen && !panelsHidden;
   const showRight = rightOpen && !panelsHidden;
 
   return (
-    <div className={`reader-shell${readingMode ? ' reading' : ''}`}
-      style={{ ['--subject-accent' as any]: subjectAccent }}>
+    <div className={`reader-shell kiA-v2${readingMode ? ' reading' : ''}`}
+      style={{ ['--subject-accent' as any]: subjectAccent, ['--subj-color' as any]: v2SubjectColor(file.subj) }}>
       {/* compact document header — title + meta + actions (~54px, Round C) */}
       {!immersive && (
         <div className="ke-reader-header">
@@ -321,7 +322,15 @@ export default function PdfReader({
       <div className={`reader-workspace${showLeft ? '' : ' no-left'}${showRight ? '' : ' no-right'}`}>
         <aside className="reader-panel reader-panel-left" aria-label="Page thumbnails">
           {showLeft && (
-            <>
+            <AnimatedContent
+              trigger="mount"
+              direction="horizontal"
+              reverse={true}
+              distance={24}
+              duration={0.45}
+              ease="power3.out"
+              className="reader-panel-anim"
+            >
               <div className="reader-panel-head">
                 <span className="eyebrow">Pages</span>
                 <button onClick={toggleLeft} className="reader-panel-toggle" aria-label="Hide pages panel">‹</button>
@@ -337,7 +346,7 @@ export default function PdfReader({
                   </button>
                 ))}
               </div>
-            </>
+            </AnimatedContent>
           )}
         </aside>
 
@@ -366,7 +375,14 @@ export default function PdfReader({
 
         <aside className="reader-panel reader-panel-right" aria-label="Study tools">
           {showRight && (
-            <>
+            <AnimatedContent
+              trigger="mount"
+              direction="horizontal"
+              distance={24}
+              duration={0.45}
+              ease="power3.out"
+              className="reader-panel-anim"
+            >
               <div className="reader-panel-head">
                 <span className="eyebrow">Study tools</span>
                 <button onClick={toggleRight} className="reader-panel-toggle" aria-label="Hide study tools">›</button>
@@ -516,7 +532,7 @@ export default function PdfReader({
                   )}
                 </div>
               )}
-            </>
+            </AnimatedContent>
           )}
         </aside>
       </div>
