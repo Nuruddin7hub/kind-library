@@ -1,0 +1,124 @@
+/* K/IND design tokens — ChatGPT Round A (2026-11-03).
+ *
+ * Subject colors are the primary visual differentiation (NOT blue-everywhere).
+ *
+ * Specificity note: index.css already declares a plain `:root` block with
+ * overlapping names from an earlier round. These tokens use `html:root`
+ * (0,1,1) so they win over that legacy block (0,1,0) without !important,
+ * while the legacy namespaced vars (--text-primary, --surface-1, …) are
+ * left untouched so the rest of the old app keeps working.
+ */
+
+html:root {
+  color-scheme: dark;
+
+  /* surfaces */
+  --bg: #080B12;
+  --surface: #101725;
+  --surface-raised: #151F30;
+  --surface-hover: #1B293D;
+
+  /* borders */
+  --border: #273449;
+  --border-subtle: #1D293A;
+
+  /* text */
+  --text: #F2F0EB;
+  --text-secondary: #96A1B4;
+  --text-muted: #69778D;
+
+  /* disciplines — the identity palette */
+  --em2: #719AFF;
+  --signals: #B38AFF;
+  --fis: #E6B36C;
+  --digital: #38D5C1;
+
+  /* type */
+  --font-display: "Instrument Serif", serif;
+  --font-ui: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* layout */
+  --sidebar-width: 224px;
+  --reader-left: 176px;
+  --reader-right: 280px;
+
+  /* radii */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+
+  /* motion */
+  --transition: 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* broad reset — scoped at html body (0,0,2) so it beats the legacy
+   `html, body, #root` rule in index.css without touching it */
+html body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+}
+
+/* ------------------------------------------------------------------
+ * Obsidian Archive v2.0 — ChatGPT Round A afternoon loop (2026-11-03).
+ * Exact spec tokens, DESKTOP-ONLY scope: .kiA-v2 is set on the desktop
+ * shell wrapper and the desktop reader root. Mobile views never match
+ * this selector, so they keep the legacy tokens above byte-identical.
+ * Custom properties inherit, so every desktop descendant picks these up.
+ * ------------------------------------------------------------------ */
+.kiA-v2 {
+  /* surfaces */
+  --bg: #080A0F;            /* Void */
+  --surface: #0E131D;       /* Surface */
+  --surface-raised: #141C2A; /* Elevated */
+  --surface-hover: #1B2637; /* Hover */
+
+  /* borders */
+  --border: #273448;        /* Border */
+  --border-subtle: #1B2740;
+
+  /* text */
+  --text: #F0EDE5;          /* Ivory */
+  --text-secondary: #929DAE; /* Muted */
+  --text-muted: #6B7585;
+
+  /* accents */
+  --cyan: #56E0D1;
+
+  /* disciplines — v2.0 identity palette */
+  --em2: #62A5FF;
+  --signals: #B28AFF;
+  --fis: #E9B36A;
+  --digital: #42D8C6;
+
+  /* type */
+  --font-display: "Instrument Serif", serif;
+  --font-ui: "Inter", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* layout — v2.0 shell geometry */
+  --sidebar-width: 248px;
+  --reader-left: 220px;
+  --reader-right: 320px;
+
+  /* radii */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+
+  /* motion */
+  --transition: 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+html::selection {
+  background: rgba(113, 154, 255, 0.3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

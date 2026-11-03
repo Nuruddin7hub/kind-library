@@ -1,0 +1,82 @@
+/* ============================================================
+   K/IND FIELD EDITION — mobile design tokens
+   (ChatGPT Round B critique, early loop 2026-11-03).
+   Mobile surfaces stay tactile with thin borders; turquoise is
+   for ACTIVE CONTROLS ONLY, not every heading.
+   Desktop (ke-) is untouched by these tokens.
+   ============================================================ */
+/* K/IND FIELD EDITION — mobile design tokens
+   (ChatGPT Round B critique, early loop 2026-11-03).
+   Mobile surfaces stay tactile with thin borders; turquoise is
+   for ACTIVE CONTROLS ONLY, not every heading.
+   Desktop (ke-) is untouched by these tokens.
+   ============================================================ */
+:root {
+  --mobile-gutter: 18px;
+  --mobile-header: 52px;
+  --mobile-dock: 64px;
+  --mobile-bg: #080B12;
+  --mobile-pane: #0D1521;
+  --mobile-raised: #131C2C;
+  --mobile-line: rgba(255, 255, 255, 0.08);
+  --mobile-line-strong: #263447;
+  --mobile-text: #F0EEE9;
+  --mobile-muted: #8995A9;
+  --mobile-turquoise: #38D5C1;
+  --mobile-dock-bg: rgba(13, 21, 33, 0.94);
+  /* discipline colors (shared.ts SUBJECTS — single source of truth) */
+  --mobile-em2: #719AFF;
+  --mobile-signals: #B38AFF;
+  --mobile-fis: #E6B36C;
+  --mobile-digital: #38D5C1;
+  /* type */
+  --mobile-serif: 'Instrument Serif', Georgia, serif;
+  --mobile-sans: 'Inter', system-ui, sans-serif;
+  --mobile-mono: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+/* type="search" inputs use custom clear buttons — hide the native one so it
+   never doubles up. */
+input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
+/* Every mobile screen root clears the fixed 64px dock + safe area. */
+.ki-screen-pad {
+  padding-bottom: calc(80px + env(safe-area-inset-bottom));
+}
+
+/* stagger-once entrance (AnimatedList behaviour): subtle fade + rise,
+ * applied per row via JS-driven delays; .is-in is set once by the
+ * IntersectionObserver and never removed — no repeat on scroll-back. */
+.ki-stagger {
+  opacity: 0;
+  transform: translate3d(0, 10px, 0);
+  transition: opacity 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ki-stagger.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* Round B P0: prefers-reduced-motion kills ALL mobile motion — entrances,
+ * transitions, shimmers, spins. Desktop is untouched by these selectors. */
+@media (prefers-reduced-motion: reduce) {
+  .ki-screen-pad *,
+  .ml-root *,
+  .mh *,
+  .ms-root *,
+  .mr-reader *,
+  .md-dock,
+  .ki-stagger {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  .ki-stagger {
+    opacity: 1;
+    transform: none;
+  }
+}

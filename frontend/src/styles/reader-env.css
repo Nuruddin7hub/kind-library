@@ -1,0 +1,300 @@
+/* K/IND Library v3 — desktop PDF reader environment restyle (ChatGPT Round A, part E).
+ *
+ * Scope: EVERY selector is prefixed with .reader-shell (the desktop reader
+ * root). The mobile reader uses .ap-reader / .ki-rdr-* classes, so this file
+ * cannot leak into it. Base reader layout/structural rules live in
+ * src/index.css — this file only restyles the environment on top of them,
+ * with higher specificity so it wins regardless of import order.
+ *
+ * Restyle only — no rails, tools, notes, bookmarks, contents, highlights,
+ * keyboard nav, zoom, or fullscreen behavior is hidden or removed here.
+ *
+ * Document paper stays untouched: page images keep their white/original
+ * colors, no filters, no recoloring — only the surrounding environment is
+ * themed.
+ *
+ * Design tokens come from src/styles/tokens.css; every use carries the
+ * documented fallback value so the reader renders correctly even before
+ * tokens.css lands.
+ */
+
+.reader-shell {
+  /* default; always overridden per-document by the inline --subj-color style */
+  --subj-color: #62A5FF;
+  background: var(--bg, #080A0F);
+  color: var(--text, #F0EDE5);
+  font-family: var(--font-ui, "Inter", system-ui, sans-serif);
+}
+
+/* ------------------------------------------------------------------
+ * Obsidian Archive v2.0 geometry (ChatGPT Round A, 2026-11-03):
+ * 64px header / 220px page-thumbs panel / flexible canvas /
+ * 320px study panel / sticky bottom control bar.
+ * Scoped to .reader-shell.kiA-v2 (desktop reader only — the mobile
+ * reader uses .ap-reader classes and never matches).
+ * ------------------------------------------------------------------ */
+
+.reader-shell.kiA-v2 {
+  grid-template-rows: 64px minmax(0, 1fr) 52px;
+}
+
+.reader-shell.kiA-v2 .ke-reader-progress {
+  top: 64px;
+}
+
+.reader-shell.kiA-v2 .reader-workspace {
+  grid-template-columns: 220px minmax(0, 1fr) 320px;
+}
+
+.reader-shell.kiA-v2 .reader-workspace.no-left {
+  grid-template-columns: 0 minmax(0, 1fr) 320px;
+}
+
+.reader-shell.kiA-v2 .reader-workspace.no-right {
+  grid-template-columns: 220px minmax(0, 1fr) 0;
+}
+
+.reader-shell.kiA-v2 .reader-workspace.no-left.no-right {
+  grid-template-columns: 0 minmax(0, 1fr) 0;
+}
+
+.reader-shell.kiA-v2.reading .reader-workspace {
+  grid-template-columns: 0 minmax(0, 1fr) 0;
+}
+
+.reader-shell.kiA-v2.reading {
+  grid-template-rows: 64px minmax(0, 1fr) 52px;
+}
+
+/* 220px panel: two-column thumbnail grid, click-to-navigate */
+.reader-shell.kiA-v2 .reader-thumb-grid {
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* bottom control bar: sticky */
+.reader-shell.kiA-v2 .reader-bottombar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+}
+
+/* AnimatedContent panel-transition wrapper: transparent to layout */
+.reader-shell .reader-panel-anim {
+  min-height: 100%;
+}
+
+/* ---------- raised tool panels: header + bottom bar ---------- */
+
+.reader-shell .ke-reader-header {
+  background: var(--surface-raised, #141C2A);
+  border-bottom: 1px solid var(--border, #273449);
+}
+
+.reader-shell .ke-reader-title-text {
+  font-family: var(--font-ui, "Inter", system-ui, sans-serif);
+  color: var(--text, #F0EDE5);
+}
+
+.reader-shell .ke-reader-submeta {
+  color: var(--text-muted, #6B7585);
+}
+
+.reader-shell .ke-reader-btn {
+  color: var(--text-secondary, #929DAE);
+  transition: background var(--transition, 220ms cubic-bezier(.2, .8, .2, 1)),
+    color var(--transition, 220ms cubic-bezier(.2, .8, .2, 1));
+}
+
+.reader-shell .ke-reader-btn:hover:not(:disabled) {
+  background: var(--surface-hover, #1B2637);
+  color: var(--text, #F0EDE5);
+}
+
+.reader-shell .reader-bottombar {
+  background: var(--surface-raised, #141C2A);
+  border-top: 1px solid var(--border, #273449);
+  color: var(--text-secondary, #929DAE);
+}
+
+.reader-shell .reader-zoom-label {
+  color: var(--text, #F0EDE5);
+}
+
+.reader-shell .reader-goto {
+  background: var(--surface, #0E131D);
+  border: 1px solid var(--border, #273449);
+  color: var(--text, #F0EDE5);
+}
+
+.reader-shell .reader-panel-toggle {
+  border: 1px solid var(--border, #273449);
+  color: var(--text-secondary, #929DAE);
+  transition: border-color var(--transition, 220ms cubic-bezier(.2, .8, .2, 1)),
+    color var(--transition, 220ms cubic-bezier(.2, .8, .2, 1));
+}
+
+.reader-shell .reader-panel-toggle.on {
+  color: var(--subj-color, #62A5FF);
+  border-color: color-mix(in srgb, var(--subj-color, #62A5FF) 45%, transparent);
+}
+
+/* ---------- raised tool panels: page rail + study rail ---------- */
+
+.reader-shell .reader-panel {
+  background: var(--surface, #0E131D);
+}
+
+.reader-shell .reader-panel-left {
+  border-right: 1px solid var(--border, #273449);
+}
+
+.reader-shell .reader-panel-right {
+  border-left: 1px solid var(--border, #273449);
+}
+
+.reader-shell .reader-panel-head .eyebrow {
+  color: var(--text-muted, #6B7585);
+}
+
+.reader-shell .reader-panel,
+.reader-shell .reader-document {
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-hover, #1B2637) transparent;
+}
+
+.reader-shell .reader-panel::-webkit-scrollbar,
+.reader-shell .reader-document::-webkit-scrollbar {
+  width: 10px;
+}
+
+.reader-shell .reader-panel::-webkit-scrollbar-thumb,
+.reader-shell .reader-document::-webkit-scrollbar-thumb {
+  background: var(--surface-hover, #1B2637);
+  border-radius: 8px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+/* ---------- thumbnails ---------- */
+
+.reader-shell .reader-thumb {
+  border: 1px solid var(--border, #273449);
+}
+
+/* selected thumbnail — subject-colored thin outline */
+.reader-shell .reader-thumb.active {
+  border-color: var(--subj-color, #62A5FF);
+  box-shadow: 0 0 0 1px var(--subj-color, #62A5FF), 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+.reader-shell .reader-thumb .reader-thumb-num {
+  background: var(--surface-raised, #141C2A);
+  color: var(--text-muted, #6B7585);
+}
+
+/* ---------- PDF stage + pages ---------- */
+
+.reader-shell .reader-document {
+  background: #1B2432;
+}
+
+/* 24px desktop page margins: horizontal on each page wrapper, vertical
+ * between pages (overrides the tailwind gap-8 on the inner column) */
+.reader-shell .reader-document > div {
+  gap: 24px;
+}
+
+.reader-shell .reader-doc-page {
+  margin-inline: 24px;
+  max-width: 100%;
+}
+
+/* page images: keep white/original paper (no recolor, no filters) with a
+ * soft realistic shadow against the dark stage */
+.reader-shell .reader-doc-page .ke-reader-page {
+  background: #fff;
+  filter: none;
+  border: none;
+  border-radius: 3px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.reader-shell .reader-thumb img {
+  filter: none;
+}
+
+.reader-shell .reader-doc-num {
+  color: var(--text-muted, #6B7585);
+}
+
+/* ---------- reading progress: subject-colored accent ---------- */
+
+.reader-shell .ke-reader-progress {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.reader-shell .ke-reader-progress > div {
+  background: linear-gradient(90deg,
+    var(--subj-color, #62A5FF),
+    color-mix(in srgb, var(--subj-color, #62A5FF) 55%, #ffffff));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--subj-color, #62A5FF) 60%, transparent);
+}
+
+/* ---------- study rail: tabs with subject-colored active indicator ---------- */
+
+.reader-shell .reader-tabs {
+  background: var(--surface-raised, #141C2A);
+  border: 1px solid var(--border, #273449);
+}
+
+.reader-shell .reader-tabs button {
+  color: var(--text-secondary, #929DAE);
+}
+
+.reader-shell .reader-tabs button.active {
+  background: color-mix(in srgb, var(--subj-color, #62A5FF) 16%, transparent);
+  color: var(--text, #F0EDE5);
+  box-shadow: inset 0 -2px 0 var(--subj-color, #62A5FF);
+}
+
+/* ---------- study rail: raised tool rows + launcher cards ---------- */
+
+.reader-shell .reader-launch-btn,
+.reader-shell .reader-tool-row {
+  background: var(--surface-raised, #141C2A);
+  border: 1px solid var(--border, #273449);
+}
+
+.reader-shell .reader-launch-btn .row-title,
+.reader-shell .reader-tool-row .row-title {
+  color: var(--text, #F0EDE5);
+}
+
+.reader-shell .reader-launch-btn .row-meta,
+.reader-shell .reader-tool-row .row-meta {
+  color: var(--text-muted, #6B7585);
+}
+
+.reader-shell .reader-launch-chev {
+  color: var(--text-muted, #6B7585);
+}
+
+.reader-shell .reader-sec-label {
+  color: var(--text-muted, #6B7585);
+}
+
+.reader-shell .reader-note-form textarea {
+  background: var(--surface-raised, #141C2A);
+  border: 1px solid var(--border, #273449);
+  color: var(--text, #F0EDE5);
+  font-family: var(--font-ui, "Inter", system-ui, sans-serif);
+}
+
+.reader-shell .reader-note-form textarea::placeholder {
+  color: var(--text-muted, #6B7585);
+}
+
+.reader-shell .reader-hint {
+  color: var(--text-muted, #6B7585);
+}
