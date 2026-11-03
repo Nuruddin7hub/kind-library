@@ -177,6 +177,7 @@ def api_search():
                 "title": d["title"],
                 "subj": d["subj"],
                 "section": d["section"],
+                "file": d.get("file"),
                 "pages": d.get("pages", 0),
                 "kind": kind or "title",
                 "page": page,
