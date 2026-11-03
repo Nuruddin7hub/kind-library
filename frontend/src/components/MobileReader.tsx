@@ -1,13 +1,39 @@
-// K/IND mobile engine — immersive study reader (ChatGPT Round C afternoon, 2026-11-02).
-// Round C P0 rebuild: compact chrome — 34px topline / 2-line title / one meta line /
-// 3px progress (header ≤125px excl. safe-area); PDF viewport padding 0 so the page
-// starts immediately beneath the header; 5-tool bottom grid (Pages/Mark/Draw/Notes/Find).
-// Draw = real freehand ink overlay per page, persisted kl:draw:<key>.
-// Find = page finder sheet. Pages are server-rendered PDF page images — real PDF
-// content (established decision: no PDF.js).
+// K/IND mobile engine — immersive study reader (ChatGPT Round C rebuild, 2026-11-03).
+//
+// Single-page flex layout (exact spec direction):
+//   .mr-reader {position:fixed; inset:0; z-index:200; display:flex;
+//               flex-direction:column; background:#080B11; overflow:hidden}
+//   54px header (back | 1-line ellipsis title | bookmark | more)
+//   48px modebar (READ/STUDY/FIND + page x/y, page counter TAPPABLE →
+//     page-jump sheet with numeric input + thumbnail strip)
+//   .mr-stage {flex:1; min-height:0; display:flex; overflow:auto; padding:12px;
+//              background:#151D29} with the page image at REAL aspect ratio
+//     (max-width:100%; max-height:100%; object-fit:contain; NO stretching)
+//   Study toolbar: 4 EXPLICIT tools — Highlight (color choice), Note (tap page
+//     to pin), Draw (pen + eraser + undo), Bookmark (save page + optional
+//     label) — each with a VISIBLE selected state and a small contextual
+//     toolbar (Undo/Cancel); annotations saved against document ID + page
+//     number, positioned relative to the page.
+//   Read mode: page nav + zoom controls only.
+//   Find mode: search field + match count + prev/next match.
+//   Global bottom nav stays hidden in the reader (z-index 200 covers the dock).
+//
+// Page content is server-rendered IMAGES (no PDF.js, no text layer —
+// established decision), so long-press text selection is impossible.
+// kl:pos / kl:posx / kl:marks / kl:draw / kl:notes all byte-compatible:
+//   kl:pos:<key>   = current page (int, desktop + resume compat)
+//   kl:posx:<key>  = {p, s, z} — s is 0 in the single-page layout (schema kept)
+//   kl:marks:<key> = [{page, name, ts}]
+//   kl:draw:<key>  = {page: [{c, w, pts}]} (normalized 0..1 coords; highlight
+//                    strokes are wide translucent strokes in the same store)
+//   kl:notes:<key> = [{page, text, ts, x?, y?}] — x/y (0..1) only on tap-pinned
+//                    notes; legacy notes without x/y still parse and list.
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import BottomSheet from './BottomSheet';
 import { consumeReaderStartPage } from '../readerStart';
+import type { SearchHit } from '../shared';
+import './MobileReader.css';
 
 export interface DocLite {
   key: string;
@@ -21,6 +47,7 @@ export interface DocLite {
 interface Props {
   file: DocLite;
   subjectLabel: string;
+  subjectCode: string;
   sectionLabel: string;
   onClose: () => void;
   onPrev: (() => void) | null;
@@ -32,6 +59,7 @@ interface Props {
   bookmarked: boolean;
   onToggleBookmark: () => void;
   onOpenDoc: (key: string) => void;
+  reducedMotion?: boolean;
 }
 
 function pageImageUrl(subj: string, file: string, page: number, totalPages: number): string {
@@ -42,17 +70,33 @@ function pageImageUrl(subj: string, file: string, page: number, totalPages: numb
 }
 
 const posKey = (k: string) => `kl:pos:${k}`;
+const posxKey = (k: string) => `kl:posx:${k}`;
 const notesKey = (k: string) => `kl:notes:${k}`;
+const marksKey = (k: string) => `kl:marks:${k}`;
 const drawKey = (k: string) => `kl:draw:${k}`;
 const SUBJECT_COLORS: Record<string, string> = {
-  em2: '#6B9DFF', signals: '#B18AFF', fis: '#E6B76C', digital: '#45D9C2',
+  em2: '#719AFF', signals: '#B38AFF', fis: '#E6B36C', digital: '#38D5C1',
 };
 
-type Sheet = 'pages' | 'notes' | 'contents' | 'bookmarks' | 'info' | 'find' | null;
+type Sheet = 'pages' | 'pin' | 'notes' | 'marks' | 'info' | null;
+
+/** Reader modes (Round C P0): Read = page nav + zoom only;
+ *  Study = 4 explicit annotation tools; Find = in-doc search. */
+type ReaderMode = 'read' | 'study' | 'find';
+/** Study tools — 4 explicit, each with visible selected state + contextual bar. */
+type StudyTool = 'highlight' | 'note' | 'draw' | 'bookmark' | null;
 
 interface Note {
   page: number;
   text: string;
+  ts: number;
+  x?: number;
+  y?: number;
+}
+
+interface Mark {
+  page: number;
+  name: string;
   ts: number;
 }
 
@@ -63,29 +107,40 @@ function loadNotes(key: string): Note[] {
   } catch { return []; }
 }
 
+function loadMarks(key: string): Mark[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(marksKey(key)) || '[]');
+    return Array.isArray(raw)
+      ? raw.filter(m => typeof m?.page === 'number' && typeof m?.name === 'string')
+          .sort((a: Mark, b: Mark) => a.page - b.page || a.ts - b.ts)
+      : [];
+  } catch { return []; }
+}
+
 // Pages sheet tile: dark tile with a skeleton shimmer until the thumbnail
-// loads — never a blank white tile.
-function ThumbTile({ page, src, selected, onGo }: {
-  page: number; src: string; selected: boolean; onGo: () => void;
+// loads — never a blank white tile. Turquoise outline marks the current page.
+function ThumbTile({ page, src, selected, onGo, eager }: {
+  page: number; src: string; selected: boolean; onGo: () => void; eager?: boolean;
 }) {
   const [loaded, setLoaded] = useState(false);
   return (
-    <button onClick={onGo} className={`ap-thumb${selected ? ' on' : ''}`} aria-label={`Go to page ${page}`}>
-      <span className="ap-thumb-frame">
-        <img src={src} alt="" loading="lazy" draggable={false}
+    <button type="button" onClick={onGo} className={`mr-thumb${selected ? ' on' : ''}`} aria-label={`Go to page ${page}`}>
+      <span className="mr-thumb-frame">
+        <img src={src} alt="" loading={eager ? 'eager' : 'lazy'} draggable={false}
           onLoad={() => setLoaded(true)} className={loaded ? 'in' : ''} />
-        {!loaded && <span className="ap-thumb-shimmer" aria-hidden="true" />}
-        {selected && <span className="ap-thumb-current">CURRENT</span>}
+        {!loaded && <span className="mr-thumb-shimmer" aria-hidden="true" />}
+        {selected && <span className="mr-thumb-current">CURRENT</span>}
       </span>
-      <span className="ap-thumb-num">{page}</span>
+      <span className="mr-thumb-num">{page}</span>
     </button>
   );
 }
 
-// ---------- freehand ink overlay (Draw tool) ----------
-// One canvas per page, absolutely positioned over the page image. Strokes are
-// stored in normalized 0..1 coordinates so they survive zoom/resize, and
-// persisted per document under kl:draw:<key>.
+// ---------- freehand ink overlay (Draw + Highlight tools) ----------
+// One canvas per mounted page, absolutely positioned over the page box.
+// Strokes are stored in normalized 0..1 coordinates so they survive
+// zoom/resize, and persisted per document under kl:draw:<key>. Highlight
+// strokes are wide translucent strokes in the same store.
 interface Stroke { c: string; w: number; pts: [number, number][]; }
 
 function loadStrokes(docKey: string, page: number): Stroke[] {
@@ -104,11 +159,14 @@ function saveStrokes(docKey: string, page: number, strokes: Stroke[]) {
   } catch { /* ignore — quota */ }
 }
 
-interface DrawApi { undo: () => void; clear: () => void; }
+interface DrawApi { undo: () => void; }
 
-function DrawLayer({ page, docKey, active, color, apis }: {
-  page: number; docKey: string; active: boolean; color: string;
-  apis: React.MutableRefObject<Map<number, DrawApi>>;
+function DrawLayer({ page, docKey, ink, color, width, erase, apiRef }: {
+  page: number; docKey: string;
+  ink: boolean;              // pen/highlighter captures pointer when true
+  color: string; width: number;
+  erase: boolean;            // tap-a-stroke deletes it
+  apiRef: React.MutableRefObject<DrawApi | null>;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [strokes, setStrokes] = useState<Stroke[]>(() => loadStrokes(docKey, page));
@@ -116,6 +174,10 @@ function DrawLayer({ page, docKey, active, color, apis }: {
   strokesRef.current = strokes;
   const colorRef = useRef(color);
   colorRef.current = color;
+  const widthRef = useRef(width);
+  widthRef.current = width;
+  const eraseRef = useRef(erase);
+  eraseRef.current = erase;
   const cur = useRef<{ pts: [number, number][] } | null>(null);
 
   const paint = useCallback(() => {
@@ -145,19 +207,18 @@ function DrawLayer({ page, docKey, active, color, apis }: {
     };
     for (const s of strokesRef.current) drawStroke(s);
     if (cur.current && cur.current.pts.length > 0) {
-      drawStroke({ c: colorRef.current, w: 3, pts: cur.current.pts });
+      drawStroke({ c: colorRef.current, w: widthRef.current, pts: cur.current.pts });
     }
   }, []);
 
   useEffect(() => {
-    apis.current.set(page, {
+    apiRef.current = {
       undo: () => setStrokes(prev => {
         const n = prev.slice(0, -1);
         saveStrokes(docKey, page, n);
         return n;
       }),
-      clear: () => { setStrokes([]); saveStrokes(docKey, page, []); },
-    });
+    };
     paint();
     const canvas = canvasRef.current;
     const wrap = canvas?.parentElement;
@@ -170,13 +231,13 @@ function DrawLayer({ page, docKey, active, color, apis }: {
     const onLoad = () => paint();
     img?.addEventListener('load', onLoad);
     return () => {
-      apis.current.delete(page);
+      if (apiRef.current) apiRef.current = null;
       ro?.disconnect();
       img?.removeEventListener('load', onLoad);
     };
-  }, [page, docKey, paint, apis]);
+  }, [page, docKey, paint, apiRef]);
 
-  useEffect(() => { paint(); }, [strokes, active, paint]);
+  useEffect(() => { paint(); }, [strokes, ink, paint]);
 
   const toNorm = (e: React.PointerEvent): [number, number] => {
     const r = canvasRef.current!.getBoundingClientRect();
@@ -185,20 +246,41 @@ function DrawLayer({ page, docKey, active, color, apis }: {
     return [Math.round(x * 1000) / 1000, Math.round(y * 1000) / 1000];
   };
 
+  // eraser: delete the nearest stroke within ~14px of the tap
+  const eraseAt = (p: [number, number]) => {
+    const list = strokesRef.current;
+    let best = -1, bestD = 0.035;
+    for (let i = list.length - 1; i >= 0; i--) {
+      for (const q of list[i].pts) {
+        const d = Math.hypot(q[0] - p[0], q[1] - p[1]);
+        if (d < bestD) { bestD = d; best = i; }
+      }
+    }
+    if (best >= 0) {
+      setStrokes(prev => {
+        const n = prev.filter((_, i) => i !== best);
+        saveStrokes(docKey, page, n);
+        return n;
+      });
+    }
+  };
+
   return (
     <canvas
       ref={canvasRef}
-      className={`ap-draw-canvas${active ? ' on' : ''}`}
+      className={`mr-draw-canvas${ink ? ' on' : ''}`}
       aria-hidden="true"
       onPointerDown={e => {
-        if (!active) return;
+        if (!ink) return;
         e.preventDefault();
+        const p = toNorm(e);
+        if (eraseRef.current) { eraseAt(p); return; }
         try { (e.target as HTMLElement).setPointerCapture(e.pointerId); } catch { /* ignore */ }
-        cur.current = { pts: [toNorm(e)] };
+        cur.current = { pts: [p] };
       }}
       onPointerMove={e => {
         const c = cur.current;
-        if (!c || !active) return;
+        if (!c || !ink || eraseRef.current) return;
         const p = toNorm(e);
         const last = c.pts[c.pts.length - 1];
         if (Math.hypot(p[0] - last[0], p[1] - last[1]) < 0.004) return;
@@ -211,7 +293,7 @@ function DrawLayer({ page, docKey, active, color, apis }: {
         cur.current = null;
         if (!c || c.pts.length < 2) { paint(); return; }
         setStrokes(prev => {
-          const n = [...prev, { c: colorRef.current, w: 3, pts: c.pts }].slice(-60);
+          const n = [...prev, { c: colorRef.current, w: widthRef.current, pts: c.pts }].slice(-60);
           saveStrokes(docKey, page, n);
           return n;
         });
@@ -224,139 +306,236 @@ function DrawLayer({ page, docKey, active, color, apis }: {
 export default function MobileReader(props: Props) {
   const { file } = props;
   const total = file.pages || 1;
+  const accent = SUBJECT_COLORS[file.subj] || '#38D5C1';
+
+  const [page, setPage] = useState(1);
   const [zoom, setZoom] = useState(100);
-  const [visiblePage, setVisiblePage] = useState(1);
-  const [immersive, setImmersive] = useState(false);
+  const [mode, setMode] = useState<ReaderMode>('read');
+  const [tool, setTool] = useState<StudyTool>(null);
   const [sheet, setSheet] = useState<Sheet>(null);
-  const [titleOpen, setTitleOpen] = useState(false);
   const [notes, setNotes] = useState<Note[]>(() => loadNotes(file.key));
+  const [marks, setMarks] = useState<Mark[]>(() => loadMarks(file.key));
   const [noteDraft, setNoteDraft] = useState('');
-  const [findVal, setFindVal] = useState('');
-  const [drawMode, setDrawMode] = useState(false);
-  const [drawColor, setDrawColor] = useState(SUBJECT_COLORS[file.subj] || '#45D9C2');
-  const drawApis = useRef(new Map<number, DrawApi>());
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [markDraft, setMarkDraft] = useState('');
+  const [pinDraft, setPinDraft] = useState('');
+  const [pinAt, setPinAt] = useState<{ x: number; y: number } | null>(null);
+  const [pinPop, setPinPop] = useState<number | null>(null);
+  const [pageInput, setPageInput] = useState('');
+  const [ftQuery, setFtQuery] = useState('');
+  const [ftLoading, setFtLoading] = useState(false);
+  const [ftHits, setFtHits] = useState<Array<{ page_number: number; snippet: string; match_count: number }>>([]);
+  const [ftIdx, setFtIdx] = useState(0);
+  // study tool options
+  const [hlColor, setHlColor] = useState('rgba(255, 236, 140, 0.55)');
+  const [penColor, setPenColor] = useState(SUBJECT_COLORS[file.subj] || '#38D5C1');
+  const [eraseMode, setEraseMode] = useState(false);
+  const drawApi = useRef<DrawApi | null>(null);
+
+  // page box geometry: real aspect ratio from the loaded image, fit into the stage
+  const [imgAR, setImgAR] = useState(0.707); // w/h, updated on load
+  const [stageSize, setStageSize] = useState({ w: 0, h: 0 });
+  const stageRef = useRef<HTMLDivElement>(null);
+  const findInputRef = useRef<HTMLInputElement>(null);
+  const posxTimer = useRef<number | null>(null);
   const restored = useRef(false);
-  const touchStart = useRef<{ x: number; y: number; t: number } | null>(null);
   const userTouched = useRef(false);
+  const pagesGridRef = useRef<HTMLDivElement>(null);
+  const pagesScrollPos = useRef(0);
+  const touchStart = useRef<{ x: number; y: number; t: number } | null>(null);
   const lastTapEnd = useRef(0);
   const pinchStart = useRef<{ dist: number; zoom: number } | null>(null);
-  const accent = SUBJECT_COLORS[file.subj] || '#45D9C2';
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
+  const pageRef = useRef(page);
+  pageRef.current = page;
 
-  // floating page pill: appears on scroll, fades after scroll settles
-  const [pillOn, setPillOn] = useState(false);
-  const pillTimer = useRef<number | null>(null);
-  const bumpPill = useCallback(() => {
-    setPillOn(true);
-    if (pillTimer.current) window.clearTimeout(pillTimer.current);
-    pillTimer.current = window.setTimeout(() => setPillOn(false), 1500);
+  // reduced motion: prop wins, else the OS preference
+  const [mqReduced, setMqReduced] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const apply = () => setMqReduced(mq.matches);
+    apply();
+    if (typeof mq.addEventListener === 'function') {
+      mq.addEventListener('change', apply);
+      return () => mq.removeEventListener('change', apply);
+    }
   }, []);
-  const goToPage = useCallback((p: number) => {
-    const page = Math.max(1, Math.min(total, p));
-    const el = document.getElementById(`kl-mpage-${page}`);
-    if (el) el.scrollIntoView({ block: 'start' });
-    setVisiblePage(page);
-    setSheet(null);
-  }, [total]);
+  const motionReduced = props.reducedMotion ?? mqReduced;
+
+  // measure the stage so the page box fits at real aspect ratio
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el) return;
+    const measure = () => setStageSize({ w: el.clientWidth, h: el.clientHeight });
+    measure();
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(measure);
+      ro.observe(el);
+    }
+    return () => ro?.disconnect();
+  }, []);
+
+  const fitW = Math.max(0, stageSize.w - 24);
+  const fitH = Math.max(0, stageSize.h - 24);
+  let baseW = fitW, baseH = fitW / Math.max(0.2, imgAR);
+  if (baseH > fitH) { baseH = fitH; baseW = fitH * Math.max(0.2, imgAR); }
+  const boxW = Math.max(40, Math.round(baseW * zoom / 100));
+  const boxH = Math.max(40, Math.round(baseH * zoom / 100));
 
   const closeSheet = useCallback(() => setSheet(null), []);
+  const openSheet = useCallback((s: Exclude<Sheet, null>) => {
+    setSheet(prev => {
+      if (prev === s) return null;
+      if (s === 'pages') setPageInput(String(pageRef.current));
+      return s;
+    });
+  }, []);
 
+  // reset per document
   useEffect(() => {
-    setZoom(100); setVisiblePage(1); setImmersive(false); setSheet(null);
-    setTitleOpen(false); setNoteDraft(''); setFindVal('');
-    setDrawMode(false); setDrawColor(SUBJECT_COLORS[file.subj] || '#45D9C2');
+    setPage(1); setZoom(100); setMode('read'); setTool(null); setSheet(null);
+    setNoteDraft(''); setMarkDraft(''); setPinDraft(''); setPinAt(null); setPinPop(null);
+    setPageInput(''); setFtQuery(''); setFtHits([]); setFtLoading(false); setFtIdx(0);
+    setHlColor('rgba(255, 236, 140, 0.55)');
+    setPenColor(SUBJECT_COLORS[file.subj] || '#38D5C1');
+    setEraseMode(false);
     setNotes(loadNotes(file.key));
+    setMarks(loadMarks(file.key));
+    pagesScrollPos.current = 0;
     restored.current = false; userTouched.current = false;
+    if (posxTimer.current) window.clearTimeout(posxTimer.current);
   }, [file.key, file.subj]);
 
-  // restore reading position (kl:pos) once pages are in the DOM —
-  // a pending exact-page open from search wins over the saved position.
-  // Lazy-loaded page images shift layout, so jump immediately (best effort)
-  // then re-assert until the target page actually sits at the stage top.
+  // debounced exact-position save: kl:posx:<key> = {p, s, z}
+  // (s is always 0 in the single-page layout — schema kept byte-compatible)
+  const schedulePosX = useCallback((p: number) => {
+    if (posxTimer.current) window.clearTimeout(posxTimer.current);
+    posxTimer.current = window.setTimeout(() => {
+      if (!restored.current) return;
+      try {
+        localStorage.setItem(posxKey(file.key), JSON.stringify({
+          p, s: 0, z: zoomRef.current,
+        }));
+      } catch { /* ignore — quota */ }
+    }, 500);
+  }, [file.key]);
+
+  const persistPage = useCallback((p: number) => {
+    try { localStorage.setItem(posKey(file.key), String(p)); } catch { /* ignore */ }
+    schedulePosX(p);
+  }, [file.key, schedulePosX]);
+
+  const goToPage = useCallback((p: number) => {
+    const pg = Math.max(1, Math.min(total, p));
+    setPage(pg);
+    setPinPop(null);
+    const sc = stageRef.current;
+    if (sc) { sc.scrollTop = 0; sc.scrollLeft = 0; }
+    persistPage(pg);
+    setSheet(null);
+  }, [total, persistPage]);
+
+  // restore reading position — a pending exact-page open from search wins
+  // over everything. kl:posx restores zoom; otherwise fall back to kl:pos.
   useEffect(() => {
     if (restored.current) return;
-    let saved = 1;
     const forced = consumeReaderStartPage(file.key);
+    let saved = 1;
     if (forced) {
       saved = forced;
     } else {
       try { saved = parseInt(localStorage.getItem(posKey(file.key)) || '1', 10) || 1; } catch { /* ignore */ }
     }
     saved = Math.min(Math.max(1, saved), total);
-    const target = saved;
-    const align = () => {
-      const scroller = scrollRef.current;
-      const el = document.getElementById(`kl-mpage-${target}`);
-      if (!el || !scroller) return false;
-      const r = el.getBoundingClientRect();
-      const sr = scroller.getBoundingClientRect();
-      if (Math.abs(r.top - sr.top) > 30) {
-        el.scrollIntoView({ block: 'start' });
-        setVisiblePage(target);
-        return false;
-      }
-      setVisiblePage(target);
-      return true;
-    };
-    align();
-    let aligned = 0, n = 0;
-    const iv = window.setInterval(() => {
-      n++;
-      // user took over scrolling — stop correcting
-      if (userTouched.current || restored.current) {
-        window.clearInterval(iv);
-        restored.current = true;
-        return;
-      }
-      if (align()) aligned++;
-      else aligned = 0;
-      if (aligned >= 3 || n >= 16) {
-        window.clearInterval(iv);
-        restored.current = true;
-      }
-    }, 500);
-    return () => window.clearInterval(iv);
-  }, [file.key, total]);
+    if (!forced) {
+      try {
+        const raw = localStorage.getItem(posxKey(file.key));
+        if (raw) {
+          const j = JSON.parse(raw);
+          if (typeof j?.z === 'number') {
+            const z = Math.max(60, Math.min(300, Math.round(j.z)));
+            setZoom(z);
+            const p = Math.max(1, Math.min(total, Math.round(j.p ?? saved)));
+            setPage(p);
+            restored.current = true;
+            persistPage(p);
+            return;
+          }
+        }
+      } catch { /* ignore */ }
+    }
+    setPage(saved);
+    restored.current = true;
+    persistPage(saved);
+  }, [file.key, total, persistPage]);
 
-  // track page nearest viewport center → persist reading position (kl:pos)
+  useEffect(() => () => {
+    if (posxTimer.current) window.clearTimeout(posxTimer.current);
+  }, []);
+
+  // zoom changes re-record the exact position
+  useEffect(() => { schedulePosX(pageRef.current); }, [zoom, schedulePosX]);
+
+  // in-document full-text search — debounced 300ms, min 2 chars,
+  // filtered to this document's key, passages sorted by page
   useEffect(() => {
-    const scroller = scrollRef.current;
-    if (!scroller) return;
-    let raf = 0, last = 1;
-    const onScroll = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        if (!restored.current) return;
-        let best = 1, bestDist = Infinity;
-        const sr = scroller.getBoundingClientRect();
-        for (let p = 1; p <= total; p++) {
-          const el = document.getElementById(`kl-mpage-${p}`);
-          if (!el) continue;
-          const r = el.getBoundingClientRect();
-          const dist = Math.abs((r.top - sr.top) + r.height / 2 - scroller.clientHeight / 2);
-          if (dist < bestDist) { bestDist = dist; best = p; }
-        }
-        if (best !== last) {
-          last = best;
-          setVisiblePage(best);
-          try { localStorage.setItem(posKey(file.key), String(best)); } catch { /* ignore */ }
-        }
-        bumpPill();
-      });
-    };
-    scroller.addEventListener('scroll', onScroll, { passive: true });
-    return () => { scroller.removeEventListener('scroll', onScroll); cancelAnimationFrame(raf); };
-  }, [file.key, total, bumpPill]);
+    const q = ftQuery.trim();
+    if (q.length < 2) { setFtHits([]); setFtLoading(false); setFtIdx(0); return; }
+    setFtLoading(true);
+    const ctrl = new AbortController();
+    const t = window.setTimeout(() => {
+      fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal: ctrl.signal })
+        .then(res => (res.ok ? res.json() : { results: [] }))
+        .then((data: { results?: SearchHit[] }) => {
+          const passages: Array<{ page_number: number; snippet: string; match_count: number }> = [];
+          for (const r of data.results || []) {
+            if (r.key !== file.key) continue;
+            for (const pg of r.passages || []) {
+              passages.push({ page_number: pg.page_number, snippet: pg.snippet, match_count: pg.match_count });
+            }
+          }
+          passages.sort((a, b) => a.page_number - b.page_number);
+          setFtHits(passages);
+          setFtIdx(0);
+        })
+        .catch(() => { /* aborted or network error — keep previous */ })
+        .finally(() => { if (!ctrl.signal.aborted) setFtLoading(false); });
+    }, 300);
+    return () => { window.clearTimeout(t); ctrl.abort(); };
+  }, [ftQuery, file.key]);
+  const ftTotalMatches = ftHits.reduce((n, h) => n + (h.match_count || 0), 0);
+  const ftPages = useMemo(
+    () => [...new Set(ftHits.map(h => h.page_number))].sort((a, b) => a - b),
+    [ftHits],
+  );
+  const ftStep = useCallback((dir: 1 | -1) => {
+    if (!ftPages.length) return;
+    setFtIdx(i => {
+      const n = (i + dir + ftPages.length) % ftPages.length;
+      goToPage(ftPages[n]);
+      return n;
+    });
+  }, [ftPages, goToPage]);
 
-  // touch: tap-center toggles chrome, double-tap toggles zoom,
-  // horizontal swipe → prev/next page, pinch → zoom.
-  // While drawing, the ink canvas owns the gesture (guarded below).
+  const switchMode = useCallback((m: ReaderMode) => {
+    setSheet(null);
+    setTool(null);
+    setEraseMode(false);
+    setMode(m);
+    if (m === 'find') {
+      window.setTimeout(() => findInputRef.current?.focus(), 120);
+    }
+  }, []);
+
+  // touch: double-tap toggles zoom, horizontal swipe turns pages,
+  // pinch zooms. While inking, the canvas owns the gesture.
   const pinchDist = (t: React.TouchList) =>
     Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
 
   const onTouchStart = (e: React.TouchEvent) => {
     userTouched.current = true;
-    if ((e.target as HTMLElement).closest('.ap-draw-canvas')) return;
+    if ((e.target as HTMLElement).closest('.mr-draw-canvas')) return;
     if (e.touches.length === 2) {
       pinchStart.current = { dist: pinchDist(e.touches), zoom };
       return;
@@ -374,43 +553,66 @@ export default function MobileReader(props: Props) {
   const onTouchEnd = (e: React.TouchEvent) => {
     if (pinchStart.current) { pinchStart.current = null; return; }
     const s = touchStart.current;
-    if (!s || drawMode) { touchStart.current = null; return; }
+    touchStart.current = null;
+    if (!s) return;
+    // a tool owns taps on the page (note pinning / inking handled elsewhere)
+    if (tool) return;
     const t = e.changedTouches[0];
     const dx = t.clientX - s.x, dy = t.clientY - s.y;
     const dt = Date.now() - s.t;
-    // quick tap, minimal movement
     if (dt < 300 && Math.abs(dx) < 12 && Math.abs(dy) < 12) {
+      // double-tap toggles zoom 100 ↔ 175
       if (Date.now() - lastTapEnd.current < 320) {
-        // double-tap toggles zoom
         setZoom(z => (z > 110 ? 100 : 175));
         lastTapEnd.current = 0;
       } else {
-        // tap-center toggles chrome
-        setImmersive(v => !v);
         lastTapEnd.current = Date.now();
       }
-      touchStart.current = null;
       return;
     }
-    // horizontal swipe at boundary → prev/next page
-    if (dt < 500 && Math.abs(dx) > 80 && Math.abs(dy) < 50) {
-      const scroller = scrollRef.current;
-      const atTop = !scroller || scroller.scrollTop < 40;
-      const atBottom = !scroller || scroller.scrollTop + scroller.clientHeight > scroller.scrollHeight - 40;
-      if (dx < 0 && atBottom) goToPage(visiblePage + 1);
-      else if (dx > 0 && atTop) goToPage(visiblePage - 1);
-      else if (dx < 0) goToPage(visiblePage + 1);
-      else goToPage(visiblePage - 1);
+    // horizontal swipe → prev/next page (only when not zoomed-in panning)
+    if (dt < 500 && Math.abs(dx) > 80 && Math.abs(dy) < 60 && zoomRef.current <= 115) {
+      if (dx < 0) goToPage(page + 1);
+      else goToPage(page - 1);
     }
-    touchStart.current = null;
   };
 
-  const progress = total ? Math.round((visiblePage / total) * 100) : 0;
+  // tap-to-pin notes (NOTE tool): a TRUE tap on the page box (not a scroll)
+  // opens the pin composer at the tapped normalized coordinates.
+  const noteTapStart = useRef<{ x: number; y: number; t: number } | null>(null);
+  const onPagePointerDown = (e: React.PointerEvent) => {
+    if (tool !== 'note') return;
+    if ((e.target as HTMLElement).closest('.mr-pin-anchor')) return; // pin's own tap
+    noteTapStart.current = { x: e.clientX, y: e.clientY, t: Date.now() };
+  };
+  const onPagePointerUp = (e: React.PointerEvent) => {
+    const s = noteTapStart.current;
+    noteTapStart.current = null;
+    if (tool !== 'note' || !s) return;
+    if ((e.target as HTMLElement).closest('.mr-pin-anchor')) return;
+    const moved = Math.hypot(e.clientX - s.x, e.clientY - s.y);
+    if (Date.now() - s.t > 350 || moved > 12) return; // it was a scroll, not a tap
+    const box = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = Math.min(1, Math.max(0, (e.clientX - box.left) / Math.max(1, box.width)));
+    const y = Math.min(1, Math.max(0, (e.clientY - box.top) / Math.max(1, box.height)));
+    setPinAt({ x: Math.round(x * 1000) / 1000, y: Math.round(y * 1000) / 1000 });
+    setPinDraft('');
+    setSheet('pin');
+  };
+
+  const savePinNote = () => {
+    const text = pinDraft.trim();
+    if (!text || !pinAt) return;
+    const next = [{ page, text, ts: Date.now(), x: pinAt.x, y: pinAt.y }, ...notes];
+    setNotes(next);
+    setPinDraft(''); setPinAt(null); setSheet(null);
+    try { localStorage.setItem(notesKey(file.key), JSON.stringify(next)); } catch { /* ignore */ }
+  };
 
   const saveNote = () => {
     const text = noteDraft.trim();
     if (!text) return;
-    const next = [{ page: visiblePage, text, ts: Date.now() }, ...notes];
+    const next = [{ page, text, ts: Date.now() }, ...notes];
     setNotes(next);
     setNoteDraft('');
     try { localStorage.setItem(notesKey(file.key), JSON.stringify(next)); } catch { /* ignore */ }
@@ -418,312 +620,469 @@ export default function MobileReader(props: Props) {
   const deleteNote = (ts: number) => {
     const next = notes.filter(n => n.ts !== ts);
     setNotes(next);
+    if (pinPop === ts) setPinPop(null);
     try { localStorage.setItem(notesKey(file.key), JSON.stringify(next)); } catch { /* ignore */ }
   };
 
-  const doFind = () => {
-    const p = parseInt(findVal, 10);
+  const saveMark = () => {
+    const name = markDraft.trim() || `Page ${page}`;
+    const next = [
+      ...marks.filter(m => m.page !== page),
+      { page, name, ts: Date.now() },
+    ].sort((a, b) => a.page - b.page || a.ts - b.ts);
+    setMarks(next);
+    setMarkDraft('');
+    setTool(null);
+    try { localStorage.setItem(marksKey(file.key), JSON.stringify(next)); } catch { /* ignore */ }
+  };
+  const deleteMark = (ts: number) => {
+    const next = marks.filter(m => m.ts !== ts);
+    setMarks(next);
+    try { localStorage.setItem(marksKey(file.key), JSON.stringify(next)); } catch { /* ignore */ }
+  };
+
+  const doPageJump = () => {
+    const p = parseInt(pageInput, 10);
     if (p >= 1 && p <= total) {
       goToPage(p);
-      setFindVal('');
+      setPageInput('');
     }
   };
 
-  const sheetHeader = (label: string) => (
-    <div className="ap-sheet-head">
-      <div className="ap-sheet-grip" />
-      <div className="ap-sheet-title-row">
-        <span className="ap-sheet-title">{label}</span>
-        <button className="ap-icon-btn" onClick={closeSheet} aria-label="Close">✕</button>
-      </div>
-    </div>
-  );
-
-  const sheetLabel = (s: Exclude<Sheet, null>) =>
-    s === 'pages' ? 'Pages' : s === 'notes' ? 'Notes' : s === 'contents' ? 'Contents'
-      : s === 'bookmarks' ? 'Bookmarks' : s === 'find' ? 'Find' : 'Info';
-
-  const tools: Array<{ id: string; label: string; icon: string; active: boolean; onPick: () => void; aria: string }> = [
-    { id: 'pages', label: 'PAGES', icon: '▤', active: sheet === 'pages', onPick: () => setSheet(sheet === 'pages' ? null : 'pages'), aria: 'Page thumbnails' },
-    { id: 'mark', label: 'MARK', icon: props.bookmarked ? '★' : '☆', active: props.bookmarked, onPick: () => props.onToggleBookmark(), aria: props.bookmarked ? 'Remove bookmark' : 'Bookmark this document' },
-    { id: 'draw', label: 'DRAW', icon: '✎', active: drawMode, onPick: () => setDrawMode(v => !v), aria: drawMode ? 'Stop drawing' : 'Draw on the page' },
-    { id: 'notes', label: 'NOTES', icon: '≡', active: sheet === 'notes', onPick: () => setSheet(sheet === 'notes' ? null : 'notes'), aria: 'Notes' },
-    { id: 'find', label: 'FIND', icon: '⌕', active: sheet === 'find', onPick: () => setSheet(sheet === 'find' ? null : 'find'), aria: 'Find a page' },
+  const MODES: Array<{ id: ReaderMode; label: string; aria: string }> = [
+    { id: 'read', label: 'READ', aria: 'Read mode — page navigation and zoom' },
+    { id: 'study', label: 'STUDY', aria: 'Study mode — highlight, notes, draw, bookmarks' },
+    { id: 'find', label: 'FIND', aria: 'Find mode — search in this document' },
   ];
 
+  const TOOLS: Array<{ id: Exclude<StudyTool, null>; label: string; icon: string; aria: string }> = [
+    { id: 'highlight', label: 'HIGHLIGHT', icon: '▬', aria: 'Highlight tool — choose a color' },
+    { id: 'note', label: 'NOTE', icon: '✚', aria: 'Note tool — tap the page to pin a note' },
+    { id: 'draw', label: 'DRAW', icon: '✎', aria: 'Draw tool — pen, eraser, undo' },
+    { id: 'bookmark', label: 'BOOKMARK', icon: '⚑', aria: 'Bookmark tool — save this page with a label' },
+  ];
+
+  const HL_COLORS = [
+    { c: 'rgba(255, 236, 140, 0.55)', label: 'Yellow highlighter' },
+    { c: accent, label: 'Subject highlighter' },
+    { c: 'rgba(255, 150, 180, 0.5)', label: 'Pink highlighter' },
+  ];
+  const PEN_COLORS = [
+    { c: accent, label: 'Subject ink' },
+    { c: '#FFFFFF', label: 'White ink' },
+    { c: '#FF7A7A', label: 'Red ink' },
+  ];
+
+  const inking = tool === 'highlight' || tool === 'draw';
+  const pageNotes = notes.filter(n => n.page === page);
+  const pinned = pageNotes.filter(n => typeof n.x === 'number' && typeof n.y === 'number');
+  const progress = total ? Math.round((page / total) * 100) : 0;
+
+  // PAGES sheet: preserve the thumbnail grid scroll position across re-opens
+  useEffect(() => {
+    if (sheet === 'pages' && pagesGridRef.current) {
+      pagesGridRef.current.scrollTop = pagesScrollPos.current;
+    }
+  }, [sheet]);
+  const savePagesScroll = useCallback(() => {
+    if (pagesGridRef.current) pagesScrollPos.current = pagesGridRef.current.scrollTop;
+  }, []);
+
   return (
-    <div className="ap-reader" style={{ ['--subject-accent' as any]: accent }}>
-      {/* compact header: 34px topline / 2-line title / one meta line / 3px bar */}
-      {!immersive && (
-        <header className="ki-rdr-head">
-          <div className="ki-rdr-top">
-            <button className="ki-rdr-back" onClick={props.onClose} aria-label="Back to library">‹</button>
-            <span className="ki-rdr-crumb">
-              K/IND <span>/</span> LIBRARY <span>/</span> {file.subj.toUpperCase()}
-            </span>
+    <div
+      className={`mr-reader${motionReduced ? ' mr-reduced-motion' : ''}`}
+      style={{ ['--subject-accent' as any]: accent }}
+    >
+      {/* 54px header: back | 1-line ellipsis title | bookmark | more */}
+      <div className="mr-reader-head">
+        <button type="button" className="mr-back" onClick={props.onClose} aria-label="Back to library">‹</button>
+        <div className="mr-titlewrap">
+          <span className="mr-title">{file.title}</span>
+        </div>
+        <button
+          type="button"
+          className={`mr-iconbtn${props.bookmarked ? ' on' : ''}`}
+          onClick={() => props.onToggleBookmark()}
+          aria-label={props.bookmarked ? 'Remove bookmark' : 'Bookmark'}
+          aria-pressed={props.bookmarked}
+        >
+          {props.bookmarked ? '★' : '☆'}
+        </button>
+        <button type="button" className="mr-iconbtn" onClick={() => openSheet('info')} aria-label="More options">⋯</button>
+      </div>
+
+      {/* 48px modebar: READ·STUDY·FIND segmented + PAGE x/y (tap → PAGES sheet) */}
+      <div className="mr-moderow">
+        <div className="mr-modeseg" role="tablist" aria-label="Reader mode">
+          {MODES.map(m => (
             <button
-              className={`ki-rdr-act${props.bookmarked ? ' on' : ''}`}
-              onClick={() => props.onToggleBookmark()}
-              aria-label={props.bookmarked ? 'Remove bookmark' : 'Bookmark'}
-              aria-pressed={props.bookmarked}
+              key={m.id}
+              type="button"
+              role="tab"
+              aria-selected={mode === m.id}
+              className={`mr-modebtn${mode === m.id ? ' on' : ''}`}
+              onClick={() => switchMode(m.id)}
+              aria-label={m.aria}
             >
-              {props.bookmarked ? '★' : '☆'}
+              {m.label}
             </button>
-            <button className="ki-rdr-act" onClick={() => setSheet('info')} aria-label="Document info">ⓘ</button>
-          </div>
-          <h2 className={`ki-rdr-title${titleOpen ? ' open' : ''}`} onClick={() => setTitleOpen(v => !v)}>
-            {file.title}
-          </h2>
-          <div className="ki-rdr-meta">PAGE {visiblePage} OF {total} · {progress}% READ</div>
-          <span className="ki-rdr-bar" aria-hidden="true">
-            <span style={{ width: `${progress}%`, background: accent }} />
-          </span>
-        </header>
+          ))}
+        </div>
+        <button
+          type="button"
+          className="mr-pagebtn"
+          onClick={() => openSheet('pages')}
+          aria-label={`Open page thumbnails, currently page ${page} of ${total}`}
+        >
+          PAGE {page}/{total} ›
+        </button>
+      </div>
+
+      {/* study toolbar: 4 explicit tools with VISIBLE selected state */}
+      {mode === 'study' && (
+        <div className="mr-studybar" role="toolbar" aria-label="Study tools">
+          {TOOLS.map(t => (
+            <button
+              type="button"
+              key={t.id}
+              className={`mr-tool${tool === t.id ? ' on' : ''}`}
+              onClick={() => {
+                setTool(prev => (prev === t.id ? null : t.id));
+                setEraseMode(false);
+                if (t.id === 'bookmark') setMarkDraft('');
+              }}
+              aria-label={t.aria}
+              aria-pressed={tool === t.id}
+            >
+              <span className="mr-tool-icon" aria-hidden="true">{t.icon}</span>
+              <span className="mr-tool-label">{t.label}</span>
+            </button>
+          ))}
+        </div>
       )}
 
-      {/* full-viewport PDF canvas — padding 0, page starts under the header */}
+      {/* contextual mini-toolbar per tool: tool controls + Undo + Cancel */}
+      {mode === 'study' && tool === 'highlight' && (
+        <div className="mr-ctxbar" role="toolbar" aria-label="Highlight options">
+          <span className="mr-ctx-hint">SWIPE TO HIGHLIGHT</span>
+          {HL_COLORS.map(o => (
+            <button
+              type="button"
+              key={o.label}
+              className={`mr-swatch${hlColor === o.c ? ' on' : ''}`}
+              style={{ background: o.c }}
+              onClick={() => setHlColor(o.c)}
+              aria-label={o.label}
+              aria-pressed={hlColor === o.c}
+            />
+          ))}
+          <button type="button" className="mr-ctxbtn" onClick={() => drawApi.current?.undo()}>UNDO</button>
+          <button type="button" className="mr-ctxbtn mr-ctxdone" onClick={() => setTool(null)}>CANCEL</button>
+        </div>
+      )}
+      {mode === 'study' && tool === 'note' && (
+        <div className="mr-ctxbar" role="toolbar" aria-label="Note options">
+          <span className="mr-ctx-hint">TAP THE PAGE TO PIN A NOTE</span>
+          <button type="button" className="mr-ctxbtn" onClick={() => openSheet('notes')}>VIEW NOTES</button>
+          <button type="button" className="mr-ctxbtn mr-ctxdone" onClick={() => setTool(null)}>CANCEL</button>
+        </div>
+      )}
+      {mode === 'study' && tool === 'draw' && (
+        <div className="mr-ctxbar" role="toolbar" aria-label="Draw options">
+          {PEN_COLORS.map(o => (
+            <button
+              type="button"
+              key={o.label}
+              className={`mr-swatch${!eraseMode && penColor === o.c ? ' on' : ''}`}
+              style={{ background: o.c }}
+              onClick={() => { setPenColor(o.c); setEraseMode(false); }}
+              aria-label={o.label}
+              aria-pressed={!eraseMode && penColor === o.c}
+            />
+          ))}
+          <button
+            type="button"
+            className={`mr-ctxbtn${eraseMode ? ' on' : ''}`}
+            onClick={() => setEraseMode(v => !v)}
+            aria-pressed={eraseMode}
+          >
+            ERASER
+          </button>
+          <button type="button" className="mr-ctxbtn" onClick={() => drawApi.current?.undo()}>UNDO</button>
+          <button type="button" className="mr-ctxbtn mr-ctxdone" onClick={() => { setTool(null); setEraseMode(false); }}>CANCEL</button>
+        </div>
+      )}
+      {mode === 'study' && tool === 'bookmark' && (
+        <div className="mr-ctxbar mr-ctxbar-input" role="toolbar" aria-label="Bookmark options">
+          <input
+            className="mr-ctx-input"
+            value={markDraft}
+            onChange={e => setMarkDraft(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') saveMark(); }}
+            placeholder={`Label for page ${page} (optional)`}
+            maxLength={60}
+            aria-label="Bookmark label"
+          />
+          <button type="button" className="mr-ctxbtn mr-ctxprimary" onClick={saveMark}>SAVE</button>
+          <button type="button" className="mr-ctxbtn mr-ctxdone" onClick={() => setTool(null)}>CANCEL</button>
+        </div>
+      )}
+
+      {/* .reader-stage: flex-1, centered, page at REAL aspect ratio */}
       <div
-        ref={scrollRef}
-        className="ap-reader-stage"
+        ref={stageRef}
+        className="mr-stage"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
-        <div className="ap-reader-pages">
-          {Array.from({ length: total }, (_, i) => i + 1).map(p => (
-            <div key={p} id={`kl-mpage-${p}`} className="ap-reader-pagewrap scroll-mt-2">
-              <div className="ap-draw-wrap">
-                <img
-                  src={pageImageUrl(file.subj, file.file, p, total)}
-                  alt={`Page ${p}`}
-                  loading={p <= 3 ? 'eager' : 'lazy'}
-                  className="ap-reader-page"
-                  style={{ width: `${zoom}%`, maxWidth: 'none' }}
-                  draggable={false}
-                />
-                <DrawLayer page={p} docKey={file.key} active={drawMode && !immersive}
-                  color={drawColor} apis={drawApis} />
-              </div>
-              <div className="ap-reader-pagenum">{p}</div>
-            </div>
+        <div
+          className="mr-pagebox"
+          style={{ width: boxW, height: boxH }}
+          onPointerDown={onPagePointerDown}
+          onPointerUp={onPagePointerUp}
+        >
+          <img
+            src={pageImageUrl(file.subj, file.file, page, total)}
+            alt={`Page ${page}`}
+            className="mr-pageimg"
+            draggable={false}
+            onLoad={e => {
+              const im = e.currentTarget;
+              if (im.naturalWidth > 0 && im.naturalHeight > 0) {
+                setImgAR(im.naturalWidth / im.naturalHeight);
+              }
+            }}
+          />
+          <DrawLayer
+            key={`${file.key}-${page}`}
+            page={page}
+            docKey={file.key}
+            ink={inking}
+            color={tool === 'highlight' ? hlColor : penColor}
+            width={tool === 'highlight' ? 10 : 3}
+            erase={tool === 'draw' && eraseMode}
+            apiRef={drawApi}
+          />
+          {/* tap-pinned notes, positioned relative to the page */}
+          {pinned.map(n => (
+            <span key={n.ts} className="mr-pin-anchor" style={{ left: `${(n.x as number) * 100}%`, top: `${(n.y as number) * 100}%` }}>
+              <button
+                type="button"
+                className={`mr-pin${pinPop === n.ts ? ' on' : ''}`}
+                onClick={ev => { ev.stopPropagation(); setPinPop(pinPop === n.ts ? null : n.ts); }}
+                aria-label={`Note on page ${n.page}: ${n.text}`}
+              >
+                ✎
+              </button>
+              {pinPop === n.ts && (
+                <span className={`mr-pin-pop${(n.y as number) < 0.4 ? ' below' : ''}`} role="dialog" aria-label="Pinned note">
+                  <span className="mr-pin-text">{n.text}</span>
+                  <span className="mr-pin-actions">
+                    <button type="button" className="mr-pin-jump" onClick={() => openSheet('notes')}>ALL NOTES</button>
+                    <button type="button" className="mr-pin-del" onClick={() => deleteNote(n.ts)}>DELETE</button>
+                  </span>
+                </span>
+              )}
+            </span>
           ))}
-          <div style={{ height: immersive ? 40 : 120 }} />
         </div>
       </div>
 
-      {/* floating page indicator — shows on scroll, fades after it settles */}
-      <div className={`ap-page-pill${pillOn && !immersive ? ' on' : ''}`} aria-hidden="true">
-        {visiblePage} / {total}
-      </div>
+      {/* Read mode: page nav + zoom controls ONLY */}
+      {mode === 'read' && (
+        <div className="mr-readbar" role="toolbar" aria-label="Page navigation and zoom">
+          <button type="button" className="mr-rbtn" onClick={() => goToPage(page - 1)}
+            disabled={page <= 1} aria-label="Previous page">‹</button>
+          <button type="button" className="mr-rbtn" onClick={() => setZoom(z => Math.max(60, z - 25))}
+            disabled={zoom <= 60} aria-label="Zoom out">−</button>
+          <button type="button" className="mr-rzoom" onClick={() => setZoom(100)}
+            aria-label="Reset zoom to 100 percent">{zoom}%</button>
+          <button type="button" className="mr-rbtn" onClick={() => setZoom(z => Math.min(300, z + 25))}
+            disabled={zoom >= 300} aria-label="Zoom in">+</button>
+          <button type="button" className="mr-rbtn" onClick={() => goToPage(page + 1)}
+            disabled={page >= total} aria-label="Next page">›</button>
+        </div>
+      )}
 
-      {/* draw tools — replaces chrome while inking */}
-      {drawMode && !immersive && (
-        <div className="ki-drawbar" role="toolbar" aria-label="Drawing tools">
-          {[accent, '#FFFFFF', '#FF7A7A'].map(c => (
-            <button
-              key={c}
-              className={`ki-draw-swatch${drawColor === c ? ' on' : ''}`}
-              style={{ background: c }}
-              onClick={() => setDrawColor(c)}
-              aria-label={`Ink color ${c}`}
-              aria-pressed={drawColor === c}
+      {/* Find mode: search field + match count + prev/next match */}
+      {mode === 'find' && (
+        <div className="mr-findpanel">
+          <div className="mr-findbar">
+            <input
+              ref={findInputRef}
+              value={ftQuery}
+              onChange={e => setFtQuery(e.target.value)}
+              placeholder="Search in this document…"
+              aria-label="Search document text"
+              enterKeyHint="search"
             />
-          ))}
-          <button className="ki-draw-btn" onClick={() => drawApis.current.get(visiblePage)?.undo()}>UNDO</button>
-          <button className="ki-draw-btn" onClick={() => drawApis.current.get(visiblePage)?.clear()}>CLEAR</button>
-          <button className="ki-draw-done" onClick={() => setDrawMode(false)}>DONE</button>
-        </div>
-      )}
-
-      {/* 5-tool bottom grid — safe-area aware, never covers content */}
-      {!immersive && (
-        <div className="ki-tools" role="toolbar" aria-label="Reading tools">
-          {tools.map(t => (
-            <button
-              key={t.id}
-              className={`ki-tool${t.active ? ' on' : ''}`}
-              onClick={t.onPick}
-              aria-label={t.aria}
-              aria-pressed={t.active}
-            >
-              <span className="ki-tool-icon" aria-hidden="true">{t.icon}</span>
-              <span className="ki-tool-label">{t.label}</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* bottom sheets */}
-      {sheet && (
-        <div className="ap-sheet-backdrop" onClick={closeSheet}>
-          <div className="ap-sheet" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
-            {sheet === 'pages' && (
-              <>
-                <div className="ap-sheet-head">
-                  <div className="ap-sheet-grip" />
-                  <div className="ap-sheet-title-row">
-                    <span className="ap-sheet-title">Pages</span>
-                    <span className="ap-sheet-count">{visiblePage} of {total} pages</span>
-                    <button className="ap-icon-btn" onClick={closeSheet} aria-label="Close">✕</button>
-                  </div>
-                </div>
-                <div className="ap-thumb-grid">
-                  {Array.from({ length: total }, (_, i) => i + 1).map(p => (
-                    <ThumbTile
-                      key={p}
-                      page={p}
-                      src={pageImageUrl(file.subj, file.file, p, total)}
-                      selected={p === visiblePage}
-                      onGo={() => goToPage(p)}
-                    />
-                  ))}
-                </div>
-              </>
+            <span className="mr-findcount" aria-live="polite">
+              {ftLoading ? '…' : `${ftTotalMatches} HIT${ftTotalMatches === 1 ? '' : 'S'}`}
+            </span>
+            {ftPages.length > 0 && (
+              <span className="mr-findpos" aria-hidden="true">{ftIdx + 1}/{ftPages.length}</span>
             )}
-            {sheet === 'notes' && (
-              <>
-                {sheetHeader('Notes')}
-                <div className="ap-info">
-                  <div className="ki-note-form">
-                    <textarea
-                      value={noteDraft}
-                      onChange={e => setNoteDraft(e.target.value)}
-                      placeholder={`Note on page ${visiblePage}…`}
-                      aria-label="Write a note"
-                    />
-                    <button
-                      className="ki-note-save"
-                      onClick={saveNote}
-                      disabled={!noteDraft.trim()}
-                    >
-                      SAVE NOTE · P. {visiblePage}
-                    </button>
-                  </div>
-                  <div className="ki-note-list">
-                    {notes.map(n => (
-                      <div key={n.ts} className="reader-note">
-                        <div className="note-page">PAGE {n.page}</div>
-                        <div className="note-text">{n.text}</div>
-                        <button className="note-del" onClick={() => deleteNote(n.ts)}>Delete</button>
-                      </div>
-                    ))}
-                    {notes.length === 0 && (
-                      <p className="ap-empty">No notes yet. Jot one down — it's pinned to the current page.</p>
-                    )}
-                  </div>
-                </div>
-              </>
+            <button type="button" className="mr-findnav" onClick={() => ftStep(-1)}
+              disabled={!ftPages.length} aria-label="Previous match">‹</button>
+            <button type="button" className="mr-findnav" onClick={() => ftStep(1)}
+              disabled={!ftPages.length} aria-label="Next match">›</button>
+          </div>
+          <div className="mr-ft-list mr-findresults">
+            {ftHits.map((h, i) => (
+              <button
+                type="button"
+                key={`${h.page_number}-${i}`}
+                className="mr-ft-hit"
+                onClick={() => goToPage(h.page_number)}
+                aria-label={`Go to page ${h.page_number}`}
+              >
+                <span className="mr-ft-page">P. {h.page_number}</span>
+                <span className="mr-ft-snippet">{h.snippet}</span>
+              </button>
+            ))}
+            {ftQuery.trim().length >= 2 && !ftLoading && ftHits.length === 0 && (
+              <p className="mr-empty">No matches for “{ftQuery.trim()}”.</p>
             )}
-            {sheet === 'find' && (
-              <>
-                {sheetHeader('Find a page')}
-                <div className="ap-info">
-                  <div className="ki-find-row">
-                    <input
-                      value={findVal}
-                      onChange={e => setFindVal(e.target.value.replace(/[^0-9]/g, ''))}
-                      onKeyDown={e => { if (e.key === 'Enter') doFind(); }}
-                      placeholder={`Page 1–${total}`}
-                      inputMode="numeric"
-                      aria-label="Page number"
-                    />
-                    <button onClick={doFind} className="ki-find-go">GO →</button>
-                  </div>
-                  <div className="ap-info-actions">
-                    <button className="ap-chip-btn" onClick={() => goToPage(1)}>First page</button>
-                    <button className="ap-chip-btn" onClick={() => goToPage(total)}>Last page</button>
-                    {props.onPrev && (
-                      <button className="ap-chip-btn" onClick={() => { closeSheet(); props.onPrev?.(); }}>← Prev doc</button>
-                    )}
-                    {props.onNext && (
-                      <button className="ap-chip-btn" onClick={() => { closeSheet(); props.onNext?.(); }}>Next doc →</button>
-                    )}
-                  </div>
-                  <p className="ap-empty">Jump straight to any page in this document.</p>
-                </div>
-              </>
-            )}
-            {sheet === 'contents' && (
-              <>
-                {sheetHeader('Contents')}
-                <div className="ap-contents">
-                  {props.contents.map(sec => (
-                    <div key={sec.id} className="ap-contents-sec">
-                      <div className="ap-contents-label">{sec.label}</div>
-                      {sec.docs.map(d => (
-                        <button
-                          key={d.key}
-                          onClick={() => { closeSheet(); props.onOpenDoc(d.key); }}
-                          className={`ap-contents-doc${d.key === file.key ? ' on' : ''}`}
-                        >
-                          <span className="ap-contents-dot" style={{ background: d.key === file.key ? accent : 'rgba(255,255,255,0.25)' }} />
-                          <span className="ap-clamp1">{d.title}</span>
-                          <span className="ap-contents-pages">{d.pages}p</span>
-                        </button>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-            {sheet === 'bookmarks' && (
-              <>
-                {sheetHeader('Bookmarks')}
-                <div className="ap-contents">
-                  {props.bookmarkedDocs.length === 0 && (
-                    <p className="ap-empty">No bookmarks yet. Tap ☆ on any document to pin it here.</p>
-                  )}
-                  {props.bookmarkedDocs.map(d => (
-                    <button key={d.key} onClick={() => { closeSheet(); props.onOpenDoc(d.key); }} className="ap-contents-doc">
-                      <span style={{ color: '#ffbf78' }}>★</span>
-                      <span className="ap-clamp1">{d.title}</span>
-                      <span className="ap-contents-pages">{d.subj.toUpperCase()} · {d.pages}p</span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-            {sheet === 'info' && (
-              <>
-                {sheetHeader('Document info')}
-                <div className="ap-info">
-                  <div className="ap-info-row"><span className="ap-info-k">TITLE</span><span>{file.title}</span></div>
-                  <div className="ap-info-row"><span className="ap-info-k">SUBJECT</span><span>{props.subjectLabel}</span></div>
-                  <div className="ap-info-row"><span className="ap-info-k">SECTION</span><span>{props.sectionLabel}</span></div>
-                  <div className="ap-info-row"><span className="ap-info-k">PAGES</span><span>{total}</span></div>
-                  <div className="ap-info-row"><span className="ap-info-k">POSITION</span><span>Page {visiblePage} of {total} · {progress}% read</span></div>
-                  <div className="ap-info-row"><span className="ap-info-k">DOCUMENT</span><span>{props.docIndex + 1} of {props.docTotal}</span></div>
-                  <div className="ap-info-row"><span className="ap-info-k">GESTURES</span><span>Pinch or double-tap to zoom · swipe sideways to turn pages · tap the page to hide the interface</span></div>
-                  <div className="ap-info-actions">
-                    <button className="ap-chip-btn" onClick={() => setSheet('contents')}>Contents</button>
-                    <button className="ap-chip-btn" onClick={() => setSheet('notes')}>Notes</button>
-                    <button className="ap-chip-btn" onClick={() => setSheet('bookmarks')}>Bookmarks</button>
-                    {props.onPrev && (
-                      <button className="ap-chip-btn" onClick={() => { closeSheet(); props.onPrev?.(); }}>← Prev doc</button>
-                    )}
-                    {props.onNext && (
-                      <button className="ap-chip-btn" onClick={() => { closeSheet(); props.onNext?.(); }}>Next doc →</button>
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
-            {/* sheet quick tabs */}
-            <div className="ap-sheet-tabs">
-              {(['pages', 'notes', 'contents', 'bookmarks', 'find', 'info'] as Sheet[]).map(s => (
-                <button
-                  key={s as string}
-                  onClick={() => setSheet(s)}
-                  className={sheet === s ? 'on' : ''}
-                  style={sheet === s ? { color: accent } : undefined}
-                >
-                  {sheetLabel(s as Exclude<Sheet, null>)}
-                </button>
-              ))}
-            </div>
           </div>
         </div>
       )}
+
+      {/* PAGES sheet — numeric input + thumbnail strip */}
+      <BottomSheet open={sheet === 'pages'} onClose={closeSheet} title="Pages" height="min(76dvh, calc(100dvh - 48px))">
+        <div className="mr-jump-row">
+          <input
+            value={pageInput}
+            onChange={e => setPageInput(e.target.value.replace(/[^0-9]/g, ''))}
+            onKeyDown={e => { if (e.key === 'Enter') doPageJump(); }}
+            placeholder={`Page 1–${total}`}
+            inputMode="numeric"
+            enterKeyHint="go"
+            aria-label="Page number"
+          />
+          <span className="mr-jump-total" aria-hidden="true">OF {total}</span>
+          <button type="button" className="mr-go" onClick={doPageJump}>GO</button>
+        </div>
+        <div className="mr-find-nav">
+          <button type="button" className="mr-chip" onClick={() => goToPage(1)}>First</button>
+          <button type="button" className="mr-chip" onClick={() => goToPage(page - 1)} aria-label="Previous page">‹ Prev</button>
+          <button type="button" className="mr-chip" onClick={() => goToPage(page + 1)} aria-label="Next page">Next ›</button>
+          <button type="button" className="mr-chip" onClick={() => goToPage(total)}>Last</button>
+        </div>
+        <div className="mr-thumb-grid" ref={pagesGridRef} onScroll={savePagesScroll}>
+          {Array.from({ length: total }, (_, i) => i + 1).map(p => (
+            <ThumbTile
+              key={p}
+              page={p}
+              src={pageImageUrl(file.subj, file.file, p, total)}
+              selected={p === page}
+              onGo={() => goToPage(p)}
+              eager={p <= 12}
+            />
+          ))}
+        </div>
+      </BottomSheet>
+
+      {/* PIN sheet — compose a tap-pinned note */}
+      <BottomSheet open={sheet === 'pin'} onClose={closeSheet} title={`Pin note · page ${page}`}>
+        <div className="mr-note-form">
+          <textarea
+            value={pinDraft}
+            onChange={e => setPinDraft(e.target.value)}
+            placeholder="Write the note…"
+            aria-label="Pinned note text"
+          />
+          <button type="button" className="mr-note-save" onClick={savePinNote} disabled={!pinDraft.trim()}>
+            PIN NOTE · P. {page}
+          </button>
+        </div>
+      </BottomSheet>
+
+      {/* NOTES sheet — add/list; tapping a note jumps to its page */}
+      <BottomSheet open={sheet === 'notes'} onClose={closeSheet} title="Notes" height="78vh">
+        <div className="mr-note-form">
+          <textarea
+            value={noteDraft}
+            onChange={e => setNoteDraft(e.target.value)}
+            placeholder={`Note on page ${page}…`}
+            aria-label="Write a note"
+          />
+          <button type="button" className="mr-note-save" onClick={saveNote} disabled={!noteDraft.trim()}>
+            SAVE NOTE · P. {page}
+          </button>
+        </div>
+        <div className="mr-note-list">
+          {notes.map(n => (
+            <div key={n.ts} className="mr-note">
+              <button type="button" className="mr-note-body" onClick={() => goToPage(n.page)}
+                aria-label={`Jump to note on page ${n.page}`}>
+                <span className="mr-note-page">PAGE {n.page}</span>
+                <span className="mr-note-text">{n.text}</span>
+              </button>
+              <button type="button" className="mr-del" onClick={() => deleteNote(n.ts)} aria-label="Delete note">✕</button>
+            </div>
+          ))}
+          {notes.length === 0 && (
+            <p className="mr-empty">No notes yet. In Study mode, tap NOTE then tap the page to pin one.</p>
+          )}
+        </div>
+      </BottomSheet>
+
+      {/* MARKS sheet — named page bookmarks */}
+      <BottomSheet open={sheet === 'marks'} onClose={closeSheet} title="Page marks" height="72vh">
+        <div className="mr-jump-row">
+          <input
+            value={markDraft}
+            onChange={e => setMarkDraft(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') saveMark(); }}
+            placeholder="Name this page…"
+            maxLength={60}
+            aria-label="Mark name"
+          />
+          <button type="button" className="mr-go" onClick={saveMark}>SAVE PAGE MARK</button>
+        </div>
+        <p className="mr-hint">Marks the page you&rsquo;re on: page {page}</p>
+        <div className="mr-mark-list">
+          {marks.map(m => (
+            <div key={m.ts} className="mr-mark-row">
+              <button type="button" className="mr-mark-jump" onClick={() => goToPage(m.page)}
+                aria-label={`Jump to ${m.name}, page ${m.page}`}>
+                <span className="mr-mark-name">{m.name}</span>
+                <span className="mr-mark-page">PAGE {m.page}</span>
+              </button>
+              <button type="button" className="mr-del" onClick={() => deleteMark(m.ts)}
+                aria-label={`Delete mark ${m.name}`}>✕</button>
+            </div>
+          ))}
+          {marks.length === 0 && (
+            <p className="mr-empty">No page marks yet. Name the page you&rsquo;re on and save it.</p>
+          )}
+        </div>
+      </BottomSheet>
+
+      {/* INFO sheet */}
+      <BottomSheet open={sheet === 'info'} onClose={closeSheet} title="Document info">
+        <div className="mr-info">
+          <div className="mr-info-row"><span className="mr-info-k">TITLE</span><span>{file.title}</span></div>
+          <div className="mr-info-row"><span className="mr-info-k">SUBJECT</span><span>{props.subjectLabel}</span></div>
+          <div className="mr-info-row"><span className="mr-info-k">SECTION</span><span>{props.sectionLabel}</span></div>
+          <div className="mr-info-row"><span className="mr-info-k">PAGES</span><span>{total}</span></div>
+          <div className="mr-info-row"><span className="mr-info-k">POSITION</span><span>Page {page} of {total} · {progress}% read</span></div>
+          <div className="mr-info-row"><span className="mr-info-k">DOCUMENT</span><span>{props.docIndex + 1} of {props.docTotal}</span></div>
+          <div className="mr-info-row"><span className="mr-info-k">MODES</span><span>Read = page navigation + zoom · Study = highlight, tap-to-pin notes, draw with eraser, page bookmarks · Find = in-document text search</span></div>
+          <div className="mr-info-row"><span className="mr-info-k">GESTURES</span><span>Pinch or double-tap to zoom · swipe sideways to turn pages</span></div>
+          <div className="mr-info-actions">
+            <button type="button" className="mr-chip" onClick={() => openSheet('notes')}>Notes</button>
+            <button type="button" className="mr-chip" onClick={() => openSheet('marks')}>Page Marks</button>
+            {props.onPrev && (
+              <button type="button" className="mr-chip" onClick={() => { closeSheet(); props.onPrev?.(); }}>← Prev doc</button>
+            )}
+            {props.onNext && (
+              <button type="button" className="mr-chip" onClick={() => { closeSheet(); props.onNext?.(); }}>Next doc →</button>
+            )}
+          </div>
+        </div>
+      </BottomSheet>
     </div>
   );
 }

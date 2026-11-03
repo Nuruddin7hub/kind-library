@@ -1,0 +1,525 @@
+/* K/IND mobile search (ChatGPT Round B, 2026-11-03).
+ * All classes ms- prefixed. Tokens from styles/tokens.css.
+ * Hard constraints: 44px minimum tap targets (page buttons included),
+ * sticky searchbar with safe positioning, no auto-focus, no entrance
+ * animations, prefers-reduced-motion honored. */
+
+.ms-root {
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace; /* Round B P0: mobile metadata */
+  color: var(--text);
+  font-family: var(--font-ui);
+  /* nav clearance: shared .mobile-page rule (index.css) — counted once there */
+}
+.ms-section {
+  padding-left: 18px;
+  padding-right: 18px;
+}
+
+/* ---------- sticky search bar ---------- */
+.ms-searchbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 12px 12px 6px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.ms-back {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+.ms-search-field {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-height: 54px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.ms-search-icon {
+  flex-shrink: 0;
+  padding-left: 16px;
+  font-size: 20px;
+  color: var(--text-muted);
+}
+.ms-search-input {
+  flex: 1;
+  min-width: 0;
+  height: 52px;
+  border: none;
+  background: transparent;
+  outline: none;
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 16px; /* 16px+ prevents iOS zoom-on-focus */
+  padding: 0 8px 0 10px;
+}
+.ms-search-input::placeholder { color: var(--text-muted); }
+.ms-search-field:focus-within {
+  border-color: var(--digital);
+  box-shadow: 0 0 0 2px rgba(56, 213, 193, 0.25);
+}
+.ms-search-clear {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* ---------- scope segmented control (P0: edge fade — never a clipped button) ---------- */
+.ms-scope {
+  display: flex;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* visible fade at the right edge: same scroll-affordance as the filter rail */
+  -webkit-mask-image: linear-gradient(to right, black 0, black calc(100% - 30px), transparent 100%);
+  mask-image: linear-gradient(to right, black 0, black calc(100% - 30px), transparent 100%);
+}
+.ms-scope::-webkit-scrollbar { display: none; }
+.ms-scope-btn {
+  flex: 1 0 auto;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ms-scope-btn.active {
+  background: var(--surface-raised);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+/* ---------- subject pills rail (visible edge fade both sides) ---------- */
+.ms-rail {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin: 12px -18px 0;
+  padding: 2px 18px 6px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, black 28px, black calc(100% - 28px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, black 28px, black calc(100% - 28px), transparent 100%);
+}
+.ms-rail::-webkit-scrollbar { display: none; }
+.ms-pill {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ms-pill.active {
+  border-color: var(--text);
+  color: var(--text);
+  background: var(--surface-raised);
+}
+
+/* ---------- results header + sort ---------- */
+.ms-results-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  row-gap: 10px;
+  column-gap: 10px;
+  margin: 16px 0 12px;
+}
+.ms-results-head {
+  margin: 0;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.ms-sort {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.ms-sort-btn {
+  min-height: 36px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ms-sort-btn.active {
+  background: var(--surface-raised);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+/* ---------- result cards: compact divider rows (P1-4) ---------- */
+.ms-results-list {
+  display: flex;
+  flex-direction: column;
+}
+.ms-card {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 13px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
+  cursor: pointer;
+}
+.ms-card:focus-visible {
+  outline: 2px solid var(--digital);
+  outline-offset: -2px;
+}
+.ms-thumb {
+  flex-shrink: 0;
+  width: 46px;
+  aspect-ratio: 3 / 4; /* 46 × 61 */
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
+  display: block;
+}
+.ms-card-main {
+  flex: 1;
+  min-width: 0;
+  padding-right: 40px; /* room for the bookmark button */
+}
+.ms-micro {
+  margin: 0 0 4px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.ms-title {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ms-meta {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* "N MATCHES · M PAGES" evidence line */
+.ms-matchline {
+  margin: 6px 0 0;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--digital);
+}
+
+/* honest match-kind label — Title match / Exact phrase / Text match */
+.ms-kindline {
+  margin: 6px 0 0;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* excerpts with highlighted term + page action (Round C P1) */
+.ms-excerpts {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ms-excerpt {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+}
+.ms-excerpt-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ms-hl {
+  background: rgba(56, 213, 193, 0.28);
+  color: var(--text);
+  border-radius: 3px;
+  padding: 0 1px;
+}
+.ms-page-go {
+  align-self: flex-end;
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.ms-page-go:active { border-color: var(--digital); }
+
+/* compact "OPEN →" text link — the card itself opens; not a button,
+   so the whole row stays one tab stop */
+.ms-open-link {
+  display: block;
+  margin-top: 8px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--digital);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* bookmark toggle */
+.ms-bookmark {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.ms-bookmark.on { color: var(--digital); }
+
+/* ---------- empty states ---------- */
+.ms-empty {
+  margin-top: 56px;
+  text-align: center;
+}
+.ms-empty-hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 15px;
+  font-style: italic;
+}
+.ms-empty-title {
+  margin: 0 0 16px;
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.6;
+}
+.ms-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.ms-chip {
+  min-height: 44px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  cursor: pointer;
+}
+.ms-clear-btn {
+  min-height: 48px;
+  padding: 12px 24px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* reduced motion: no shimmer/entrance anywhere */
+@media (prefers-reduced-motion: reduce) {
+  .ms-card,
+  .ms-page-btn,
+  .ms-pill,
+  .ms-scope-btn { transition: none; }
+}
+
+/* ---------- secondary filters button (results bar) ---------- */
+.ms-filters-btn {
+  position: relative;
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+}
+.ms-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--digital);
+  color: #062A26;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- secondary filters bottom sheet ---------- */
+.ms-sheet-group { padding: 16px 18px 4px; }
+.ms-sheet-label {
+  margin: 0 0 10px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.ms-opt-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ms-opt {
+  min-height: 44px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ms-opt.active {
+  border-color: var(--digital);
+  color: var(--digital);
+  background: var(--surface-raised);
+}
+.ms-sheet-footer {
+  display: flex;
+  gap: 10px;
+  padding: 12px 18px calc(14px + env(safe-area-inset-bottom));
+}
+.ms-btn-ghost {
+  flex: 1;
+  min-height: 52px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+}
+.ms-btn-primary {
+  flex: 2;
+  min-height: 52px;
+  border-radius: 12px;
+  border: none;
+  background: var(--digital);
+  color: #062A26;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+}
+
+/* metadata lines go IBM Plex Mono 10px uppercase (Round B P0) — handled
+   in the primary rules above; no overrides here. */

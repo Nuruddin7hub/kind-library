@@ -1,0 +1,297 @@
+/* K/IND mobile subject index — ChatGPT Round B rebuild (2026-11-03).
+ * Plain block root: the parent supplies the 18px gutter; this component
+ * adds no horizontal padding of its own. Bottom padding clears the 68px
+ * dock + safe area. All artwork is static — no animation, so
+ * prefers-reduced-motion needs no special casing beyond ScrollReveal's. */
+
+.msi {
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace; /* Round B P0: mobile metadata */
+  color: var(--ke-text);
+  /* nav clearance: shared .mobile-page rule (index.css) — counted once there */
+}
+
+/* ---------- header: discipline badge / editorial headline / lede ---------- */
+.msi-back {
+  display: inline-flex; align-items: center;
+  min-height: 44px; padding: 0 12px 0 0; margin-bottom: 6px;
+  background: none; border: 0; cursor: pointer;
+  font-family: var(--mobile-mono, 'JetBrains Mono', monospace);
+  font-size: 10px; letter-spacing: 0.14em; color: var(--mobile-muted, #8995A9);
+}
+.msi-back:active { color: var(--mobile-text, #F0EEE9); }
+.msi-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--subject-accent);
+}
+.msi-badge::before {
+  content: "";
+  width: 24px;
+  height: 1px;
+  background: var(--subject-accent);
+  opacity: 0.8;
+}
+
+.msi-headline {
+  font-family: var(--font-display);
+  font-weight: 400;
+  color: var(--ke-text);
+  font-size: clamp(34px, 9.6vw, 38px);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  margin: 12px 0 0;
+}
+.msi-headline .rb-scroll-reveal-text { margin: 0; }
+
+.msi-lede {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+  max-width: 34ch;
+}
+
+/* ---------- per-subject SVG artwork band ---------- */
+.msi-art {
+  margin-top: 18px;
+  height: 132px;
+  border-radius: 16px;
+  background: #0D1521;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.msi-art svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------- meta: one mono line, no big stat blocks ---------- */
+.msi-meta {
+  margin: 14px 0 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+/* ---------- BROWSE BY TYPE category chips (all 44px+ targets) ---------- */
+.msi-cats { margin-top: 18px; }
+.msi-cats-label {
+  margin: 0 0 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--ke-text);
+}
+.msi-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+  /* visible edge fade: every type is reachable, the rail reads as scrollable */
+  -webkit-mask-image: linear-gradient(to right, transparent 0, black 24px, black calc(100% - 24px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, black 24px, black calc(100% - 24px), transparent 100%);
+}
+.msi-chips::-webkit-scrollbar { display: none; }
+.msi-chip {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: #0D1521;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.msi-chip.on {
+  color: var(--subject-accent);
+  border-color: color-mix(in srgb, var(--subject-accent) 55%, transparent);
+}
+
+/* ---------- featured resource card (whole card tappable) ---------- */
+.msi-feat {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  text-align: left;
+  margin-top: 22px;
+  padding: 14px;
+  border-radius: 16px;
+  background:
+    radial-gradient(130% 120% at 0% 0%, color-mix(in srgb, var(--subject-accent) 16%, transparent), transparent 58%),
+    #0D1521;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: transform 150ms var(--ease-premium);
+}
+.msi-feat:active { transform: scale(0.985); }
+.msi-feat-thumb {
+  width: 96px;
+  height: 128px;
+  object-fit: cover;
+  border-radius: 10px;
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+  background: #131c2c;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
+}
+.msi-feat-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.msi-feat-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--subject-accent);
+  text-transform: uppercase;
+}
+.msi-feat-title {
+  font-family: var(--font-doc);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--ke-text);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.msi-feat-meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.msi-feat-cta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--subject-accent);
+}
+
+/* ---------- list ---------- */
+.msi-listhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 26px 0 2px;
+}
+.msi-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--ke-text);
+  text-transform: uppercase;
+}
+.msi-eyebrow.dim { color: var(--muted); font-weight: 400; }
+.msi-list { /* MobileDocRow (ki-row) carries its own row chrome */ }
+.msi-hint {
+  padding: 10px 2px 0;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: rgba(160, 169, 186, 0.55);
+}
+
+/* ---------- Round C P2: FIS hero questions (tappable → real search) ----------
+ * Amber kept restrained: only the arrow carries the subject accent. */
+.msi-questions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 14px 0 4px;
+}
+.msi-question {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 48px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.msi-question:active { transform: scale(0.98); }
+.msi-question-q {
+  font-family: var(--font-display, 'Instrument Serif', Georgia, serif);
+  font-size: 16px;
+  font-style: italic;
+  color: #F0EEE9;
+}
+.msi-question-go {
+  flex: 0 0 auto;
+  font-size: 16px;
+  color: var(--subject-accent);
+}
+
+/* ---------- Round C P2: Digital — stronger START HERE hierarchy ---------- */
+.msi[data-subject="digital"] .msi-feat-eyebrow {
+  display: inline-block;
+  background: var(--subject-accent);
+  color: #04110E;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+}
+
+/* ---------- Round C P2: Digital — circuit-trace archive section heading --- */
+.msi[data-subject="digital"] .msi-listhead {
+  position: relative;
+  padding-top: 16px;
+  margin-top: 30px;
+}
+.msi[data-subject="digital"] .msi-listhead::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    var(--subject-accent) 0%,
+    var(--subject-accent) 28%,
+    rgba(56, 213, 193, 0.18) 68%,
+    transparent 100%);
+}
+.msi[data-subject="digital"] .msi-listhead::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1.5px solid var(--subject-accent);
+}
