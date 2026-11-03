@@ -1,0 +1,78 @@
+/* K/IND DocCover — subject-branded fallback tile (Round B P0).
+ * 3:4, subject radial glow, subject color, doc index, doc type.
+ * The tile is the permanent underlay: the real page image fades in OVER it,
+ * so a cover is never blank — not while loading, not on failure. */
+
+/* caller className (width/height/border-radius) lands on this wrapper */
+.doc-cover {
+  --cover-c: #929DAE;
+  position: relative;
+  display: block;
+  overflow: hidden;
+}
+
+.doc-cover-under {
+  position: absolute;
+  inset: 0;
+}
+
+.doc-cover-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.doc-cover-img.in { opacity: 1; }
+
+.doc-cover-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+  /* border-radius comes from the caller's className (same element chain),
+   * so the fallback tile matches the img it replaces. */
+  background:
+    radial-gradient(120% 90% at 50% 12%, color-mix(in srgb, var(--cover-c) 38%, #0C1220) 0%, #0C1220 62%),
+    #0C1220;
+  border: 1px solid color-mix(in srgb, var(--cover-c) 45%, transparent);
+  overflow: hidden;
+  text-align: center;
+}
+
+.doc-cover-fallback-num {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--cover-c);
+}
+
+.doc-cover-fallback-code {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.doc-cover-fallback-type {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 7px;
+  letter-spacing: 0.12em;
+  color: color-mix(in srgb, var(--cover-c) 80%, #ffffff);
+  opacity: 0.85;
+  max-width: 90%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .doc-cover-img { transition: none; }
+}
