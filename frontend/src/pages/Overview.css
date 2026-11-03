@@ -1,0 +1,574 @@
+/* K/IND Library — Overview page (desktop). All classes prefixed kiA-. */
+
+.kiA {
+  max-width: 1600px; /* v2.0 spec */
+  margin: 0 auto;
+  padding: 0 48px 64px;
+  color: var(--text, #F0EDE5);
+}
+
+/* ---------------- Hero ---------------- */
+
+.kiA-hero {
+  position: relative;
+  min-height: 340px;
+  padding: 72px 0 56px;
+  overflow: hidden;
+}
+
+.kiA-hero-aurora {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 35%;
+  pointer-events: none;
+}
+
+.kiA-hero-inner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 48px;
+  align-items: center;
+}
+
+.kiA-eyebrow {
+  font-family: var(--font-mono, "IBM Plex Mono", monospace);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-muted, #6B7585);
+  margin: 0 0 18px;
+}
+
+/* v2.0: 76px Instrument Serif headline, React Bits SplitText entrance.
+ * SplitText renders inline-block with className appended — the wrapper h1
+ * carries the editorial type styles, which inherit into the split words. */
+.kiA-headline {
+  display: block;
+  font-family: var(--font-display, "Instrument Serif", serif);
+  font-size: clamp(56px, 5.5vw, 76px);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+  color: var(--text, #F0EDE5);
+  font-weight: 400;
+  margin: 0;
+  max-width: 12ch;
+}
+
+.kiA-hero-sub {
+  font-family: var(--font-ui, Inter, sans-serif);
+  font-size: 17px;
+  color: var(--text-secondary, #929DAE);
+  margin: 22px 0 26px;
+}
+
+/* v2.0: archive stats with CountUp — real data, never hardcoded */
+.kiA-stats {
+  display: flex;
+  gap: 36px;
+  margin: 0 0 30px;
+  padding: 0;
+}
+
+.kiA-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kiA-stat-num {
+  font-family: var(--font-mono, "IBM Plex Mono", monospace);
+  font-size: 26px;
+  font-weight: 500;
+  color: var(--text, #F0EDE5);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.kiA-stat-count {
+  font: inherit;
+  color: inherit;
+}
+
+.kiA-stat-label {
+  font-family: var(--font-mono, "IBM Plex Mono", monospace);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: var(--text-muted, #6B7585);
+}
+
+.kiA-search {
+  display: flex;
+  gap: 10px;
+  max-width: 540px;
+}
+
+.kiA-search-input {
+  flex: 1;
+  min-width: 0;
+  height: 52px;
+  background: var(--surface-raised, #141C2A);
+  border: 1px solid var(--border, #273449);
+  border-radius: var(--radius-md, 14px);
+  color: var(--text, #F0EDE5);
+  padding: 0 18px;
+  font-family: var(--font-ui, Inter, sans-serif);
+  font-size: 15px;
+  outline: none;
+  transition: var(--transition, 220ms cubic-bezier(.2,.8,.2,1));
+}
+
+.kiA-search-input::placeholder {
+  color: var(--text-muted, #6B7585);
+}
+
+.kiA-search-input:focus {
+  border-color: var(--text-secondary, #929DAE);
+}
+
+.kiA-search-btn {
+  height: 52px;
+  padding: 0 28px;
+  background: var(--text, #F0EDE5);
+  color: #080A0F;
+  border: none;
+  border-radius: var(--radius-md, 14px);
+  font-family: var(--font-ui, Inter, sans-serif);
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: var(--transition, 220ms cubic-bezier(.2,.8,.2,1));
+}
+
+.kiA-search-btn:hover {
+  opacity: 0.85;
+}
+
+/* Knowledge-map artwork */
+
+.kiA-hero-art {
+  display: flex;
+  justify-content: center;
+}
+
+.kiA-kmap {
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+}
+
+.kiA-kmap-link {
+  stroke: var(--border, #273449);
+  stroke-width: 1;
+  opacity: 0.75;
+}
+
+.kiA-kmap-ring {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1;
+  opacity: 0.5;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: kiA-ring 2.6s ease-out infinite;
+}
+
+.kiA-kmap-node {
+  filter: drop-shadow(0 0 6px currentColor);
+}
+
+@keyframes kiA-ring {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+.kiA-kmap-label {
+  font-family: var(--font-mono, "IBM Plex Mono", monospace);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  fill: var(--text-muted, #6B7585);
+}
+
+/* ---------------- Sections ---------------- */
+
+.kiA-section {
+  padding: 44px 0;
+}
+
+.kiA-section-title {
+  font-family: var(--font-display, "Instrument Serif", serif);
+  font-weight: 400;
+  font-size: clamp(28px, 3vw, 36px);
+  color: var(--text, #F0EDE5);
+  margin: 0 0 24px;
+}
+
+/* Subject bento cards — v2.0 editorial treatment */
+
+.kiA-bento .magic-bento__card {
+  cursor: pointer;
+  border-radius: var(--radius-lg, 20px);
+}
+
+.kiA-bento .magic-bento__content {
+  height: 100%;
+}
+
+.kiA-subj-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.kiA-subj-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--subj) 55%, transparent);
+  box-shadow: inset 0 0 36px -20px var(--subj);
+  opacity: 0;
+  transition: opacity var(--transition, 220ms cubic-bezier(.2,.8,.2,1));
+  pointer-events: none;
+}
+
+.magic-bento__card:hover .kiA-subj-card::after {
+  opacity: 1;
+}
+
+.kiA-subj-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.kiA-subj-num {
+  font-family: var(--font-mono, "IBM Plex Mono", monospace);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  color: var(--subj);
+}
+
+.kiA-subj-count {
+  font-family: var(--font-mono, "IBM Plex Mono", monospace);
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--text, #F0EDE5);
+  font-variant-numeric: tabular-nums;
+}
+
+.kiA-subj-count-suffix {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--text-muted, #6B7585);
+  font-weight: 400;
+}
+
+.kiA-subj-art {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  margin: 8px 0;
+}
+
+.kiA-art {
+  width: 100%;
+  height: 96px;
+  display: block;
+}
+
+.kiA-art-faint {
+  stroke: var(--border, #273448);
+  stroke-width: 1;
+  opacity: 0.35;
+}
+
+.kiA-art-dim {
+  opacity: 0.55;
+}
+
+.kiA-art-serif {
+  font-family: var(--font-display, "Instrument Serif", serif);
+  font-style: italic;
+}
+
+.kiA-subj-code {
+  font-family: var(--font-mono, "IBM Plex Mono", monospace);
+  font-size: 11px;
+  letter-spacing: 0.26em;
+  color: var(--subj);
+  margin: 0 0 6px;
+}
+
+.kiA-subj-title {
+  font-family: var(--font-display, "Instrument Serif", serif);
+  font-size: 24px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--text, #F0EDE5);
+  margin: 0 0 6px;
+}
+
+.kiA-subj-desc {
+  font-family: var(--font-ui, Inter, sans-serif);
+  font-size: 13px;
+  color: var(--text-secondary, #929DAE);
+  margin: 0;
+}
+
+/* ---------------- Continue studying: horizontal featured band ---------------- */
+
+.kiA-feat {
+  display: flex;
+  gap: 40px;
+  align-items: center;
+  background:
+    radial-gradient(120% 160% at 0% 0%, color-mix(in srgb, var(--subj) 9%, transparent), transparent 55%),
+    var(--surface, #0E131D);
+  border: 1px solid var(--border, #273448);
+  border-radius: var(--radius-lg, 20px);
+  padding: 36px 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+.kiA-feat::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--subj);
+  box-shadow: 0 0 18px var(--subj);
+}
+
+.kiA-feat-tilt {
+  flex: none;
+  border-radius: var(--radius-md, 14px);
+}
+
+.kiA-feat-cover {
+  width: 190px;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  display: block;
+  border-radius: var(--radius-md, 14px);
+  border: 1px solid var(--border, #273448);
+  background: var(--surface-raised, #141C2A);
+  box-shadow: 0 30px 60px -18px rgba(0, 0, 0, 0.7);
+}
+
+.kiA-feat-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.kiA-feat-kicker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono, "IBM Plex Mono", monospace);
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  color: var(--subj);
+  margin: 0 0 14px;
+}
+
+.kiA-feat-title {
+  font-family: var(--font-display, "Instrument Serif", serif);
+  font-weight: 400;
+  font-size: clamp(26px, 2.6vw, 38px);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--text, #F0EDE5);
+  margin: 0 0 12px;
+}
+
+.kiA-feat-meta {
+  font-family: var(--font-mono, "IBM Plex Mono", monospace);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, #6B7585);
+  margin: 0 0 18px;
+}
+
+.kiA-progress {
+  height: 6px;
+  background: var(--surface-raised, #141C2A);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 24px;
+  max-width: 420px;
+}
+
+.kiA-progress-fill {
+  height: 100%;
+  background: var(--subj, var(--text-secondary, #929DAE));
+  border-radius: 999px;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--subj) 60%, transparent);
+  transition: width 600ms var(--transition, 220ms cubic-bezier(.2,.8,.2,1));
+}
+
+.kiA-feat-btn {
+  height: 48px;
+  padding: 0 28px;
+  background: var(--text, #F0EDE5);
+  color: #080A0F;
+  border: none;
+  border-radius: var(--radius-md, 14px);
+  font-family: var(--font-ui, Inter, sans-serif);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: var(--transition, 220ms cubic-bezier(.2,.8,.2,1));
+}
+
+.kiA-feat-btn:hover {
+  box-shadow: 0 0 24px -6px var(--subj);
+  transform: translateY(-1px);
+}
+
+/* ---------------- Recently added: horizontal strip ---------------- */
+
+.kiA-strip {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 4px 2px 16px;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-hover, #1B2637) transparent;
+}
+
+.kiA-strip-card {
+  flex: 0 0 168px;
+  scroll-snap-align: start;
+}
+
+.kiA-strip-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+
+.kiA-strip-cover {
+  position: relative;
+  display: block;
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius-sm, 8px);
+  overflow: hidden;
+  border: 1px solid var(--border, #273448);
+  background: var(--surface-raised, #141C2A);
+  transition: transform var(--transition, 220ms cubic-bezier(.2,.8,.2,1)),
+              border-color var(--transition, 220ms cubic-bezier(.2,.8,.2,1)),
+              box-shadow var(--transition, 220ms cubic-bezier(.2,.8,.2,1));
+}
+
+.kiA-strip-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.kiA-strip-accent {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+}
+
+.kiA-strip-btn:hover .kiA-strip-cover {
+  transform: translateY(-5px);
+  border-color: var(--border, #273448);
+  box-shadow: 0 18px 36px -14px rgba(0, 0, 0, 0.7);
+}
+
+.kiA-strip-text {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.kiA-strip-title {
+  font-family: var(--font-ui, Inter, sans-serif);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text, #F0EDE5);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.kiA-strip-meta {
+  font-family: var(--font-mono, "IBM Plex Mono", monospace);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--text-muted, #6B7585);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.kiA-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* ---------------- Empty states ---------------- */
+
+.kiA-empty {
+  font-family: var(--font-ui, Inter, sans-serif);
+  font-size: 14px;
+  color: var(--text-muted, #6B7585);
+  max-width: 560px;
+}
+
+/* ---------------- Responsive safety (desktop-first) ---------------- */
+
+@media (max-width: 900px) {
+  .kiA {
+    padding: 0 24px 48px;
+  }
+
+  .kiA-hero-inner {
+    grid-template-columns: 1fr;
+  }
+
+  .kiA-hero-art {
+    display: none;
+  }
+
+  .kiA-cont {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

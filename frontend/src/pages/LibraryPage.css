@@ -1,0 +1,444 @@
+/* K/IND Library — ChatGPT Round A, desktop Library page rebuild (part D).
+ * All classes prefixed kiA-. Desktop only; mobile styles untouched. */
+
+/* ---- Design tokens — Obsidian Archive v2.0 (ChatGPT Round A, 2026-11-03).
+ *  Scoped to the page root; this page is desktop-only, so the v2.0 values
+ *  live here directly. ---- */
+.kiA-page {
+  --kiA-bg: #080A0F;
+  --kiA-surface: #0E131D;
+  --kiA-surface-raised: #141C2A;
+  --kiA-surface-hover: #1B2637;
+  --kiA-border: #273448;
+  --kiA-border-subtle: #1B2740;
+  --kiA-text: #F0EDE5;
+  --kiA-text-secondary: #929DAE;
+  --kiA-text-muted: #6B7585;
+  --kiA-cyan: #56E0D1;
+  --kiA-em2: #62A5FF;
+  --kiA-signals: #B28AFF;
+  --kiA-fis: #E9B36A;
+  --kiA-digital: #42D8C6;
+  --kiA-font-display: "Instrument Serif", Georgia, serif;
+  --kiA-font-ui: "Inter", system-ui, -apple-system, sans-serif;
+  --kiA-font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  --kiA-radius-sm: 8px;
+  --kiA-radius-md: 14px;
+  --kiA-radius-lg: 20px;
+  --kiA-transition: 220ms cubic-bezier(.2,.8,.2,1);
+
+  color: var(--kiA-text);
+  font-family: var(--kiA-font-ui);
+  padding: 56px 48px 96px;
+  max-width: 1680px;
+  margin: 0 auto;
+}
+
+/* ---------- header ---------- */
+.kiA-head { margin-bottom: 36px; }
+
+.kiA-eyebrow {
+  font-family: var(--kiA-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.32em;
+  color: var(--kiA-text-muted);
+  margin: 0 0 14px;
+}
+
+.kiA-title {
+  font-family: var(--kiA-font-display);
+  font-size: clamp(40px, 4.5vw, 64px);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  margin: 0 0 12px;
+}
+
+.kiA-editorial {
+  font-family: var(--kiA-font-display);
+  font-style: italic;
+  font-size: 22px;
+  color: var(--kiA-fis);
+  margin: 0 0 8px;
+}
+
+.kiA-subline {
+  font-family: var(--kiA-font-mono);
+  font-size: 12.5px;
+  color: var(--kiA-text-secondary);
+  margin: 0;
+}
+
+/* ---------- controls ---------- */
+.kiA-controls {
+  margin-bottom: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.kiA-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.kiA-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: var(--kiA-radius-sm);
+  border: 1px solid var(--kiA-border-subtle);
+  background: var(--kiA-surface);
+  color: var(--kiA-text-secondary);
+  font-family: var(--kiA-font-mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background var(--kiA-transition), color var(--kiA-transition), border-color var(--kiA-transition);
+}
+
+.kiA-tab:hover { background: var(--kiA-surface-hover); color: var(--kiA-text); }
+
+.kiA-tab--active {
+  background: var(--kiA-surface-hover);
+  color: var(--kiA-text);
+  border-color: var(--kiA-border);
+}
+
+.kiA-tab-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.kiA-tab-dot--all { background: var(--kiA-text-muted); }
+
+.kiA-tab-code { letter-spacing: 0.08em; font-weight: 600; }
+
+.kiA-tab-count { color: var(--kiA-text-muted); font-size: 11px; }
+
+.kiA-controls-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.kiA-search {
+  flex: 1 1 220px;
+  max-width: 320px;
+  padding: 10px 14px;
+  border-radius: var(--kiA-radius-sm);
+  border: 1px solid var(--kiA-border-subtle);
+  background: var(--kiA-surface);
+  color: var(--kiA-text);
+  font-family: var(--kiA-font-ui);
+  font-size: 13.5px;
+  outline: none;
+  transition: border-color var(--kiA-transition), background var(--kiA-transition);
+}
+
+.kiA-search::placeholder { color: var(--kiA-text-muted); }
+
+.kiA-search:focus { border-color: var(--kiA-border); background: var(--kiA-surface-raised); }
+
+.kiA-type-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.kiA-chip {
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--kiA-border-subtle);
+  background: transparent;
+  color: var(--kiA-text-secondary);
+  font-family: var(--kiA-font-ui);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: all var(--kiA-transition);
+}
+
+.kiA-chip:hover { color: var(--kiA-text); border-color: var(--kiA-border); }
+
+.kiA-chip--active {
+  background: var(--kiA-surface-hover);
+  color: var(--kiA-text);
+  border-color: var(--kiA-border);
+}
+
+.kiA-sort { display: inline-flex; align-items: center; gap: 8px; }
+
+.kiA-sort-label {
+  font-family: var(--kiA-font-mono);
+  font-size: 11px;
+  color: var(--kiA-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.kiA-sort select {
+  padding: 9px 12px;
+  border-radius: var(--kiA-radius-sm);
+  border: 1px solid var(--kiA-border-subtle);
+  background: var(--kiA-surface);
+  color: var(--kiA-text);
+  font-family: var(--kiA-font-ui);
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+}
+
+.kiA-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 14px;
+  border-radius: var(--kiA-radius-sm);
+  border: 1px solid var(--kiA-border-subtle);
+  background: var(--kiA-surface);
+  color: var(--kiA-text-secondary);
+  font-family: var(--kiA-font-ui);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all var(--kiA-transition);
+}
+
+.kiA-toggle:hover { color: var(--kiA-text); border-color: var(--kiA-border); }
+
+.kiA-toggle--on {
+  background: var(--kiA-surface-hover);
+  color: var(--kiA-text);
+  border-color: var(--kiA-border);
+}
+
+.kiA-view-toggle { display: inline-flex; gap: 6px; }
+
+/* ---------- grid ---------- */
+.kiA-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 1439px) {
+  .kiA-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1099px) {
+  .kiA-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* SpotlightCard override — keep the vendored glow, restyle the shell.
+ * v2.0: hover lifts -5px with a subject-colored border + glow. */
+.spotlight-card.kiA-card {
+  padding: 0;
+  border-radius: var(--kiA-radius-md);
+  background-color: var(--kiA-surface);
+  border: 1px solid var(--kiA-border-subtle);
+  box-shadow: none;
+  cursor: pointer;
+  transition: transform var(--kiA-transition), border-color var(--kiA-transition), box-shadow var(--kiA-transition);
+}
+
+.spotlight-card.kiA-card:hover {
+  transform: translateY(-5px);
+  border-color: color-mix(in srgb, var(--kiA-accent, #929DAE) 65%, transparent);
+  box-shadow: 0 22px 44px -16px rgba(0, 0, 0, 0.7),
+    0 0 24px -8px color-mix(in srgb, var(--kiA-accent, #929DAE) 45%, transparent);
+}
+
+.kiA-card-inner { display: flex; flex-direction: column; height: 100%; outline: none; }
+
+.kiA-card-inner:focus-visible { outline: 2px solid var(--kiA-accent, #929DAE); outline-offset: 2px; }
+
+.kiA-cover {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  background: var(--kiA-surface-raised); /* honest placeholder if the page image 404s */
+  border-radius: var(--kiA-radius-md) var(--kiA-radius-md) 0 0;
+  overflow: hidden;
+}
+
+.kiA-cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.kiA-cover-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--kiA-accent, #929DAE);
+}
+
+.kiA-bookmark {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(8, 11, 18, 0.55);
+  backdrop-filter: blur(6px);
+  color: var(--kiA-text-secondary);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--kiA-transition), color var(--kiA-transition), background var(--kiA-transition);
+}
+
+.spotlight-card.kiA-card:hover .kiA-bookmark,
+.kiA-row:hover .kiA-bookmark,
+.kiA-bookmark--on { opacity: 1; }
+
+.kiA-bookmark--on { color: var(--kiA-accent, #929DAE); }
+
+.kiA-bookmark:hover { color: var(--kiA-text); }
+
+.kiA-bookmark--small { position: static; flex: none; }
+
+.kiA-row .kiA-bookmark { opacity: 0; }
+
+.kiA-card-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 6px; }
+
+/* v2.0: subject identity line on every card */
+.kiA-card-subj {
+  font-family: var(--kiA-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  color: var(--kiA-accent, #929DAE);
+  margin: 0;
+}
+
+.kiA-card-title {
+  font-family: var(--kiA-font-ui);
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.35;
+  margin: 0;
+  color: var(--kiA-text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.kiA-card-meta {
+  font-family: var(--kiA-font-mono);
+  font-size: 11px;
+  color: var(--kiA-text-muted);
+  margin: 0;
+}
+
+.kiA-lastread { color: var(--kiA-accent, #929DAE); }
+
+/* v2.0: reading progress from the saved kl:pos position */
+.kiA-card-progress {
+  height: 4px;
+  background: var(--kiA-surface-raised);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.kiA-card-progress-fill {
+  height: 100%;
+  background: var(--kiA-accent, #929DAE);
+  border-radius: 999px;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--kiA-accent, #929DAE) 60%, transparent);
+}
+
+/* v2.0: last-opened status line */
+.kiA-card-foot {
+  font-family: var(--kiA-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--kiA-text-muted);
+  margin: 2px 0 0;
+}
+
+/* ---------- FIS editorial treatment ---------- */
+.kiA-page--fis .kiA-grid {
+  grid-template-columns: repeat(2, minmax(0, 560px));
+  justify-content: center;
+  gap: 40px 36px;
+}
+
+.kiA-page--fis .kiA-card-body { padding: 22px 24px 24px; gap: 10px; }
+
+.kiA-page--fis .kiA-card-title { font-size: 19px; line-height: 1.4; }
+
+.kiA-page--fis .kiA-card-meta { font-size: 12px; }
+
+/* ---------- list mode ---------- */
+.kiA-list { display: flex; flex-direction: column; gap: 8px; }
+
+.kiA-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 64px;
+  padding: 0 16px;
+  border-radius: var(--kiA-radius-md);
+  border: 1px solid var(--kiA-border-subtle);
+  background: var(--kiA-surface);
+  cursor: pointer;
+  transition: background var(--kiA-transition), border-color var(--kiA-transition), transform var(--kiA-transition);
+}
+
+.kiA-row:hover {
+  background: var(--kiA-surface-hover);
+  border-color: color-mix(in srgb, var(--kiA-accent, #929DAE) 35%, transparent);
+}
+
+.kiA-row:focus-visible { outline: 2px solid var(--kiA-accent, #929DAE); outline-offset: 2px; }
+
+.kiA-row-thumb {
+  width: 44px;
+  height: 60px;
+  flex: none;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--kiA-surface-raised);
+}
+
+.kiA-row-thumb .kiA-cover-img { width: 100%; height: 100%; object-fit: cover; }
+
+.kiA-row-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+
+.kiA-row-title {
+  font-family: var(--kiA-font-ui);
+  font-weight: 600;
+  font-size: 14px;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kiA-row-meta {
+  font-family: var(--kiA-font-mono);
+  font-size: 11px;
+  color: var(--kiA-text-muted);
+  margin: 0;
+}
+
+/* ---------- empty state ---------- */
+.kiA-empty {
+  padding: 96px 24px;
+  text-align: center;
+}
+
+.kiA-empty p {
+  font-family: var(--kiA-font-display);
+  font-style: italic;
+  font-size: 20px;
+  color: var(--kiA-text-secondary);
+  margin: 0;
+}

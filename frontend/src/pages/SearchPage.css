@@ -1,0 +1,447 @@
+/* ============================================================
+   K/IND Library v3 — Search page (ChatGPT Round A, desktop-only).
+   Dense discovery view. Tokens from src/styles/tokens.css with
+   fallbacks so this page renders before/after that file lands.
+   ============================================================ */
+
+.kiA-page {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 40px 32px 64px;
+  color: var(--text, #F0EDE5);
+  font-family: var(--font-ui, Inter, system-ui, sans-serif);
+}
+
+/* ---------- header ---------- */
+.kiA-head { margin-bottom: 24px; }
+
+.kiA-eyebrow {
+  margin: 0 0 8px;
+  font-family: var(--font-mono, "IBM Plex Mono", ui-monospace, monospace);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-muted, #6B7585);
+}
+
+.kiA-title {
+  margin: 0;
+  font-family: var(--font-display, "Instrument Serif", Georgia, serif);
+  font-weight: 400;
+  font-size: clamp(28px, 3.2vw, 36px);
+  line-height: 1.15;
+  color: var(--text, #F0EDE5);
+}
+
+/* ---------- search field — v2.0: 60px bar, max 760px ---------- */
+.kiA-searchwrap {
+  margin-bottom: 18px;
+  max-width: 760px;
+}
+
+.kiA-input {
+  width: 100%;
+  height: 60px;
+  padding: 0 22px;
+  box-sizing: border-box;
+  background: var(--surface-raised, #141C2A);
+  border: 1px solid var(--border, #273448);
+  border-radius: 16px;
+  color: var(--text, #F0EDE5);
+  font-family: var(--font-ui, Inter, system-ui, sans-serif);
+  font-size: 17px;
+  outline: none;
+  transition: border-color var(--transition, 220ms cubic-bezier(.2,.8,.2,1)),
+              box-shadow var(--transition, 220ms cubic-bezier(.2,.8,.2,1));
+}
+
+.kiA-input::placeholder { color: var(--text-muted, #6B7585); }
+
+.kiA-input:focus {
+  border-color: var(--cyan, #56E0D1);
+  box-shadow: 0 0 0 3px rgba(86, 224, 209, 0.13);
+}
+
+/* ---------- v2.0 filter bar: discipline + type + sort ---------- */
+.kiA-filterbar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.kiA-filterbar .kiA-chips {
+  margin-bottom: 0;
+}
+
+.kiA-filterbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.kiA-type-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.kiA-chip--sm {
+  padding: 7px 12px;
+  font-size: 10px;
+}
+
+.kiA-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.kiA-sort-label {
+  font-family: var(--font-mono, "IBM Plex Mono", ui-monospace, monospace);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted, #6B7585);
+}
+
+.kiA-sort select {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border, #273448);
+  background: var(--surface, #0E131D);
+  color: var(--text, #F0EDE5);
+  font-family: var(--font-ui, Inter, system-ui, sans-serif);
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color var(--transition, 220ms cubic-bezier(.2,.8,.2,1));
+}
+
+.kiA-sort select:hover,
+.kiA-sort select:focus {
+  border-color: var(--text-muted, #6B7585);
+}
+
+/* ---------- subject chips ---------- */
+.kiA-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.kiA-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid var(--border, #273449);
+  border-radius: 999px;
+  color: var(--text-secondary, #929DAE);
+  font-family: var(--font-mono, "IBM Plex Mono", ui-monospace, monospace);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color var(--transition, 220ms cubic-bezier(.2,.8,.2,1)),
+              border-color var(--transition, 220ms cubic-bezier(.2,.8,.2,1)),
+              box-shadow var(--transition, 220ms cubic-bezier(.2,.8,.2,1)),
+              background var(--transition, 220ms cubic-bezier(.2,.8,.2,1));
+}
+
+.kiA-chip:hover { color: var(--text, #F0EDE5); border-color: var(--text-muted, #6B7585); }
+
+.kiA-chip-active { color: var(--text, #F0EDE5); }
+
+.kiA-chip-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.kiA-chip-dot-all { background: var(--text-secondary, #929DAE); }
+
+.kiA-chip-count {
+  color: var(--text-muted, #6B7585);
+  font-variant-numeric: tabular-nums;
+}
+
+.kiA-chip-active .kiA-chip-count { color: inherit; opacity: 0.85; }
+
+/* ---------- evidence line ---------- */
+.kiA-evidence {
+  margin: 0 0 16px;
+  font-family: var(--font-mono, "IBM Plex Mono", ui-monospace, monospace);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, #6B7585);
+  min-height: 16px;
+}
+
+/* ---------- result list ---------- */
+.kiA-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ---------- dense result card (~124px row) ---------- */
+.kiA-card {
+  display: flex;
+  align-items: stretch;
+  gap: 18px;
+  width: 100%;
+  min-height: 124px;
+  padding: 14px 18px 14px 14px;
+  box-sizing: border-box;
+  background: var(--surface, #0E131D);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md, 14px);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition, 220ms cubic-bezier(.2,.8,.2,1)),
+              box-shadow var(--transition, 220ms cubic-bezier(.2,.8,.2,1)),
+              border-color var(--transition, 220ms cubic-bezier(.2,.8,.2,1)),
+              transform var(--transition, 220ms cubic-bezier(.2,.8,.2,1));
+  animation: kiA-enter 420ms cubic-bezier(.2,.8,.2,1) both;
+}
+
+@keyframes kiA-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.kiA-card:hover { background: var(--surface-hover, #1B2637); }
+
+.kiA-card-selected {
+  box-shadow: 0 0 0 1.5px var(--kiA-subject, #929DAE),
+              0 0 22px -8px var(--kiA-subject, #929DAE);
+}
+
+/* thumbnail */
+.kiA-thumb {
+  flex: none;
+  width: 80px;
+  height: 108px;
+  align-self: center;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface-raised, #141C2A);
+  border: 1px solid var(--border, #273449);
+}
+
+.kiA-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* main column */
+.kiA-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.kiA-card-title {
+  display: block;
+  font-family: var(--font-ui, Inter, system-ui, sans-serif);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text, #F0EDE5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kiA-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono, "IBM Plex Mono", ui-monospace, monospace);
+  font-size: 11px;
+  color: var(--text-muted, #6B7585);
+  letter-spacing: 0.02em;
+}
+
+.kiA-meta-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex: none;
+}
+
+/* v2.0: page number of the match — mono, subject-tinted */
+.kiA-meta-page {
+  color: var(--kiA-subject, #929DAE);
+  font-weight: 600;
+}
+
+.kiA-preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary, #929DAE);
+}
+
+.kiA-mark {
+  background: rgba(230, 179, 108, 0.28);
+  color: var(--text, #F0EDE5);
+  border-radius: 3px;
+  padding: 0 1px;
+}
+
+/* match badge */
+.kiA-badge {
+  flex: none;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  font-family: var(--font-mono, "IBM Plex Mono", ui-monospace, monospace);
+  font-size: 10px;
+  color: var(--text-muted, #6B7585);
+}
+
+.kiA-badge-score {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--kiA-subject, #929DAE);
+  font-variant-numeric: tabular-nums;
+}
+
+.kiA-badge-reason {
+  max-width: 120px;
+  text-align: right;
+  line-height: 1.45;
+}
+
+/* ---------- skeleton shimmer ---------- */
+.kiA-skel {
+  display: flex;
+  gap: 18px;
+  min-height: 124px;
+  padding: 14px;
+  box-sizing: border-box;
+  background: var(--surface, #0E131D);
+  border-radius: var(--radius-md, 14px);
+}
+
+.kiA-skel-thumb {
+  flex: none;
+  width: 80px;
+  height: 108px;
+  border-radius: 8px;
+}
+
+.kiA-skel-body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
+
+.kiA-skel-line {
+  height: 12px;
+  border-radius: 6px;
+}
+
+.kiA-skel-line-a { width: 62%; }
+.kiA-skel-line-b { width: 38%; }
+.kiA-skel-line-c { width: 84%; height: 10px; }
+
+.kiA-skel-thumb, .kiA-skel-line {
+  background: linear-gradient(100deg,
+    var(--surface-raised, #141C2A) 40%,
+    var(--surface-hover, #1B2637) 50%,
+    var(--surface-raised, #141C2A) 60%);
+  background-size: 200% 100%;
+  animation: kiA-shimmer 1.4s linear infinite;
+}
+
+@keyframes kiA-shimmer {
+  from { background-position: 180% 0; }
+  to   { background-position: -20% 0; }
+}
+
+/* ---------- empty / idle ---------- */
+.kiA-empty {
+  padding: 56px 24px;
+  text-align: center;
+}
+
+.kiA-empty-title {
+  margin: 0 0 10px;
+  font-family: var(--font-display, "Instrument Serif", Georgia, serif);
+  font-size: 24px;
+  color: var(--text, #F0EDE5);
+}
+
+.kiA-empty-tip {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted, #6B7585);
+}
+
+.kiA-idle { padding-top: 8px; }
+
+.kiA-recent-label {
+  margin: 0 0 12px;
+  font-family: var(--font-mono, "IBM Plex Mono", ui-monospace, monospace);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted, #6B7585);
+}
+
+.kiA-recent {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.kiA-recent-chip {
+  padding: 8px 16px;
+  background: var(--surface, #0E131D);
+  border: 1px solid var(--border, #273449);
+  border-radius: 999px;
+  color: var(--text-secondary, #929DAE);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background var(--transition, 220ms cubic-bezier(.2,.8,.2,1)),
+              color var(--transition, 220ms cubic-bezier(.2,.8,.2,1)),
+              border-color var(--transition, 220ms cubic-bezier(.2,.8,.2,1));
+}
+
+.kiA-recent-chip:hover {
+  background: var(--surface-hover, #1B2637);
+  color: var(--text, #F0EDE5);
+  border-color: var(--text-muted, #6B7585);
+}
+
+.kiA-hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-muted, #6B7585);
+}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .kiA-card { animation: none; }
+  .kiA-skel-thumb, .kiA-skel-line { animation: none; }
+  .kiA-card, .kiA-input, .kiA-chip, .kiA-recent-chip { transition: none; }
+}
