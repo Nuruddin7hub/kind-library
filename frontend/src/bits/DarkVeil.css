@@ -1,0 +1,16 @@
+/* @ts-nocheck — vendored from React Bits (DavidHDev/react-bits), per ChatGPT critique 2026-11-04 (Round A desktop loop). */
+
+.dark-veil-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.dark-veil-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
