@@ -1,0 +1,22 @@
+/* Vendored from React Bits (DavidHDev/react-bits) — Particles.css (MIT).
+ * Registry: src/ts-default/Backgrounds/Particles/Particles.css. */
+.particles-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.particles-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* K/IND: pin the vendored container into the constellation frame layer. */
+.kiA-constellation-particles.particles-container {
+  position: absolute;
+  inset: 0;
+}
