@@ -13,6 +13,7 @@ import { setReaderStartPage } from './readerStart';
 // ChatGPT Round A desktop rebuild (2026-11-03): new navigation shell + pages
 import DesktopSidebar, { type SidebarView } from './components/navigation/DesktopSidebar';
 import Topbar from './components/navigation/Topbar';
+import GlobalBackdrop from './components/GlobalBackdrop';
 import Overview from './pages/Overview';
 import SearchPage from './pages/SearchPage';
 import LibraryPage from './pages/LibraryPage';
@@ -186,21 +187,25 @@ export default function App() {
 
   const [apiResults, setApiResults] = useState<SearchHit[]>([]);
   const [searching, setSearching] = useState(false);
+  // mobile search error state — retry preserves query + filters (Round C)
+  const [searchError, setSearchError] = useState(false);
+  const [searchRetry, setSearchRetry] = useState(0);
   useEffect(() => {
     const q = query.trim();
-    if (q.length < 2) { setApiResults([]); setSearching(false); return; }
+    if (q.length < 2) { setApiResults([]); setSearching(false); setSearchError(false); return; }
     setSearching(true);
+    setSearchError(false);
     const ctrl = new AbortController();
     const t = setTimeout(() => {
       fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal: ctrl.signal })
-        .then(r => r.json())
+        .then(r => { if (!r.ok) throw new Error(`search ${r.status}`); return r.json(); })
         .then(d => { setApiResults(Array.isArray(d.results) ? d.results : []); setSearching(false); })
         .catch(err => {
-          if ((err as Error)?.name !== 'AbortError') { setApiResults([]); setSearching(false); }
+          if ((err as Error)?.name !== 'AbortError') { setApiResults([]); setSearching(false); setSearchError(true); }
         });
     }, 240);
     return () => { clearTimeout(t); ctrl.abort(); };
-  }, [query]);
+  }, [query, searchRetry]);
 
   const [searchSelected, setSearchSelected] = useState(0);
   useEffect(() => { setSearchSelected(0); }, [query, searchSubject, searchType, searchSort]);
@@ -401,11 +406,34 @@ export default function App() {
 
 
 
+  // Mobile page background identity (Round B 2026-11-04, 1420 loop):
+  // .mobile-shell + data-subject drive styles/field-atmosphere.css (the
+  // exact background spec: --void/--navy/--panel, 32px grid, grain,
+  // subject-colored lighting). .ap-root stays for BottomSheet scroll
+  // locking. Desktop branch never renders these — desktop is untouched.
+  const mobilePageClass = !isMobile ? '' : (() => {
+    const parts = ['ap-page-' + mobileTab];
+    if (mobileTab === 'library' && indexSubject !== 'all') parts.push('ap-subject-' + indexSubject);
+    return parts.join(' ');
+  })();
+  const mobileSubject = isMobile && mobileTab === 'library' && indexSubject !== 'all'
+    ? indexSubject : undefined;
+
   return (
     <div
-      className={isMobile ? "relative w-full bg-[#030406] overflow-y-auto ap-root" : "relative w-full min-h-screen overflow-y-auto"}
+      className={isMobile ? `relative w-full bg-[#030406] overflow-y-auto ap-root mobile-shell ${mobilePageClass}` : "relative w-full min-h-screen overflow-y-auto"}
       style={isMobile ? { minHeight: '100dvh' } : undefined}
+      {...(isMobile ? { id: 'kl-mobile-scroll' } : {})}
+      {...(mobileSubject ? { 'data-subject': mobileSubject } : {})}
     >
+      {/* fixed atmosphere layers (field-atmosphere.css): soft card light +
+          FIS paper grain — purely decorative, continuous while scrolling */}
+      {isMobile && !readerFile && (
+        <>
+          <div className="mobile-cardlight" aria-hidden="true" />
+          <div className="mobile-papergrain" aria-hidden="true" />
+        </>
+      )}
       {isMobile ? (
         readerFile ? (
           <MobileReader
@@ -487,6 +515,7 @@ export default function App() {
                   reducedMotion={reducedMotion}
                   onBack={() => setIndexSubject('all')}
                   onSearchQuery={(q) => { setQuery(q); setMobileTab('search'); window.scrollTo({ top: 0 }); }}
+                  onOpenSubject={(subj) => { setIndexSubject(subj); setLibraryBookmarksOnly(false); setMobileTab('library'); window.scrollTo({ top: 0 }); }}
                 />
               </div>
             )}
@@ -496,12 +525,20 @@ export default function App() {
                 onQueryChange={setQuery}
                 results={searchResults}
                 searching={searching}
+                searchError={searchError}
+                onRetry={() => setSearchRetry(n => n + 1)}
                 totalMatches={totalMatches}
                 searchSubject={searchSubject}
                 onSubjectChange={setSearchSubject}
                 currentSubject={indexSubject}
                 subjectCounts={subjectCounts}
                 recentKeys={recentOpened}
+                recentDocs={recentOpened
+                  .map(k => files.find(f => f.key === k))
+                  .filter((f): f is LibFile => !!f)
+                  .slice(0, 4)
+                  .map(f => ({ key: f.key, title: f.title, subj: f.subj }))}
+                onOpenRecent={(key) => openReader(key, [key])}
                 bookmarks={bookmarks}
                 onToggleBookmark={toggleBookmark}
                 onOpenHit={openSearchHit}
@@ -532,11 +569,13 @@ export default function App() {
         )
       ) : (
         <div className="kiA-desktop kiA-v2" style={{ marginLeft: 'var(--sidebar-width, 248px)' }}>
+          <GlobalBackdrop />
           <DesktopSidebar
             files={files}
             view={sidebarView}
             onNavigate={handleSidebarNav}
             onGoSubject={gotoLibrarySubject}
+            activeSubject={view === 'library' && indexSubject !== 'all' ? indexSubject : null}
           />
           <Topbar onSearch={goSearch} />
           <main className="kiA-main">
@@ -546,6 +585,7 @@ export default function App() {
                 onOpenReader={openReader}
                 onSubmitSearch={submitSearch}
                 onGoSubject={gotoLibrarySubject}
+                onGoSearch={goSearch}
               />
             )}
             {view === 'library' && (
