@@ -1,14 +1,17 @@
-/* K/IND DocCover — subject-branded fallback tile (Round B P0).
- * 3:4, subject radial glow, subject color, doc index, doc type.
- * The tile is the permanent underlay: the real page image fades in OVER it,
- * so a cover is never blank — not while loading, not on failure. */
+/* K/IND DocCover — generative document-cover system (ChatGPT Round C, 2026-11-04).
+ * Every document gets a distinct cover from one consistent system: subject
+ * colour + large document number + unique diagram/mathematical mark + short
+ * title fragment. Sizes scale with the cover via container-query units, so
+ * the same tile works at row size (48×58) and featured size.
+ * The real page image still fades in OVER the tile once loaded. */
 
-/* caller className (width/height/border-radius) lands on this wrapper */
 .doc-cover {
   --cover-c: #929DAE;
   position: relative;
   display: block;
   overflow: hidden;
+  /* container queries scale the generative typography to any cover size */
+  container-type: size;
 }
 
 .doc-cover-under {
@@ -29,45 +32,79 @@
 .doc-cover-img.in { opacity: 1; }
 
 .doc-cover-fallback {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 3cqw;
   width: 100%;
   height: 100%;
-  /* border-radius comes from the caller's className (same element chain),
-   * so the fallback tile matches the img it replaces. */
+  padding: 8cqw 6cqw;
+  /* deep subject wash: richer at the top, near-black at the base */
   background:
-    radial-gradient(120% 90% at 50% 12%, color-mix(in srgb, var(--cover-c) 38%, #0C1220) 0%, #0C1220 62%),
-    #0C1220;
-  border: 1px solid color-mix(in srgb, var(--cover-c) 45%, transparent);
+    radial-gradient(135% 95% at 50% 0%, color-mix(in srgb, var(--cover-c) 30%, #0A0F1C) 0%, #0A0F1C 62%),
+    #0A0F1C;
+  border: 1px solid color-mix(in srgb, var(--cover-c) 42%, transparent);
   overflow: hidden;
   text-align: center;
 }
 
-.doc-cover-fallback-num {
-  font-family: 'Instrument Serif', Georgia, serif;
-  font-size: 22px;
-  line-height: 1;
+/* unique diagram/mathematical mark — large, clipped, behind the number */
+.doc-cover-gen-mark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 118cqw;
+  height: 118cqw;
+  transform: translate(-50%, -58%);
   color: var(--cover-c);
+  opacity: 0.34;
+  pointer-events: none;
+}
+
+/* large document number — the cover's focal point */
+.doc-cover-fallback-num {
+  position: relative;
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 46cqw;
+  line-height: 0.95;
+  color: var(--cover-c);
+  text-shadow: 0 2px 18px color-mix(in srgb, var(--cover-c) 45%, transparent);
+}
+
+/* short title fragment (substring of the real title, uppercase) */
+.doc-cover-fallback-frag {
+  position: relative;
+  max-width: 100%;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: max(12.5cqw, 6.5px);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .doc-cover-fallback-code {
+  position: relative;
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
-  font-size: 9px;
+  font-size: max(11cqw, 6px);
   font-weight: 500;
-  letter-spacing: 0.16em;
-  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.18em;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .doc-cover-fallback-type {
+  position: relative;
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
-  font-size: 7px;
+  font-size: max(9.5cqw, 5.5px);
   letter-spacing: 0.12em;
-  color: color-mix(in srgb, var(--cover-c) 80%, #ffffff);
-  opacity: 0.85;
-  max-width: 90%;
+  color: color-mix(in srgb, var(--cover-c) 78%, #ffffff);
+  opacity: 0.9;
+  max-width: 100%;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
