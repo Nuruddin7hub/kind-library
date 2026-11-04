@@ -402,7 +402,7 @@ export default function PdfReader({
 
               {tab === null && (
                 <div className="reader-launcher">
-                  <button className="reader-launch-btn" onClick={() => setTab('bookmarks')}>
+                  <button className="reader-launch-btn kiA-tool-bookmarks" onClick={() => setTab('bookmarks')}>
                     <span className="reader-launch-ico" style={{ color: '#F0B86B' }}>★</span>
                     <span className="min-w-0">
                       <span className="row-title">Bookmarks</span>
@@ -410,7 +410,7 @@ export default function PdfReader({
                     </span>
                     <span className="reader-launch-chev">›</span>
                   </button>
-                  <button className="reader-launch-btn" onClick={() => setTab('notes')}>
+                  <button className="reader-launch-btn kiA-tool-notes" onClick={() => setTab('notes')}>
                     <span className="reader-launch-ico" style={{ color: 'var(--digital)' }}>✎</span>
                     <span className="min-w-0">
                       <span className="row-title">Notes</span>
@@ -418,7 +418,7 @@ export default function PdfReader({
                     </span>
                     <span className="reader-launch-chev">›</span>
                   </button>
-                  <button className="reader-launch-btn" onClick={() => setTab('contents')}>
+                  <button className="reader-launch-btn kiA-tool-contents" onClick={() => setTab('contents')}>
                     <span className="reader-launch-ico" style={{ color: 'var(--em2)' }}>▤</span>
                     <span className="min-w-0">
                       <span className="row-title">Contents</span>

@@ -11,6 +11,8 @@ interface DesktopSidebarProps {
   view: SidebarView;
   onNavigate: (v: SidebarView) => void;
   onGoSubject: (subj: string) => void;
+  /** subject currently shown in the library view (null when not browsing a subject) */
+  activeSubject?: string | null;
 }
 
 const NAV_ITEMS: Array<{ label: string; view: SidebarView }> = [
@@ -26,7 +28,7 @@ const NAV_ITEMS: Array<{ label: string; view: SidebarView }> = [
  *  subject-neutral active state). The DISCIPLINES rows are hand-built:
  *  LineSidebar items are plain strings with no custom-label slot, so the
  *  dot + code + name + count rows use a hover line-grow effect instead. */
-export default function DesktopSidebar({ files, view, onNavigate, onGoSubject }: DesktopSidebarProps) {
+export default function DesktopSidebar({ files, view, onNavigate, onGoSubject, activeSubject }: DesktopSidebarProps) {
   const counts = getSubjectCounts(files);
   const activeNav = NAV_ITEMS.findIndex((n) => n.view === view);
 
@@ -52,7 +54,7 @@ export default function DesktopSidebar({ files, view, onNavigate, onGoSubject }:
           maxShift={12}
           falloff="smooth"
           fontSize={0.78}
-          itemGap={16}
+          itemGap={20}
           className="kiA-linesidebar"
         />
       </nav>
@@ -64,10 +66,11 @@ export default function DesktopSidebar({ files, view, onNavigate, onGoSubject }:
             <button
               key={s.id}
               type="button"
-              className="kiA-subj"
+              className={`kiA-subj${activeSubject === s.id ? ' kiA-subj--active' : ''}`}
               style={{ '--subj': v2SubjectColor(s.id) } as CSSProperties}
               onClick={() => onGoSubject(s.id)}
               aria-label={`${s.name} — ${counts[s.id] ?? 0} documents`}
+              aria-current={activeSubject === s.id ? 'true' : undefined}
             >
               <span className="kiA-subj-num">{s.num}</span>
               <span className="kiA-subj-dot" aria-hidden="true" />
