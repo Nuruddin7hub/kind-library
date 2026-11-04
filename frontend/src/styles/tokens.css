@@ -62,44 +62,52 @@ html body {
 }
 
 /* ------------------------------------------------------------------
- * Obsidian Archive v2.0 — ChatGPT Round A afternoon loop (2026-11-03).
+ * Obsidian Atlas v3.0 — ChatGPT Round A desktop loop (2026-11-04 ~14:20).
  * Exact spec tokens, DESKTOP-ONLY scope: .kiA-v2 is set on the desktop
  * shell wrapper and the desktop reader root. Mobile views never match
  * this selector, so they keep the legacy tokens above byte-identical.
  * Custom properties inherit, so every desktop descendant picks these up.
  * ------------------------------------------------------------------ */
 .kiA-v2 {
+  /* identity — Obsidian Atlas spec (exact) */
+  --void: #07090E;
+  --obsidian: #0B1019;
+  --midnight: #101A2A;
+  --slate: #172438;
+  --ice: #DCE8F4;
+  --silver: #8D9BAF;
+  --cyan: #42D9D0;
+
   /* surfaces */
-  --bg: #080A0F;            /* Void */
-  --surface: #0E131D;       /* Surface */
-  --surface-raised: #141C2A; /* Elevated */
-  --surface-hover: #1B2637; /* Hover */
+  --bg: var(--void);               /* Void */
+  --surface: var(--obsidian);      /* Obsidian */
+  --surface-raised: var(--midnight); /* Midnight */
+  --surface-hover: var(--slate);   /* Slate */
 
   /* borders */
-  --border: #273448;        /* Border */
-  --border-subtle: #1B2740;
+  --border: rgba(151, 178, 211, 0.13);
+  --border-subtle: rgba(151, 178, 211, 0.07);
+  --border-strong: rgba(151, 178, 211, 0.22);
 
   /* text */
-  --text: #F0EDE5;          /* Ivory */
-  --text-secondary: #929DAE; /* Muted */
-  --text-muted: #6B7585;
+  --text: #EDEAE2;                 /* warm ivory */
+  --text-bright: var(--ice);       /* Ice — headings, emphasis */
+  --text-secondary: var(--silver);
+  --text-muted: #69778D;
 
-  /* accents */
-  --cyan: #56E0D1;
-
-  /* disciplines — v2.0 identity palette */
-  --em2: #62A5FF;
-  --signals: #B28AFF;
-  --fis: #E9B36A;
-  --digital: #42D8C6;
+  /* disciplines — v3.0 identity palette (exact spec) */
+  --em2: #5B9FFF;
+  --signals: #B18AFF;
+  --fis: #E5A34C;
+  --digital: #42D9B5;
 
   /* type */
   --font-display: "Instrument Serif", serif;
   --font-ui: "Inter", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 
-  /* layout — v2.0 shell geometry */
-  --sidebar-width: 248px;
+  /* layout — v3.0 shell geometry: narrow 180–200px sidebar */
+  --sidebar-width: 192px;
   --reader-left: 220px;
   --reader-right: 320px;
 
@@ -108,9 +116,31 @@ html body {
   --radius-md: 14px;
   --radius-lg: 20px;
 
+  /* standardized shadows */
+  --shadow-sm: 0 6px 16px -8px rgba(0, 0, 0, 0.55);
+  --shadow-md: 0 18px 40px -16px rgba(0, 0, 0, 0.65);
+  --shadow-lg: 0 34px 72px -20px rgba(0, 0, 0, 0.75);
+
   /* motion */
   --transition: 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-page: 480ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-card: 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-btn: 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-sidebar: 250ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
+
+/* Standardized surface treatment — the .surface look every card uses. */
+.kiA-v2 .kiA-surface {
+  background:
+    radial-gradient(130% 120% at 50% 0%, rgba(151, 178, 211, 0.045), transparent 55%),
+    var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.kiA-v2 .kiA-surface--tight { border-radius: var(--radius-md); }
+.kiA-v2 .kiA-surface--flat { box-shadow: none; }
 
 html::selection {
   background: rgba(113, 154, 255, 0.3);
