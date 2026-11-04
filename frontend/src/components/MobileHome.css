@@ -1,5 +1,6 @@
-/* K/IND mobile engine — MOBILE HOME styles (ChatGPT Round B, 2026-11-03).
- * Mobile home screen only. 18px page gutter. Page bg (#080B12) comes from parent. */
+/* K/IND mobile engine — MOBILE HOME styles (ChatGPT Round B, 2026-11-04).
+ * FIELD EDITION: page bg identity comes from styles/field-atmosphere.css
+ * (ap-page-home). 18px page gutter. Mobile only. */
 
 .mh {
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace; /* Round B P0: mobile metadata */
@@ -28,12 +29,19 @@
   outline-offset: 2px;
 }
 
-/* ——— 1. Header ——— */
+/* SpecularButton (vendored React Bits) must keep its glass background —
+ * the :where() reset above would otherwise flatten it. */
+.mh button.specular-button {
+  background: color-mix(in srgb, var(--sb-tint, #32d3bd) calc(var(--sb-tint-opacity, 0.5) * 100%), transparent);
+}
+
+/* ——— 1. Header: 48px + subtle bottom border ——— */
 .mh-header {
   height: 48px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  border-bottom: 1px solid rgba(150, 180, 215, 0.1);
 }
 .mh-wordmark {
   font-family: 'Instrument Serif', serif;
@@ -47,69 +55,73 @@
   color: rgba(242, 244, 248, 0.5);
 }
 
-/* ——— 2–6. Hero (Round C P1: ~15–20% leaner — action sooner) ——— */
+/* ——— 2–6. Hero: "The Knowledge Field" ——— */
 .mh-hero {
   position: relative;
-  padding-top: 16px;
+  padding-top: 18px;
   padding-bottom: 2px;
 }
+/* Restrained teal/blue light field — CSS radial gradients only, NO cursor
+ * tracking. Teal glow strongest behind the network graphic (~52% down),
+ * fainter blue wash behind the stats (~94% down). hero-copy (z-index 1)
+ * paints above; never garish. */
+.mh-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -18px;
+  right: -18px;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(230px 190px at 50% 52%, rgba(50, 211, 189, 0.11), transparent 70%),
+    radial-gradient(320px 240px at 50% 94%, rgba(56, 110, 200, 0.07), transparent 70%);
+}
+/* Aurora — Home hero ONLY, critique's exact settings passed as props.
+ * Full-bleed across the 18px gutters; masked into the page below. */
 .mh-aurora {
   position: absolute;
   top: 0;
   left: -18px;
   right: -18px;
-  height: 230px;
-  opacity: 0.35;
+  height: 300px;
   pointer-events: none;
   overflow: hidden;
-}
-/* dark overlay gradient for headline readability */
-.mh-aurora::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg,
-    rgba(8, 11, 18, 0) 0%,
-    rgba(8, 11, 18, 0.55) 55%,
-    #080B12 100%);
-}
-.mh-orbit {
-  position: absolute;
-  top: 8px;
-  right: -18px;
-  width: 56%;
-  max-width: 220px;
-  height: auto;
-  opacity: 0.45;
-  pointer-events: none;
-}
-.mh-orbit-spin {
-  animation: mh-orbit-spin 40s linear infinite;
-  transform-origin: 120px 100px;
-}
-@keyframes mh-orbit-spin {
-  to { transform: rotate(360deg); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .mh-orbit-spin { animation: none; }
+  -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 55%, transparent 100%);
 }
 
 .mh-hero-copy {
   position: relative;
   z-index: 1;
 }
+/* ShinyText eyebrow: keep the mono label styling; the shine comes from
+ * the component's background-clip:text (force transparent fill). */
 .mh-eyebrow {
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
   font-size: 10px;
   letter-spacing: 0.2em;
-  color: rgba(242, 244, 248, 0.55);
   margin: 0 0 10px;
+  display: inline-block;
 }
+.mh-eyebrow.shiny-text {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+/* sheen on the eyebrow (matches ShinyText loop) */
+p.mh-eyebrow {
+  color: rgba(242, 244, 248, 0.55);
+}
+
+/* headline: 35–39px / 0.99 / -0.045em / 400 / max 340px */
 .mh-headline {
   font-family: 'Instrument Serif', serif;
-  font-size: clamp(36px, 10.2vw, 42px);
-  line-height: 1.04;
-  letter-spacing: -0.01em;
+  font-weight: 400;
+  font-size: clamp(35px, 10vw, 39px);
+  line-height: 0.99;
+  letter-spacing: -0.045em;
+  max-width: 340px;
   margin: 0;
   color: #F2F4F8;
 }
@@ -117,6 +129,155 @@
 .mh-hero-copy .mh-headline {
   margin: 0;
 }
+
+/* ——— network art: the knowledge field (300px, spec 290–320px) ——— */
+.mh-network-wrap {
+  position: relative;
+  margin: 18px 0 4px;
+}
+/* Particles drift behind the constellation (low count, decorative) */
+.mh-particles {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  -webkit-mask-image: radial-gradient(75% 75% at 50% 50%, #000 40%, transparent 100%);
+  mask-image: radial-gradient(75% 75% at 50% 50%, #000 40%, transparent 100%);
+}
+.mh-particles-canvas,
+.mh-particles canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+.mh-network {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 300px; /* spec: 290–320px */
+  margin: 0 auto;
+  overflow: visible;
+}
+/* tappable nodes: focus ring + no outline flash on touch */
+.mh-node-tap,
+.mh-node {
+  outline: none;
+}
+.mh-node-tap:focus-visible,
+.mh-node:focus-visible {
+  outline: 2px solid #32d3bd;
+  outline-offset: 4px;
+  border-radius: 50%;
+}
+/* subject preview card (tap a constellation node) */
+.mh-preview {
+  position: absolute;
+  z-index: 2;
+  left: 8px;
+  right: 8px;
+  bottom: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px 16px;
+  border-radius: 16px;
+  background: rgba(13, 21, 33, 0.96);
+  border: 1px solid rgba(150, 180, 215, 0.2);
+  box-shadow: 0 18px 44px -12px rgba(0, 0, 0, 0.7);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  animation: mh-preview-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes mh-preview-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.mh-preview-close {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  width: 44px;
+  height: 44px;
+  font-size: 22px;
+  line-height: 1;
+  color: rgba(242, 244, 248, 0.5);
+}
+.mh-preview-code {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+.mh-preview-name {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 22px;
+  line-height: 1.15;
+  color: #F2F4F8;
+}
+.mh-preview-count {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: rgba(242, 244, 248, 0.5);
+  margin-bottom: 6px;
+}
+.mh-preview-open {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 999px;
+  background: var(--sc);
+  color: #04110E;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.mh-preview-open:active { transform: scale(0.96); }
+@media (prefers-reduced-motion: reduce) {
+  .mh-preview { animation: none; }
+}
+/* pulsing subject nodes */
+.mh-node {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mh-node-breathe 4.2s ease-in-out infinite;
+}
+@keyframes mh-node-breathe {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.06); opacity: 0.92; }
+}
+.mh-halo-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mh-halo-pulse 4.2s ease-in-out infinite;
+}
+@keyframes mh-halo-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.22; }
+  50% { transform: scale(1.55); opacity: 0.1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mh-node, .mh-halo-pulse { animation: none; }
+}
+/* arrival pulse on the signal's destination node: same 4.5s period as the
+ * SMIL travelling signal, delayed by the travel time (~2.9s) — one pulse
+ * per cycle (scale 1→1.6, opacity .5→0), then silent until the next arrival.
+ * Only rendered when animate=true (reduced-motion → static, no signal). */
+.mh-arrival-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mh-arrival-pulse 4.5s linear infinite;
+  animation-delay: 2.9s;
+  opacity: 0;
+}
+@keyframes mh-arrival-pulse {
+  0% { transform: scale(1); opacity: 0.5; }
+  12% { transform: scale(1.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
 .mh-supporting {
   font-size: 13.5px;
   line-height: 1.55;
@@ -125,68 +286,130 @@
   max-width: 30ch;
 }
 
-/* search — integrated control: full-width input + 42px arrow button inside the right edge */
+/* ——— search: 54px, #0F1723, teal border, specular GO ——— */
 .mh-search {
   position: relative;
   margin-top: 14px;
 }
 .mh-search-input {
   width: 100%;
-  height: 50px;
-  padding: 0 60px 0 16px;
+  height: 54px;
+  padding: 0 64px 0 16px;
   font-size: 16px; /* no iOS zoom */
   font-family: 'Inter', system-ui, sans-serif;
   color: #F2F4F8;
-  background: rgba(255, 255, 255, 0.045);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #0F1723;
+  border: 1px solid rgba(69, 191, 183, 0.38);
   border-radius: 14px;
 }
 .mh-search-input::placeholder {
   color: rgba(242, 244, 248, 0.35);
 }
-.mh-search-go {
+.mh-search-input:focus {
+  outline: none;
+  border-color: rgba(47, 211, 192, 0.65);
+  box-shadow: 0 0 0 3px rgba(47, 211, 192, 0.22);
+}
+/* GO: specular glass arrow, 44px, arrow #32D3BD on deep teal */
+.mh-search-go.specular-button {
   position: absolute;
   right: 5px;
   top: 50%;
   transform: translateY(-50%);
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 0;
+  border-radius: 12px;
   font-size: 20px;
   line-height: 1;
-  color: #05211D;
-  background: #38D5C1;
+  --sb-tint: #32d3bd;
+  --sb-tint-opacity: 0.55;
+  --sb-text-color: #05211d;
+  --sb-radius: 12px;
+}
+.mh-search-go.specular-button:active {
+  transform: translateY(-50%) scale(0.94);
+}
+.mh-search-go.specular-button .specular-button__label {
+  color: #05211d;
+  font-weight: 700;
+}
+/* reduced-motion plain fallback button */
+button.mh-search-go:not(.specular-button) {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  font-size: 20px;
+  line-height: 1;
+  color: #05211d;
+  background: #32d3bd;
   display: grid;
   place-items: center;
 }
-.mh-search-go:active { transform: translateY(-50%) scale(0.94); }
 
-/* three compact stat figures (real counts) */
+/* ——— stats: ONE connected strip, 1px dividers, LIBRARY METRICS micro label ———
+ * 66–72px strip, rgba(15,22,32,.78), 22–24px serif numbers, 9px mono labels */
 .mh-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
   margin-top: 18px;
 }
-.mh-stat {
-  padding: 10px 6px;
+.mh-stats-eyebrow {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  color: rgba(242, 244, 248, 0.4);
+  margin: 0 0 8px;
   text-align: center;
+}
+.mh-stats-strip {
+  display: flex;
+  align-items: stretch;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.025);
+  background: rgba(15, 22, 32, 0.78);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.mh-stat {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 68px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 6px;
+  text-align: center;
+  background: none;
+  border: 0;
+}
+.mh-stat-divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 14px 0;
+  background: rgba(255, 255, 255, 0.09);
 }
 .mh-stat-num {
   display: block;
   font-family: 'Instrument Serif', Georgia, serif;
-  font-size: 22px;
+  font-size: 23px;
   line-height: 1.1;
   color: #F2F4F8;
+  font-variant-numeric: tabular-nums;
+}
+.mh-countup {
+  font: inherit;
+  color: inherit;
 }
 .mh-stat-label {
   display: block;
-  margin-top: 3px;
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
-  font-size: 10px;
+  font-size: 9px;
   letter-spacing: 0.16em;
   color: rgba(242, 244, 248, 0.5);
 }
@@ -204,7 +427,11 @@
   font-weight: 500;
 }
 
-/* ——— 7. Discipline tiles ——— */
+/* ——— 7. Discipline signature tiles ——— */
+/* keep tile title/count text clear of the bottom nav safe area */
+.mh-section--tiles {
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+}
 .mh-tiles {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -214,16 +441,12 @@
   position: relative;
   overflow: hidden;
   min-height: 158px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: flex-start;
-  gap: 4px;
-  padding: 14px;
+  padding: 0;
   text-align: left;
   background: #0D1521;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+  border-radius: 14px;
+  box-shadow: 0 14px 32px -18px rgba(0, 0, 0, 0.7);
 }
 /* 3px subject-colored bottom edge */
 .mh-tile::after {
@@ -234,14 +457,35 @@
   bottom: 0;
   height: 3px;
   background: var(--sc);
+  z-index: 2;
+  pointer-events: none;
+}
+/* SpotlightCard inside the tile: transparent canvas over the tile surface,
+ * tap/focus-driven spotlight (no cursor FX on mobile). */
+.mh-tile-spot.spotlight-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  min-height: 158px;
+  padding: 14px 14px 16px;
+  text-align: left;
+  background-color: transparent;
+  background-image:
+    radial-gradient(120% 90% at 100% 100%, color-mix(in srgb, var(--sc) 14%, transparent), transparent 60%);
+  border-radius: 14px;
+  box-shadow: none;
 }
 .mh-motif {
   position: absolute;
-  right: -12px;
-  bottom: 8px;
-  width: 118px;
-  height: 98px;
-  opacity: 0.3;
+  right: -6px;
+  bottom: 6px;
+  width: 128px;
+  height: 128px;
+  opacity: 0.5;
   pointer-events: none;
 }
 .mh-tile-num {
@@ -260,6 +504,7 @@
   font-weight: 600;
   line-height: 1.25;
   color: #F2F4F8;
+  max-width: 62%;
 }
 .mh-tile-count {
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
@@ -281,6 +526,7 @@
   background: #0D1521;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
+  box-shadow: 0 14px 32px -18px rgba(0, 0, 0, 0.7);
 }
 .mh-resume-thumb {
   flex: 0 0 auto;
@@ -337,19 +583,6 @@
 }
 
 /* ——— 9. Recently explored ——— */
-.mh-recent {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  margin: 0 -18px;
-  padding: 2px 18px 10px;
-}
-.mh-recent::-webkit-scrollbar {
-  display: none;
-}
 .mh-recent-card {
   width: 100%;
   min-height: 190px;

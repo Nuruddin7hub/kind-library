@@ -1,35 +1,43 @@
-/* 4-destination mobile navigation dock — ChatGPT Round B shared component.
-   All classes md- prefixed. */
+/* 4-destination mobile navigation dock — ChatGPT Round B critique 2026-11-04
+ * (1420 loop, "K/IND — FIELD EDITION / OBSIDIAN ATLAS").
+ * Spec: 66px + safe area · full width minus 16px · radius 21px ·
+ * translucent midnight (rgba(10,18,30,.94)) · cyan active tab + 2px
+ * underline. Shared component across all mobile screens; the reader hides
+ * the global nav (App renders MobileReader instead of the dock).
+ * All classes md- prefixed. */
 
 .md-dock {
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace; /* Round B P0: mobile metadata */
   position: fixed;
-  left: 12px;
-  right: 12px;
-  height: 64px;
-  bottom: calc(8px + env(safe-area-inset-bottom));
-  border-radius: 22px;
-  background: rgba(13, 21, 33, 0.94);
-  border: 1px solid #263447;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  left: 8px; /* spec: full width minus 16px */
+  right: 8px;
+  bottom: 0; /* 66px content + safe area lives inside the dock */
+  height: calc(66px + env(safe-area-inset-bottom)); /* spec: 66px + safe area */
+  padding-bottom: env(safe-area-inset-bottom);
+  border-radius: 21px; /* spec: radius 21px */
+  background: rgba(10, 18, 30, 0.94); /* spec: translucent midnight */
+  border: 1px solid rgba(130, 165, 195, 0.2);
+  backdrop-filter: blur(22px); /* spec: blur(22px) */
+  -webkit-backdrop-filter: blur(22px);
+  box-shadow: 0 18px 44px -12px rgba(0, 0, 0, 0.65), /* spec: shadow */
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
   z-index: 100;
-  display: flex;
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* 4-col grid */
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Four equal tabs; each fills the full 64px dock height (well above the
+/* Four equal tabs; each fills the 66px dock height (well above the
    44px minimum tap target). */
 .md-tab {
-  flex: 1 1 0;
+  position: relative;
   min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  min-height: 44px;
+  min-height: 44px; /* spec: 44px targets */
   padding: 6px 4px;
   border: 0;
   background: none;
@@ -37,16 +45,16 @@
   font-family: var(--font-ui);
   cursor: pointer;
   transition: color 0.25s ease;
+  border-radius: 16px;
 }
 
 .md-tab--active {
-  color: #38d5c1;
+  color: #32d3bd; /* spec: cyan active */
 }
 
 .md-tab:focus-visible {
-  outline: 2px solid #38d5c1;
+  outline: 2px solid #32d3bd;
   outline-offset: -2px;
-  border-radius: 16px;
 }
 
 /* Icon above the label; constrained to the 19–21px window regardless of the
@@ -72,16 +80,17 @@
   white-space: nowrap;
 }
 
-/* Turquoise active indicator: glides between tabs on the same ease-out curve
-   as PillNav's sliding indicator (compact adaptation). */
+/* Cyan 2px underline: glides between tabs on the same ease-out curve as
+   PillNav's sliding indicator (compact adaptation). */
 .md-indicator {
   position: absolute;
-  bottom: 6px;
+  bottom: calc(7px + env(safe-area-inset-bottom));
   left: 0;
   width: 24px;
-  height: 2px;
+  height: 2px; /* spec: 2px underline */
   border-radius: 2px;
-  background: #38d5c1;
+  background: #32d3bd; /* spec: cyan */
+  box-shadow: 0 0 8px rgba(50, 211, 189, 0.7);
   transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
 }

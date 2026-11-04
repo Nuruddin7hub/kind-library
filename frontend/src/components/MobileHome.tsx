@@ -1,15 +1,28 @@
-// K/IND mobile engine — MOBILE HOME screen (ChatGPT Round B, 2026-11-03).
-// Editorial mobile home: header · hero (Aurora + four-orbit knowledge map) ·
-// search · 2-col discipline grid with per-subject SVG motifs · resume card ·
-// recently-explored snap row. Desktop untouched. Mobile only.
-//
-// NOTE: this file is created per the Round B spec and is NOT edited by it.
+// K/IND mobile engine — MOBILE HOME screen (ChatGPT Round B, 2026-11-04).
+// FIELD EDITION mobile rebuild per the Round B critique (kind.serve01 loop):
+// page-specific field identity (field-atmosphere.css) · Aurora hero-only with
+// the critique's exact settings (NO mouse interaction) · restrained
+// teal/blue light field (CSS gradients — strongest behind the network
+// graphic, weaker behind the stats) · upgraded network art (~280×200,
+// pulsing nodes, halos, fixed labels, faint grid, travelling signal with
+// arrival pulse — real subject data only) · BlurText
+// headlines (words/top/90/0.4/7, once) · ShinyText eyebrow · CountUp stats
+// (once, real values) · 54px search with SpecularButton GO · discipline
+// tiles as signature cards (SpotlightCard tap/focus + full-bleed per-subject
+// SVG artwork, subject bottom edge, art never behind text) · AnimatedContent
+// section entrances. Desktop untouched. Mobile only.
 
-import { useState, type CSSProperties } from 'react';
+import { useState, type CSSProperties, type ReactNode } from 'react';
 import type { LibFile } from '../shared';
 import { SUBJECTS, pageImageUrl, relTime, subjectOf } from '../shared';
 import Aurora from '../bits/Aurora';
+import Particles from '../bits/Particles';
 import BlurText from '../bits/BlurText';
+import ShinyText from '../bits/ShinyText';
+import CountUp from '../bits/CountUp';
+import SpotlightCard from '../bits/SpotlightCard';
+import AnimatedContent from '../bits/AnimatedContent';
+import SpecularButton from '../bits/SpecularButton';
 import Carousel from '../bits/Carousel';
 import DocCover from './DocCover';
 import './DocCover.css';
@@ -37,80 +50,176 @@ export interface MobileHomeProps {
   onSearch: (q: string) => void;      // submit hero search
 }
 
-/** Inline SVG decorative motif per subject — subtle background artwork. */
+/** Signature per-subject background artwork for the discipline tiles —
+ *  full-bleed, bottom-right anchored, decorative (abstract motifs only —
+ *  never fake content). Art never sits behind text: tiles keep text
+ *  left-aligned with the art on the right edge. */
 function SubjectMotif({ id, color }: { id: string; color: string }) {
   if (id === 'em2') {
-    const grid: string[] = [];
-    for (let x = 0; x <= 120; x += 15) grid.push(`M${x},0 V100`);
-    for (let y = 0; y <= 100; y += 15) grid.push(`M0,${y} H120`);
+    // blue geometry: coordinate grid + parabola sweep + integral glyph
     return (
-      <svg className="mh-motif" viewBox="0 0 120 100" aria-hidden="true">
-        <path d={grid.join(' ')} stroke="rgba(255,255,255,.07)" strokeWidth="1" fill="none" />
-        <path d="M4,86 C30,78 44,30 72,26 C96,23 104,44 118,40" stroke={color} strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        <circle cx="72" cy="26" r="3.5" fill={color} />
+      <svg className="mh-motif" viewBox="0 0 160 160" aria-hidden="true">
+        {Array.from({ length: 6 }, (_, i) => (
+          <line key={`v${i}`} x1={i * 32} y1="0" x2={i * 32} y2="160" stroke="rgba(255,255,255,.09)" strokeWidth="1" />
+        ))}
+        {Array.from({ length: 6 }, (_, i) => (
+          <line key={`h${i}`} x1="0" y1={i * 32} x2="160" y2={i * 32} stroke="rgba(255,255,255,.09)" strokeWidth="1" />
+        ))}
+        <path d="M8 148 C52 148 58 44 118 40 C142 38 150 62 160 58"
+          stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" />
+        <path d="M8 156 C60 156 66 84 130 80" stroke={color} strokeWidth="1.5"
+          fill="none" strokeLinecap="round" opacity="0.5" />
+        <circle cx="118" cy="40" r="4.5" fill={color} />
+        <text x="108" y="128" fontSize="44" fill={color} opacity="0.75"
+          fontFamily="'Instrument Serif', serif">∫</text>
       </svg>
     );
   }
   if (id === 'signals') {
+    // violet waves: layered sine + square wave
     return (
-      <svg className="mh-motif" viewBox="0 0 120 100" aria-hidden="true">
-        <line x1="0" y1="52" x2="120" y2="52" stroke="rgba(255,255,255,.08)" strokeWidth="1" strokeDasharray="3 4" />
-        <path
-          d="M0,52 C10,52 12,14 22,14 C32,14 30,90 42,90 C54,90 52,30 64,30 C76,30 74,74 86,74 C98,74 100,52 120,52"
-          stroke={color} strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      <svg className="mh-motif" viewBox="0 0 160 160" aria-hidden="true">
+        <line x1="0" y1="80" x2="160" y2="80" stroke="rgba(255,255,255,.1)" strokeWidth="1" strokeDasharray="3 4" />
+        <path d="M-4 80 C20 10 44 10 68 80 S116 150 140 80 S188 10 212 80"
+          stroke={color} strokeWidth="3" fill="none" strokeLinecap="round" />
+        <path d="M-4 112 H28 V48 H60 V112 H92 V48 H124 V112 H156 V48 H188"
+          stroke={color} strokeWidth="1.5" fill="none" opacity="0.55" />
+        <path d="M-4 80 C16 60 36 60 56 80 S96 100 116 80 S156 60 176 80"
+          stroke={color} strokeWidth="1.5" fill="none" opacity="0.4" />
+        <circle cx="68" cy="80" r="4.5" fill={color} />
       </svg>
     );
   }
   if (id === 'fis') {
+    // bronze marble: flowing organic strata + editorial quote mark
     return (
-      <svg className="mh-motif" viewBox="0 0 120 100" aria-hidden="true">
-        <text x="58" y="86" textAnchor="middle" fontSize="96" fill={color} opacity="0.85"
-          fontFamily="'Instrument Serif', serif">&ldquo;</text>
-        <line x1="8" y1="14" x2="52" y2="14" stroke="rgba(255,255,255,.12)" strokeWidth="1" />
-        <line x1="8" y1="22" x2="36" y2="22" stroke="rgba(255,255,255,.12)" strokeWidth="1" />
+      <svg className="mh-motif" viewBox="0 0 160 160" aria-hidden="true">
+        <path d="M-4 30 C40 22 60 44 104 36 C132 30 146 20 166 26"
+          stroke={color} strokeWidth="2" fill="none" opacity="0.7" />
+        <path d="M-4 62 C36 56 66 76 108 66 C138 59 150 50 166 56"
+          stroke={color} strokeWidth="1.5" fill="none" opacity="0.5" />
+        <path d="M-4 96 C44 90 62 110 104 100 C134 93 148 86 166 92"
+          stroke={color} strokeWidth="1.5" fill="none" opacity="0.38" />
+        <path d="M-4 128 C40 124 70 140 112 130 C140 124 152 118 166 124"
+          stroke={color} strokeWidth="1" fill="none" opacity="0.28" />
+        <text x="104" y="150" fontSize="92" fill={color} opacity="0.8"
+          fontFamily="'Instrument Serif', serif">?</text>
+        <line x1="10" y1="14" x2="58" y2="14" stroke="rgba(255,255,255,.14)" strokeWidth="1" />
+        <line x1="10" y1="22" x2="42" y2="22" stroke="rgba(255,255,255,.14)" strokeWidth="1" />
       </svg>
     );
   }
-  // digital — circuit traces + pads
+  // digital — teal circuits: traces, pads, AND gate
   return (
-    <svg className="mh-motif" viewBox="0 0 120 100" aria-hidden="true">
-      <path d="M8,22 H52 V48 H92" stroke={color} strokeWidth="2" fill="none" strokeLinecap="round" />
-      <path d="M8,78 H34 V58" stroke={color} strokeWidth="2" fill="none" strokeLinecap="round" />
-      <path d="M92,48 V86 H112" stroke={color} strokeWidth="2" fill="none" strokeLinecap="round" />
-      <circle cx="8" cy="22" r="4" fill="none" stroke={color} strokeWidth="2" />
-      <circle cx="52" cy="48" r="3" fill={color} />
-      <circle cx="34" cy="58" r="3" fill={color} />
-      <circle cx="112" cy="86" r="4" fill="none" stroke={color} strokeWidth="2" />
+    <svg className="mh-motif" viewBox="0 0 160 160" aria-hidden="true">
+      <path d="M6 26 H64 V64 H118" stroke={color} strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      <path d="M6 120 H44 V96" stroke={color} strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      <path d="M118 64 V128 H152" stroke={color} strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      <circle cx="6" cy="26" r="5" fill="none" stroke={color} strokeWidth="2.5" />
+      <circle cx="64" cy="64" r="3.5" fill={color} />
+      <circle cx="44" cy="96" r="3.5" fill={color} />
+      <circle cx="152" cy="128" r="5" fill="none" stroke={color} strokeWidth="2.5" />
+      {/* mini AND gate */}
+      <path d="M96 92 H116 A16 16 0 0 1 116 124 H96 Z" fill="none" stroke={color} strokeWidth="2.5" />
+      <line x1="84" y1="102" x2="96" y2="102" stroke={color} strokeWidth="2" />
+      <line x1="84" y1="114" x2="96" y2="114" stroke={color} strokeWidth="2" />
+      <line x1="132" y1="108" x2="146" y2="108" stroke={color} strokeWidth="2" />
     </svg>
   );
 }
 
-/** Four-orbit knowledge map — one node per discipline, slow 40s rotation. */
-function OrbitMap({ animate }: { animate: boolean }) {
-  const nodes = SUBJECTS.map((s, i) => {
-    const a = ((-90 + i * 90) * Math.PI) / 180;
-    return { x: 120 + 84 * Math.cos(a), y: 100 + 68 * Math.sin(a), color: s.color };
-  });
+/** The Knowledge Field — upgraded hero network art (~280×200). Four nodes,
+ *  one per real discipline (SUBJECTS = the only network data: no invented
+ *  relationships), visible connecting lines, pulsing nodes, subject halos,
+ *  faint grid, fixed node labels. Slow SMIL travelling signal along one
+ *  connection (~4.5s: ~2.9s travel, ~1.6s pause) with a halo pulse on the
+ *  destination node on arrival. Static when reduced-motion. */
+function NetworkField({ animate, onNodeTap }: {
+  animate: boolean;
+  onNodeTap: (id: string) => void;
+}) {
+  const nodes = [
+    { x: 70, y: 72, s: SUBJECTS[0] },   // EM2
+    { x: 210, y: 72, s: SUBJECTS[1] },  // SIGNALS
+    { x: 70, y: 228, s: SUBJECTS[2] },  // FIS
+    { x: 210, y: 228, s: SUBJECTS[3] }, // DIGITAL
+  ];
+  const grid: string[] = [];
+  for (let x = 0; x <= 280; x += 20) grid.push(`M${x},0 V300`);
+  for (let y = 0; y <= 300; y += 20) grid.push(`M0,${y} H280`);
+  const links: Array<[number, number]> = [[0, 1], [2, 3], [0, 2], [1, 3], [0, 3], [1, 2]];
+  const SIGNAL_PATH = 'M70,72 L210,228'; // EM2 → DIGITAL diagonal
   return (
-    <svg className="mh-orbit" viewBox="0 0 240 200" aria-hidden="true">
-      <g className={animate ? 'mh-orbit-spin' : undefined}>
-        <ellipse cx="120" cy="100" rx="84" ry="68" fill="none"
-          stroke="rgba(255,255,255,.10)" strokeWidth="1" strokeDasharray="2 5" />
-        {nodes.map((n, i) => {
-          const m = nodes[(i + 1) % nodes.length];
-          return <line key={`l${i}`} x1={n.x} y1={n.y} x2={m.x} y2={m.y}
-            stroke="rgba(255,255,255,.14)" strokeWidth="1" />;
-        })}
-        {nodes.map((n, i) => (
-          <g key={`n${i}`}>
-            <circle cx={n.x} cy={n.y} r="9" fill={n.color} opacity="0.18" />
-            <circle cx={n.x} cy={n.y} r="4.5" fill={n.color} opacity="0.9" />
-          </g>
-        ))}
-        <circle cx="120" cy="100" r="3" fill="rgba(255,255,255,.35)" />
-      </g>
+    <svg className="mh-network" viewBox="0 0 280 300" preserveAspectRatio="xMidYMid meet" role="img"
+      aria-label="Knowledge field: the four disciplines, connected. Tap a node to preview it.">
+      <defs>
+        <radialGradient id="mh-halo" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#fff" stopOpacity="0.28" />
+          <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <path d={grid.join(' ')} stroke="rgba(150,180,215,.07)" strokeWidth="1" fill="none" />
+      {links.map(([a, b], i) => (
+        <line key={i}
+          x1={nodes[a].x} y1={nodes[a].y} x2={nodes[b].x} y2={nodes[b].y}
+          stroke="rgba(170,200,235,.22)" strokeWidth="1" />
+      ))}
+      {nodes.map((n, i) => (
+        <g key={i}
+          className={animate ? 'mh-node' : 'mh-node-tap'}
+          style={{ animationDelay: `${i * 0.7}s` }}
+          onClick={() => onNodeTap(n.s.id)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNodeTap(n.s.id); }
+          }}
+          tabIndex={0}
+          role="button"
+          aria-label={`${n.s.name} — tap to preview`}
+          cursor="pointer"
+        >
+          <title>{n.s.name}</title>
+          {/* 52px invisible tap target (44px minimum, thumb-friendly) */}
+          <circle cx={n.x} cy={n.y} r="26" fill="transparent" />
+          <circle cx={n.x} cy={n.y} r="26" fill="url(#mh-halo)" opacity="0.5" />
+          <circle cx={n.x} cy={n.y} r="13" fill={n.s.color} opacity="0.22"
+            className={animate ? 'mh-halo-pulse' : undefined} style={{ animationDelay: `${i * 0.7}s` }} />
+          <circle cx={n.x} cy={n.y} r="5.5" fill={n.s.color} opacity="0.95" />
+          <circle cx={n.x} cy={n.y} r="5.5" fill="none" stroke="#fff" strokeWidth="1" opacity="0.5" />
+          <text x={n.x} y={n.y + 28} textAnchor="middle" fontSize="8.5"
+            fontFamily="'IBM Plex Mono', monospace" letterSpacing="0.12em"
+            fill="rgba(235,240,248,.62)">{n.s.code}</text>
+        </g>
+      ))}
+      {animate && (
+        <g aria-hidden="true">
+          <circle r="3" fill="#8FE8DA" opacity="0.9">
+            <animateMotion
+              dur="4.5s"
+              repeatCount="indefinite"
+              keyTimes="0;0.65;1"
+              keyPoints="0;1;1"
+              calcMode="linear"
+              path={SIGNAL_PATH}
+            />
+          </circle>
+          {/* arrival pulse on the destination node: same 4.5s period,
+              delayed by the travel time (~2.9s), one pulse per cycle */}
+          <circle cx="210" cy="228" r="10" fill="none" stroke="#32D3BD"
+            strokeWidth="1.5" className="mh-arrival-pulse" />
+        </g>
+      )}
+      <circle cx="140" cy="150" r="2.5" fill="rgba(255,255,255,.4)" />
     </svg>
   );
+}
+
+/** AnimatedContent pass-through when reduced-motion is on (render children
+ *  directly — no entrance animation). */
+function MaybeAnim({ children, reducedMotion, ...props }: {
+  children: ReactNode; reducedMotion: boolean; [k: string]: unknown;
+}) {
+  if (reducedMotion) return <>{children}</>;
+  return <AnimatedContent {...(props as object)}>{children}</AnimatedContent>;
 }
 
 export default function MobileHome(props: MobileHomeProps) {
@@ -119,6 +228,9 @@ export default function MobileHome(props: MobileHomeProps) {
     reducedMotion, onOpenSubject, onOpenReader, onSearch,
   } = props;
   const [query, setQuery] = useState('');
+  // constellation node preview (Round B 2026-11-04, 1420 loop): tapping a
+  // node shows a per-subject preview with the real document count
+  const [preview, setPreview] = useState<string | null>(null);
 
   const submitSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,42 +246,115 @@ export default function MobileHome(props: MobileHomeProps) {
 
   return (
     <div className="mh mobile-page">
-      {/* 1 — Header 48px */}
+      {/* 1 — Header 48px + subtle bottom border */}
       <header className="mh-header">
         <span className="mh-wordmark">K/IND</span>
         <span className="mh-micro">{totalDocs} DOCS · 4 DISCIPLINES</span>
       </header>
 
-      {/* 2–6 — Hero */}
+      {/* 2–6 — Hero: "The Knowledge Field" */}
       <section className="mh-hero">
         {!reducedMotion && (
           <div className="mh-aurora" aria-hidden="true">
             <Aurora
-              colorStops={['#568BFF', '#B18AFF', '#45D9C2']}
-              amplitude={1.1}
-              blend={0.5}
-              speed={0.25}
+              colorStops={['#087F83', '#145D91', '#292B65']}
+              amplitude={0.45}
+              blend={0.8}
+              height={0.38}
+              speed={0.16}
+              scale={1.3}
+              glow={0.3}
+              layers={2}
+              opacity={0.32}
               mouseInteraction={false}
             />
           </div>
         )}
-        <OrbitMap animate={!reducedMotion} />
 
         <div className="mh-hero-copy">
-          <p className="mh-eyebrow">K/IND · FIELD EDITION</p>
+          {reducedMotion ? (
+            <p className="mh-eyebrow">K/IND · FIELD EDITION</p>
+          ) : (
+            <ShinyText
+              text="K/IND · FIELD EDITION"
+              className="mh-eyebrow"
+              color="rgba(242,244,248,0.55)"
+              shineColor="#8fe8da"
+              speed={3.2}
+              shineWidth={46}
+              trigger="loop"
+              yoyo={false}
+              disabled={false}
+            />
+          )}
           {!reducedMotion ? (
             <>
               <BlurText className="mh-headline" text="Think deeper." animateBy="words"
-                trigger="load" loop={false} delay={70} stepDuration={0.35} blur={8} distance={30} />
+                direction="top" trigger="load" loop={false} delay={90} stepDuration={0.4} blur={7} distance={30} />
               <BlurText className="mh-headline" text="Connect everything." animateBy="words"
-                trigger="load" loop={false} delay={110} stepDuration={0.35} blur={8} distance={30} />
+                direction="top" trigger="load" loop={false} delay={130} stepDuration={0.4} blur={7} distance={30} />
             </>
           ) : (
             <h1 className="mh-headline">Think deeper.<br />Connect everything.</h1>
           )}
+
+          <div className="mh-network-wrap">
+            {/* Particles behind the constellation (low count, no hover) */}
+            {!reducedMotion && (
+              <div className="mh-particles" aria-hidden="true">
+                <Particles
+                  particleCount={56}
+                  speed={0.12}
+                  particleColors={['#8FE8DA', '#719AFF', '#B38AFF', '#E6B36C']}
+                  alphaParticles
+                  particleBaseSize={22}
+                  sizeRandomness={0.6}
+                  disableRotation
+                  moveParticlesOnHover={false}
+                  glow={0.6}
+                  twinkle={0.35}
+                  drift="up"
+                  driftSpeed={0.12}
+                  opacity={0.5}
+                  className="mh-particles-canvas"
+                />
+              </div>
+            )}
+            <NetworkField animate={!reducedMotion} onNodeTap={(id) => setPreview(id)} />
+            {preview && (() => {
+              const s = SUBJECTS.find(x => x.id === preview);
+              if (!s) return null;
+              const count = subjectCounts[s.id] ?? 0;
+              return (
+                <div className="mh-preview" role="dialog" aria-label={`${s.name} preview`}>
+                  <button
+                    type="button"
+                    className="mh-preview-close"
+                    onClick={() => setPreview(null)}
+                    aria-label="Close preview"
+                  >
+                    ×
+                  </button>
+                  <span className="mh-preview-code" style={{ color: s.color }}>{s.code}</span>
+                  <span className="mh-preview-name">{s.name}</span>
+                  <span className="mh-preview-count">{count} DOCUMENTS</span>
+                  <button
+                    type="button"
+                    className="mh-preview-open"
+                    style={{ ['--sc' as any]: s.color }}
+                    onClick={() => { setPreview(null); onOpenSubject(s.id); }}
+                  >
+                    OPEN COLLECTION →
+                  </button>
+                </div>
+              );
+            })()}
+          </div>
+
           <p className="mh-supporting">
             {totalDocs} documents. 4 disciplines. Your entire study world.
           </p>
+
           <form className="mh-search" onSubmit={submitSearch} role="search">
             <input
               className="mh-search-input"
@@ -180,32 +365,79 @@ export default function MobileHome(props: MobileHomeProps) {
               enterKeyHint="search"
               aria-label="Search the library"
             />
-            <button className="mh-search-go" type="submit" aria-label="Search">
-              →
-            </button>
+            {reducedMotion ? (
+              <button className="mh-search-go" type="submit" aria-label="Search">→</button>
+            ) : (
+              <SpecularButton
+                type="submit"
+                size="sm"
+                className="mh-search-go"
+                aria-label="Search"
+                tint="#32D3BD"
+                tintOpacity={0.5}
+                textColor="#05211D"
+                radius={12}
+                intensity={0.9}
+                idleIntensity={0.35}
+                autoAnimate
+                followMouse={false}
+                glow={0.5}
+              >
+                →
+              </SpecularButton>
+            )}
           </form>
-          {/* three compact stat figures — all real counts */}
+
+          {/* three stat figures — ONE connected strip with dividers,
+              LIBRARY METRICS micro label; CountUp once, all real counts */}
           <div className="mh-stats" aria-label="Library statistics">
-            <div className="mh-stat">
-              <span className="mh-stat-num">{totalDocs}</span>
-              <span className="mh-stat-label">DOCUMENTS</span>
-            </div>
-            <div className="mh-stat">
-              <span className="mh-stat-num">{SUBJECTS.length}</span>
-              <span className="mh-stat-label">DISCIPLINES</span>
-            </div>
-            <div className="mh-stat">
-              <span className="mh-stat-num">{totalPages.toLocaleString('en-US')}</span>
-              <span className="mh-stat-label">PAGES</span>
+            <p className="mh-stats-eyebrow">LIBRARY METRICS</p>
+            <div className="mh-stats-strip">
+              <div className="mh-stat">
+                <span className="mh-stat-num">
+                  {reducedMotion ? totalDocs : (
+                    <CountUp to={totalDocs} from={0} duration={1.4} trigger="load" className="mh-countup" />
+                  )}
+                </span>
+                <span className="mh-stat-label">DOCUMENTS</span>
+              </div>
+              <div className="mh-stat-divider" aria-hidden="true" />
+              <div className="mh-stat">
+                <span className="mh-stat-num">
+                  {reducedMotion ? SUBJECTS.length : (
+                    <CountUp to={SUBJECTS.length} from={0} duration={1.1} trigger="load" className="mh-countup" />
+                  )}
+                </span>
+                <span className="mh-stat-label">DISCIPLINES</span>
+              </div>
+              <div className="mh-stat-divider" aria-hidden="true" />
+              <div className="mh-stat">
+                <span className="mh-stat-num">
+                  {reducedMotion ? totalPages.toLocaleString('en-US') : (
+                    <CountUp to={totalPages} from={0} duration={1.6} separator="," trigger="load" className="mh-countup" />
+                  )}
+                </span>
+                <span className="mh-stat-label">PAGES</span>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 8 — Disciplines */}
-      <section className="mh-section">
+      {/* 8 — Disciplines: signature cards (SpotlightCard, tap/focus) */}
+      <section className="mh-section mh-section--tiles">
         <h2 className="mh-section-head">YOUR DISCIPLINES</h2>
-        <div className="mh-tiles">
+        <MaybeAnim
+          reducedMotion={reducedMotion}
+          className="mh-tiles"
+          distance={18}
+          duration={0.45}
+          ease="power3.out"
+          once
+          stagger={0.08}
+          trigger="scroll"
+          container="#kl-mobile-scroll"
+        >
           {SUBJECTS.map((s) => {
             const count = subjectCounts[s.id] ?? 0;
             return (
@@ -216,54 +448,79 @@ export default function MobileHome(props: MobileHomeProps) {
                 onClick={() => onOpenSubject(s.id)}
                 aria-label={`${s.name} — ${count} documents`}
               >
-                <SubjectMotif id={s.id} color={s.color} />
-                <span className="mh-tile-num">{s.num}</span>
-                <span className="mh-tile-short" style={{ color: s.color }}>
-                  {s.short.toUpperCase()}
-                </span>
-                <span className="mh-tile-name">{s.name}</span>
-                <span className="mh-tile-count">{count} DOCUMENTS</span>
+                <SpotlightCard
+                  className="mh-tile-spot"
+                  spotlightColor={s.color}
+                  intensity={0.32}
+                  spotlightSize={150}
+                  softness={0.75}
+                  borderGlow={0.55}
+                  proximity={60}
+                  flare={false}
+                  grain={0}
+                  theme="dark"
+                >
+                  <SubjectMotif id={s.id} color={s.color} />
+                  <span className="mh-tile-num">{s.num}</span>
+                  <span className="mh-tile-short" style={{ color: s.color }}>
+                    {s.short.toUpperCase()}
+                  </span>
+                  <span className="mh-tile-name">{s.name}</span>
+                  <span className="mh-tile-count">{count} DOCUMENTS</span>
+                </SpotlightCard>
               </button>
             );
           })}
-        </div>
+        </MaybeAnim>
       </section>
 
-      {/* 8b — Continue Reading (after the grid: real doc + page + progress + RESUME →) */}
+      {/* 8b — Continue Reading */}
       {resume && (
         <section className="mh-section mh-resume-section">
           <h2 className="mh-section-head">CONTINUE READING</h2>
-          <button
-            className="mh-resume"
-            style={{ '--sc': resumeColor } as CSSProperties}
-            onClick={() => onOpenReader(resume.file.key, [resume.file.key])}
-            aria-label={`Continue reading ${resume.file.title}, page ${resumePage} of ${resumePages}`}
+          <MaybeAnim
+            reducedMotion={reducedMotion}
+            distance={18}
+            duration={0.45}
+            ease="power3.out"
+            once
+            trigger="scroll"
+            container="#kl-mobile-scroll"
           >
-            <DocCover
-              src={pageImageUrl(resume.file.subj, resume.file.file, resumePage, resumePages)}
-              subj={resume.file.subj}
-              docIndex={1}
-              docType="RESUME"
-              className="mh-resume-thumb"
-            />
-            <span className="mh-resume-body">
-              <span className="mh-resume-eyebrow" style={{ color: resumeColor }}>
-                {resumeSubj?.code ?? 'K/IND'}
+            <button
+              className="mh-resume"
+              style={{ '--sc': resumeColor } as CSSProperties}
+              onClick={() => onOpenReader(resume.file.key, [resume.file.key])}
+              aria-label={`Continue reading ${resume.file.title}, page ${resumePage} of ${resumePages}`}
+            >
+              <DocCover
+                src={pageImageUrl(resume.file.subj, resume.file.file, resumePage, resumePages)}
+                subj={resume.file.subj}
+                docIndex={1}
+                docType="RESUME"
+                title={resume.file.title}
+                seed={resume.file.key}
+                className="mh-resume-thumb"
+              />
+              <span className="mh-resume-body">
+                <span className="mh-resume-eyebrow" style={{ color: resumeColor }}>
+                  {resumeSubj?.code ?? 'K/IND'}
+                </span>
+                <span className="mh-resume-title">{resume.file.title}</span>
+                <span className="mh-resume-meta">
+                  PAGE {resumePage} OF {resumePages} · {resumePct}%
+                </span>
+                <span className="mh-resume-bar">
+                  <span className="mh-resume-fill" style={{ width: `${resumePct}%` }} />
+                </span>
+                <span className="mh-resume-cta">RESUME →</span>
               </span>
-              <span className="mh-resume-title">{resume.file.title}</span>
-              <span className="mh-resume-meta">
-                PAGE {resumePage} OF {resumePages} · {resumePct}%
-              </span>
-              <span className="mh-resume-bar">
-                <span className="mh-resume-fill" style={{ width: `${resumePct}%` }} />
-              </span>
-              <span className="mh-resume-cta">RESUME →</span>
-            </span>
-          </button>
+            </button>
+          </MaybeAnim>
         </section>
       )}
 
-      {/* 9 — Recently explored (React Bits Carousel: native touch gestures, no autoplay) */}
+      {/* 9 — Recently explored */}
       {recent.length > 0 && (
         <section className="mh-section">
           <h2 className="mh-section-head">RECENTLY EXPLORED</h2>
@@ -279,6 +536,8 @@ export default function MobileHome(props: MobileHomeProps) {
                   src={pageImageUrl(r.file.subj, r.file.file, 1, Math.max(1, r.file.pages))}
                   subj={r.file.subj}
                   docIndex={i + 1}
+                  title={r.file.title}
+                  seed={r.file.key}
                   className="mh-recent-thumb"
                 />
                 <span className="mh-recent-title">{r.file.title}</span>

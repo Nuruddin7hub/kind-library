@@ -7,7 +7,7 @@
 
 import { useRef, useState } from 'react';
 import DocCover from './DocCover';
-import { pageImageUrl } from '../shared';
+import GlareHover from '../bits/GlareHover';
 import './DocCover.css';
 
 export interface RowFile {
@@ -28,13 +28,16 @@ interface Props {
   bookmarked: boolean;
   /** real study state: "CONTINUE P.12" / "OPENED 2H AGO" — never invented */
   studyState?: string | null;
+  /** false when the subject is already carried by a group header / page
+   *  identity — the row then never repeats the subject name (Round B 2026-11-04) */
+  showSubject?: boolean;
   onOpen: () => void;
   onToggleBookmark: () => void;
 }
 
 export default function MobileDocRow({
   f, index, accent, subjectCode, sectionLabel,
-  bookmarked, studyState, onOpen, onToggleBookmark,
+  bookmarked, studyState, showSubject = true, onOpen, onToggleBookmark,
 }: Props) {
   const [revealed, setRevealed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -99,10 +102,6 @@ export default function MobileDocRow({
     setMenuOpen(false);
   };
 
-  const coverSrc = f.file
-    ? pageImageUrl(f.subj, f.file, 1, f.pages)
-    : null;
-
   return (
     <div className={`ki-row${revealed ? ' revealed' : ''}`}>
       <div className="ki-row-actions" aria-hidden={!revealed}>
@@ -116,6 +115,14 @@ export default function MobileDocRow({
           {bookmarked ? '★' : '☆'}
         </button>
       </div>
+      <GlareHover
+        mode="click"
+        glareOpacity={0.22}
+        glareSize={24}
+        transitionDuration={480}
+        className="ki-row-glare"
+        style={{ ['--gh-br' as any]: '10px' }}
+      >
       <div
         className="ki-row-inner"
         onTouchStart={onTouchStart}
@@ -129,25 +136,43 @@ export default function MobileDocRow({
         aria-label={`Open ${f.title}`}
       >
         <span className="ki-row-cover" aria-hidden="true">
+          {/* stacked-list rows show the generative cover system (Round C) —
+              subject colour + large doc number + unique mark + title
+              fragment: a curated archive, not repeated page thumbnails */}
           <DocCover
-            src={coverSrc}
+            src={null}
             subj={f.subj}
             docIndex={index + 1}
             docType={sectionLabel}
+            title={f.title}
+            seed={f.key}
             className="ki-row-coverimg"
           />
         </span>
         <span className="ki-row-body">
           <span className="ki-row-micro" style={{ color: accent }}>
-            {subjectCode} / {sectionLabel.toUpperCase()}
+            {showSubject ? `${subjectCode} / ` : ''}{sectionLabel.toUpperCase()}
           </span>
           <span className="ki-row-title">{f.title}</span>
           <span className="ki-row-meta">
             {f.pages} PAGES · PDF{studyState ? ` · ${studyState}` : ''}
           </span>
         </span>
-        <span className="ki-row-chev" aria-hidden="true">›</span>
+        {/* bookmark action SEPARATED from the full-card open tap
+            (Round B 2026-11-04, 1420 loop): its own 44px target, never
+            nested inside the open action — stopPropagation keeps them apart */}
+        <button
+          type="button"
+          className={`ki-row-bmbtn${bookmarked ? ' on' : ''}`}
+          onClick={(e) => { e.stopPropagation(); onToggleBookmark(); }}
+          onKeyDown={(e) => e.stopPropagation()}
+          aria-label={bookmarked ? `Remove bookmark for ${f.title}` : `Bookmark ${f.title}`}
+          aria-pressed={bookmarked}
+        >
+          {bookmarked ? '★' : '☆'}
+        </button>
       </div>
+      </GlareHover>
 
       {/* long-press menu: bookmark + share (44px+ targets) */}
       {menuOpen && (

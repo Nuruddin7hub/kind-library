@@ -12,6 +12,8 @@ import { SUBJECTS, SECTION_LABELS, sectionLabel, subjectOf, relTime } from '../s
 import MobileDocRow from './MobileDocRow';
 import RowStagger from './RowStagger';
 import BottomSheet from './BottomSheet';
+import Dither from '../bits/Dither';
+import SpecularButton from '../bits/SpecularButton';
 import './MobileLibrary.css';
 
 type SortId = 'recent' | 'title' | 'pages';
@@ -60,6 +62,7 @@ function docRow(
   onToggleBookmark: (key: string) => void,
   onOpen: (key: string) => void,
   studyState?: string | null,
+  showSubject = true,
 ) {
   const { code, color } = subjMeta(f.subj);
   return (
@@ -72,6 +75,7 @@ function docRow(
       sectionLabel={sectionLabel(f.section)}
       bookmarked={bookmarks.includes(f.key)}
       studyState={studyState ?? null}
+      showSubject={showSubject}
       onOpen={() => onOpen(f.key)}
       onToggleBookmark={() => onToggleBookmark(f.key)}
     />
@@ -100,8 +104,9 @@ export default function MobileLibrary(props: MobileLibraryProps) {
   } = props;
 
   const [filterOpen, setFilterOpen] = useState(false);
-  const [sortOpen, setSortOpen] = useState(false);
   const [recentOnly, setRecentOnly] = useState(false);
+  // collapsed subject groups (Round B 2026-11-04: optional collapse)
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const railRef = useRef<HTMLDivElement>(null);
 
   // selected chip stays visible: center it in the rail on subject change
@@ -115,10 +120,13 @@ export default function MobileLibrary(props: MobileLibraryProps) {
   }, [indexSubject]);
 
   // Temp filter-sheet state — committed to parent setters on Apply.
+  // (Round B 2026-11-04, 1420 loop: Subject / Type / Saved only / Sort /
+  // Clear / Apply — ONE sheet, no separate sort control.)
   const [tempSubject, setTempSubject] = useState('all');
   const [tempSection, setTempSection] = useState('all');
   const [tempBookmarked, setTempBookmarked] = useState(false);
   const [tempRecent, setTempRecent] = useState(false);
+  const [tempSort, setTempSort] = useState<SortId>('recent');
 
   // Doc-type chips derived from files (label + count via SECTION_LABELS).
   const sectionOptions = useMemo(() => {
@@ -148,6 +156,7 @@ export default function MobileLibrary(props: MobileLibraryProps) {
     setTempSection(section);
     setTempBookmarked(bookmarksOnly);
     setTempRecent(recentOnly);
+    setTempSort(sort);
     setFilterOpen(true);
   };
 
@@ -156,6 +165,7 @@ export default function MobileLibrary(props: MobileLibraryProps) {
     setTempSection('all');
     setTempBookmarked(false);
     setTempRecent(false);
+    setTempSort('recent');
   };
 
   const applyFilters = () => {
@@ -163,6 +173,7 @@ export default function MobileLibrary(props: MobileLibraryProps) {
     onSectionChange(tempSection);
     onBookmarksOnlyChange(tempBookmarked);
     setRecentOnly(tempRecent);
+    onSortChange(tempSort);
     setFilterOpen(false);
   };
 
@@ -177,18 +188,57 @@ export default function MobileLibrary(props: MobileLibraryProps) {
   const filterFooter = (
     <div className="ml-sheet-footer">
       <button type="button" className="ml-btn-ghost" onClick={resetTemp}>
-        Reset
+        Clear
       </button>
-      <button type="button" className="ml-btn-primary" onClick={applyFilters}>
-        Apply
-      </button>
+      {reducedMotion ? (
+        <button type="button" className="ml-btn-primary" onClick={applyFilters}>
+          Apply
+        </button>
+      ) : (
+        <SpecularButton
+          type="button"
+          size="sm"
+          className="ml-btn-primary"
+          onClick={applyFilters}
+          tint="#38D5C1"
+          tintOpacity={0.5}
+          textColor="#062A26"
+          radius={12}
+          intensity={0.85}
+          idleIntensity={0.3}
+          autoAnimate
+          followMouse={false}
+        >
+          Apply
+        </SpecularButton>
+      )}
     </div>
   );
+
+  // In the grouped "all" view the subject is carried by the group header —
+  // rows never repeat the subject name (Round B 2026-11-04).
+  const grouped = indexSubject === 'all';
 
   return (
     <div className={`ml-root mobile-page${reducedMotion ? ' ml-reduced' : ''}`}>
       <header className="ml-header">
-        <p className="ml-eyebrow">K/IND / LIBRARY</p>
+        {!reducedMotion && (
+          <div className="ml-dither" aria-hidden="true">
+            <Dither
+              waveColor={[0.05, 0.22, 0.3]}
+              backgroundColor={[0.03, 0.05, 0.09]}
+              colorNum={4}
+              pixelSize={5}
+              contrast={0.25}
+              brightness={1.0}
+              waveSpeed={0.012}
+              waveFrequency={1.8}
+              waveAmplitude={0.06}
+              enableMouseInteraction={false}
+            />
+          </div>
+        )}
+        <p className="ml-eyebrow">K/IND LIBRARY</p>
         <h1 className="ml-title">The archive.</h1>
       </header>
 
@@ -240,6 +290,8 @@ export default function MobileLibrary(props: MobileLibraryProps) {
             ))}
           </div>
 
+          {/* spec hierarchy (1420 loop): "N DOCUMENTS" + Filters button —
+              sort lives INSIDE the filter sheet, no separate sort control */}
           <div className="ml-tools">
             <span className="ml-count" aria-live="polite">
               {effectiveFiles.length} DOCUMENTS
@@ -251,14 +303,6 @@ export default function MobileLibrary(props: MobileLibraryProps) {
             >
               FILTERS
               {activeFilterCount > 0 && <span className="ml-badge">{activeFilterCount}</span>}
-            </button>
-            <button
-              type="button"
-              className="ml-tools-btn"
-              onClick={() => setSortOpen(true)}
-              aria-label={`Sort documents, current: ${SORT_OPTIONS.find(o => o.id === sort)?.label}`}
-            >
-              SORT
             </button>
           </div>
 
@@ -302,27 +346,38 @@ export default function MobileLibrary(props: MobileLibraryProps) {
                 Clear filters
               </button>
             </div>
-          ) : indexSubject === 'all' ? (
-            /* grouped by subject with small sticky headings (Round C P1) */
+          ) : grouped ? (
+            /* grouped by subject with collapsible sticky headings */
             <div className="ml-list">
               {SUBJECTS.map(s => {
                 const docs = effectiveFiles.filter(f => f.subj === s.id);
                 if (!docs.length) return null;
+                const isCollapsed = !!collapsed[s.id];
                 return (
                   <section className="ml-group" key={s.id} aria-label={s.name}>
-                    <div className="ml-group-head" style={{ ['--group-accent' as any]: s.color }}>
+                    <button
+                      type="button"
+                      className="ml-group-head"
+                      style={{ ['--group-accent' as any]: s.color }}
+                      aria-expanded={!isCollapsed}
+                      onClick={() => setCollapsed(prev => ({ ...prev, [s.id]: !prev[s.id] }))}
+                    >
                       <span className="ml-group-code" style={{ color: s.color }}>{s.code}</span>
                       <span className="ml-group-name">{s.name.toUpperCase()}</span>
                       <span className="ml-group-count">{docs.length}</span>
-                    </div>
-                    <RowStagger>
-                      {docs.map(f =>
-                        docRow(
-                          f, globalIndex.get(f.key) ?? 0, bookmarks, onToggleBookmark,
-                          key => onOpenReader(key, effectiveList), studyStateFor(f, recentKeys),
-                        ),
-                      )}
-                    </RowStagger>
+                      <span className={`ml-group-chev${isCollapsed ? ' closed' : ''}`} aria-hidden="true">▾</span>
+                    </button>
+                    {!isCollapsed && (
+                      <RowStagger>
+                        {docs.map(f =>
+                          docRow(
+                            f, globalIndex.get(f.key) ?? 0, bookmarks, onToggleBookmark,
+                            key => onOpenReader(key, effectiveList), studyStateFor(f, recentKeys),
+                            false,
+                          ),
+                        )}
+                      </RowStagger>
+                    )}
                   </section>
                 );
               })}
@@ -424,33 +479,21 @@ export default function MobileLibrary(props: MobileLibraryProps) {
             <span className={`ml-switch${tempRecent ? ' on' : ''}`} aria-hidden="true" />
           </button>
         </div>
-      </BottomSheet>
-
-      {/* ---------- sort sheet (immediate apply on tap) ---------- */}
-      <BottomSheet
-        open={sortOpen}
-        onClose={() => setSortOpen(false)}
-        title="Sort by"
-        height="70vh"
-      >
         <div className="ml-sheet-group">
-          {SORT_OPTIONS.map(o => (
-            <button
-              key={o.id}
-              type="button"
-              className={`ml-sort-row${sort === o.id ? ' active' : ''}`}
-              aria-pressed={sort === o.id}
-              onClick={() => { onSortChange(o.id); setSortOpen(false); }}
-            >
-              <span className="ml-sort-text">
-                <span className="ml-sort-label">{o.label}</span>
-                <span className="ml-sort-hint">{o.hint}</span>
-              </span>
-              {sort === o.id && (
-                <span className="ml-sort-check" aria-hidden="true">✓</span>
-              )}
-            </button>
-          ))}
+          <div className="ml-sheet-label">Sort by</div>
+          <div className="ml-chip-row">
+            {SORT_OPTIONS.map(o => (
+              <button
+                key={o.id}
+                type="button"
+                className={`ml-opt${tempSort === o.id ? ' active' : ''}`}
+                aria-pressed={tempSort === o.id}
+                onClick={() => setTempSort(o.id)}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
         </div>
       </BottomSheet>
     </div>
