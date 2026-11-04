@@ -48,7 +48,7 @@
   min-height: 54px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
-  background: var(--surface);
+  background: #101925; /* spec: #101925 */
 }
 .ms-search-icon {
   flex-shrink: 0;
@@ -156,23 +156,44 @@
   background: var(--surface-raised);
 }
 
-/* ---------- results header + sort ---------- */
+/* ---------- results header: compact single line (1420 loop) ----------
+ * "03 RESULTS — SORT: BEST MATCH — FILTER" */
 .ms-results-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  row-gap: 10px;
-  column-gap: 10px;
-  margin: 16px 0 12px;
+  gap: 8px;
+  margin: 12px 0 10px;
 }
 .ms-results-head {
   margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
   font-size: 10px;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ms-results-sep {
+  color: var(--text-faint, rgba(255, 255, 255, 0.3));
+}
+/* keep the legacy two-line meta rules harmless (unused since 1420 loop) */
+.ms-results-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+/* honest sort label — never a fake match % */
+.ms-results-sort {
+  margin: 0;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--text-faint, rgba(255, 255, 255, 0.42));
   white-space: nowrap;
 }
 .ms-sort {
@@ -205,7 +226,7 @@
   box-shadow: inset 0 0 0 1px var(--border);
 }
 
-/* ---------- result cards: compact divider rows (P1-4) ---------- */
+/* ---------- result rows: dense 104–116px base (Round B 2026-11-04) ---------- */
 .ms-results-list {
   display: flex;
   flex-direction: column;
@@ -213,10 +234,12 @@
 .ms-card {
   position: relative;
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 12px;
-  align-items: flex-start;
+  min-height: 104px; /* spec: rows 104–116px base */
   padding: 13px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(150, 170, 195, 0.13); /* spec divider */
   background: transparent;
   cursor: pointer;
 }
@@ -224,10 +247,11 @@
   outline: 2px solid var(--digital);
   outline-offset: -2px;
 }
+/* 48×64 thumbs (1420 loop: standardize with the mobile list spec) */
 .ms-thumb {
-  flex-shrink: 0;
-  width: 46px;
-  aspect-ratio: 3 / 4; /* 46 × 61 */
+  flex: 0 0 48px;
+  width: 48px;
+  height: 64px;
   object-fit: cover;
   border-radius: 6px;
   border: 1px solid var(--border-subtle);
@@ -237,8 +261,8 @@
 .ms-card-main {
   flex: 1;
   min-width: 0;
-  padding-right: 40px; /* room for the bookmark button */
 }
+/* 10px subject/type+match (1420 loop: standardize with the list spec) */
 .ms-micro {
   margin: 0 0 4px;
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
@@ -247,10 +271,11 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
+/* 14px titles (spec) */
 .ms-title {
   margin: 0;
   font-family: var(--font-ui);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   line-height: 1.3;
   color: var(--text);
@@ -260,9 +285,10 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+/* 11px meta (spec) */
 .ms-meta {
   margin: 6px 0 0;
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 
@@ -281,15 +307,63 @@
 .ms-kindline {
   margin: 6px 0 0;
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
-/* excerpts with highlighted term + page action (Round C P1) */
+/* right action column: bookmark + OPEN (both real 44px touch targets) */
+.ms-card-actions {
+  flex: 0 0 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 6px;
+  align-self: stretch;
+  padding: 2px 0;
+}
+.ms-bookmark {
+  width: 44px;
+  height: 44px;
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.ms-bookmark.on { color: var(--digital); }
+
+/* OPEN: quieter than before but still a clear 44px target */
+.ms-open {
+  position: relative;
+  overflow: hidden;
+  min-height: 44px;
+  padding: 8px 4px;
+  border-radius: 10px;
+  border: 1px solid rgba(160, 175, 195, 0.28);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(237, 239, 245, 0.85);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.ms-open:active {
+  transform: scale(0.96);
+  border-color: rgba(50, 211, 189, 0.6);
+  color: #32d3bd;
+}
+
+/* excerpts with highlighted term + page action (full-width, below the row) */
 .ms-excerpts {
-  margin-top: 10px;
+  flex: 1 1 100%;
+  margin-top: 2px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -309,8 +383,8 @@
   line-height: 1.55;
   color: var(--text-secondary);
   display: -webkit-box;
-  -webkit-line-clamp: 4;
-  line-clamp: 4;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -319,6 +393,81 @@
   color: var(--text);
   border-radius: 3px;
   padding: 0 1px;
+}
+/* query fragment in result titles: muted teal, original typography */
+.ms-hl-t {
+  background: rgba(56, 213, 193, 0.2);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+.ms-kindline-count {
+  color: var(--text-muted);
+}
+
+/* ---------- empty-query / no-results / error states ---------- */
+.ms-empty-group { margin-bottom: 20px; }
+.ms-empty-group:last-child { margin-bottom: 0; }
+.ms-empty-label {
+  margin: 0 0 10px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--text-muted);
+}
+.ms-recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.ms-recent-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--border-subtle);
+  text-align: left;
+  width: 100%;
+}
+.ms-recent-row:last-child { border-bottom: none; }
+.ms-recent-code {
+  flex: 0 0 auto;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.ms-recent-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--text);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ms-recent-go {
+  flex: 0 0 auto;
+  color: var(--text-faint, rgba(255, 255, 255, 0.35));
+  font-size: 18px;
+  line-height: 1;
+}
+.ms-retry-btn {
+  min-height: 48px;
+  padding: 0 26px;
+  margin-top: 14px;
+  border-radius: 12px;
+  background: rgba(56, 213, 193, 0.14);
+  border: 1px solid rgba(56, 213, 193, 0.45);
+  color: #32d3bd;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
 }
 .ms-page-go {
   align-self: flex-end;
@@ -336,36 +485,22 @@
 }
 .ms-page-go:active { border-color: var(--digital); }
 
-/* compact "OPEN →" text link — the card itself opens; not a button,
-   so the whole row stays one tab stop */
-.ms-open-link {
-  display: block;
-  margin-top: 8px;
-  text-align: right;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: var(--digital);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+/* ---------- loading skeletons ---------- */
+.ms-skel {
+  height: 110px;
+  margin: 13px 0;
+  border-radius: var(--radius-md);
+  background: linear-gradient(90deg, var(--surface) 25%, var(--surface-raised) 50%, var(--surface) 75%);
+  background-size: 200% 100%;
+  animation: ms-shimmer 1.4s ease-in-out infinite;
 }
-
-/* bookmark toggle */
-.ms-bookmark {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 44px;
-  height: 44px;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 20px;
-  line-height: 1;
-  cursor: pointer;
+@keyframes ms-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
 }
-.ms-bookmark.on { color: var(--digital); }
+@media (prefers-reduced-motion: reduce) {
+  .ms-skel { animation: none; }
+}
 
 /* ---------- empty states ---------- */
 .ms-empty {
@@ -519,6 +654,16 @@
   font-weight: 700;
   letter-spacing: 0.12em;
   cursor: pointer;
+}
+/* SpecularButton Apply keeps its glass background (beats the flat rule above) */
+.ms-sheet-footer .ms-btn-primary.specular-button {
+  background: color-mix(in srgb, var(--sb-tint, #38d5c1) calc(var(--sb-tint-opacity, 0.5) * 100%), transparent);
+  color: var(--sb-text-color, #062a26);
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 0 24px;
 }
 
 /* metadata lines go IBM Plex Mono 10px uppercase (Round B P0) — handled

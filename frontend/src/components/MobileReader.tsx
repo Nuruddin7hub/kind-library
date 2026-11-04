@@ -1,22 +1,18 @@
-// K/IND mobile engine — immersive study reader (ChatGPT Round C rebuild, 2026-11-03).
+// K/IND mobile engine — immersive study reader (ChatGPT Round C rebuild, 2026-11-04).
 //
-// Single-page flex layout (exact spec direction):
-//   .mr-reader {position:fixed; inset:0; z-index:200; display:flex;
-//               flex-direction:column; background:#080B11; overflow:hidden}
-//   54px header (back | 1-line ellipsis title | bookmark | more)
-//   48px modebar (READ/STUDY/FIND + page x/y, page counter TAPPABLE →
-//     page-jump sheet with numeric input + thumbnail strip)
-//   .mr-stage {flex:1; min-height:0; display:flex; overflow:auto; padding:12px;
-//              background:#151D29} with the page image at REAL aspect ratio
-//     (max-width:100%; max-height:100%; object-fit:contain; NO stretching)
-//   Study toolbar: 4 EXPLICIT tools — Highlight (color choice), Note (tap page
-//     to pin), Draw (pen + eraser + undo), Bookmark (save page + optional
-//     label) — each with a VISIBLE selected state and a small contextual
-//     toolbar (Undo/Cancel); annotations saved against document ID + page
-//     number, positioned relative to the page.
-//   Read mode: page nav + zoom controls only.
-//   Find mode: search field + match count + prev/next match.
-//   Global bottom nav stays hidden in the reader (z-index 200 covers the dock).
+// Two-row header (row 1: back | two-line-clamp title | bookmark | overflow;
+//   row 2: subject/type metadata + READ/STUDY/FIND segmented) · contextual
+//   strip (PAGE n OF m, tap → PAGES sheet · fit/zoom status) · stage wrapped
+//   with Gradual Blur feathering on the chrome edges only (never the
+//   document) · deep charcoal/navy stage, page 20px below controls, full
+//   available width minus 24px, soft broad shadow, true aspect ratio.
+// Modes genuinely distinct:
+//   READ = page nav + zoom + FIT WIDTH/PAGE + CONTINUOUS stacked scroll;
+//   STUDY = organizer (CONTENTS / BOOKMARKS / NOTES / INK / TOOLS tabs) with
+//     useful empty states ("No notes yet" + ADD A NOTE ON THIS PAGE);
+//   FIND = compact in-doc search (count + prev/next + PAGES jump).
+// Global bottom nav stays hidden (z-index 200 covers the dock).
+// No Aurora/Glare/3D card in the reader. Reduced-motion respected.
 //
 // Page content is server-rendered IMAGES (no PDF.js, no text layer —
 // established decision), so long-press text selection is impossible.
@@ -31,6 +27,8 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import BottomSheet from './BottomSheet';
+import GradualBlur from '../bits/GradualBlur';
+import AnimatedContent from '../bits/AnimatedContent';
 import { consumeReaderStartPage } from '../readerStart';
 import type { SearchHit } from '../shared';
 import './MobileReader.css';
@@ -80,10 +78,12 @@ const SUBJECT_COLORS: Record<string, string> = {
 
 type Sheet = 'pages' | 'pin' | 'notes' | 'marks' | 'info' | null;
 
-/** Reader modes (Round C P0): Read = page nav + zoom only;
- *  Study = 4 explicit annotation tools; Find = in-doc search. */
+/** Reader modes (Round C): Read = nav + zoom + fit + continuous;
+ *  Study = organizer; Find = in-doc search. */
 type ReaderMode = 'read' | 'study' | 'find';
-/** Study tools — 4 explicit, each with visible selected state + contextual bar. */
+/** Study organizer tabs — contents/bookmarks/notes/highlights/tools. */
+type StudyTab = 'contents' | 'bookmarks' | 'notes' | 'ink' | 'tools';
+/** Study annotation tools (TOOLS tab) — 4 explicit, visible selected state. */
 type StudyTool = 'highlight' | 'note' | 'draw' | 'bookmark' | null;
 
 interface Note {
@@ -114,6 +114,18 @@ function loadMarks(key: string): Mark[] {
       ? raw.filter(m => typeof m?.page === 'number' && typeof m?.name === 'string')
           .sort((a: Mark, b: Mark) => a.page - b.page || a.ts - b.ts)
       : [];
+  } catch { return []; }
+}
+
+/** Pages with ink strokes (kl:draw) — the STUDY > INK tab. */
+function loadInkPages(key: string): Array<{ page: number; count: number }> {
+  try {
+    const all = JSON.parse(localStorage.getItem(drawKey(key)) || '{}');
+    return Object.keys(all)
+      .map(Number)
+      .filter(p => Number.isFinite(p) && Array.isArray(all[String(p)]) && all[String(p)].length > 0)
+      .sort((a, b) => a - b)
+      .map(p => ({ page: p, count: (all[String(p)] as unknown[]).length }));
   } catch { return []; }
 }
 
@@ -311,10 +323,12 @@ export default function MobileReader(props: Props) {
   const [page, setPage] = useState(1);
   const [zoom, setZoom] = useState(100);
   const [mode, setMode] = useState<ReaderMode>('read');
+  const [studyTab, setStudyTab] = useState<StudyTab>('contents');
   const [tool, setTool] = useState<StudyTool>(null);
   const [sheet, setSheet] = useState<Sheet>(null);
   const [notes, setNotes] = useState<Note[]>(() => loadNotes(file.key));
   const [marks, setMarks] = useState<Mark[]>(() => loadMarks(file.key));
+  const [inkPages, setInkPages] = useState(() => loadInkPages(file.key));
   const [noteDraft, setNoteDraft] = useState('');
   const [markDraft, setMarkDraft] = useState('');
   const [pinDraft, setPinDraft] = useState('');
@@ -325,6 +339,12 @@ export default function MobileReader(props: Props) {
   const [ftLoading, setFtLoading] = useState(false);
   const [ftHits, setFtHits] = useState<Array<{ page_number: number; snippet: string; match_count: number }>>([]);
   const [ftIdx, setFtIdx] = useState(0);
+  // collapsible page strip (Round B 2026-11-04, 1420 loop)
+  const [stripCollapsed, setStripCollapsed] = useState(false);
+  // copy-note feedback (Study "copy" action — kl:* compatible notes)
+  // read-mode layout: fit + continuous
+  const [fit, setFit] = useState<'page' | 'width'>('page');
+  const [continuous, setContinuous] = useState(false);
   // study tool options
   const [hlColor, setHlColor] = useState('rgba(255, 236, 140, 0.55)');
   const [penColor, setPenColor] = useState(SUBJECT_COLORS[file.subj] || '#38D5C1');
@@ -335,6 +355,8 @@ export default function MobileReader(props: Props) {
   const [imgAR, setImgAR] = useState(0.707); // w/h, updated on load
   const [stageSize, setStageSize] = useState({ w: 0, h: 0 });
   const stageRef = useRef<HTMLDivElement>(null);
+  const pageEls = useRef(new Map<number, HTMLDivElement>());
+  const scrollRaf = useRef(0);
   const findInputRef = useRef<HTMLInputElement>(null);
   const posxTimer = useRef<number | null>(null);
   const restored = useRef(false);
@@ -348,6 +370,8 @@ export default function MobileReader(props: Props) {
   zoomRef.current = zoom;
   const pageRef = useRef(page);
   pageRef.current = page;
+  const continuousRef = useRef(continuous);
+  continuousRef.current = continuous;
 
   // reduced motion: prop wins, else the OS preference
   const [mqReduced, setMqReduced] = useState(false);
@@ -361,6 +385,8 @@ export default function MobileReader(props: Props) {
     }
   }, []);
   const motionReduced = props.reducedMotion ?? mqReduced;
+  const motionReducedRef = useRef(motionReduced);
+  motionReducedRef.current = motionReduced;
 
   // measure the stage so the page box fits at real aspect ratio
   useEffect(() => {
@@ -374,14 +400,19 @@ export default function MobileReader(props: Props) {
       ro.observe(el);
     }
     return () => ro?.disconnect();
-  }, []);
+  }, [mode, studyTab, continuous]);
 
+  // single-page geometry: fit-page = contain in the stage; fit-width =
+  // full available width minus 24px even if it overflows vertically
   const fitW = Math.max(0, stageSize.w - 24);
   const fitH = Math.max(0, stageSize.h - 24);
   let baseW = fitW, baseH = fitW / Math.max(0.2, imgAR);
-  if (baseH > fitH) { baseH = fitH; baseW = fitH * Math.max(0.2, imgAR); }
+  if (fit === 'page' && baseH > fitH) { baseH = fitH; baseW = fitH * Math.max(0.2, imgAR); }
   const boxW = Math.max(40, Math.round(baseW * zoom / 100));
   const boxH = Math.max(40, Math.round(baseH * zoom / 100));
+  // continuous geometry: every page at full width minus 24px, 18px gutters
+  const contW = Math.max(40, Math.round(fitW * zoom / 100));
+  const contH = Math.max(40, Math.round(contW / Math.max(0.2, imgAR)));
 
   const closeSheet = useCallback(() => setSheet(null), []);
   const openSheet = useCallback((s: Exclude<Sheet, null>) => {
@@ -394,7 +425,8 @@ export default function MobileReader(props: Props) {
 
   // reset per document
   useEffect(() => {
-    setPage(1); setZoom(100); setMode('read'); setTool(null); setSheet(null);
+    setPage(1); setZoom(100); setMode('read'); setStudyTab('contents'); setTool(null); setSheet(null);
+    setFit('page'); setContinuous(false);
     setNoteDraft(''); setMarkDraft(''); setPinDraft(''); setPinAt(null); setPinPop(null);
     setPageInput(''); setFtQuery(''); setFtHits([]); setFtLoading(false); setFtIdx(0);
     setHlColor('rgba(255, 236, 140, 0.55)');
@@ -402,6 +434,8 @@ export default function MobileReader(props: Props) {
     setEraseMode(false);
     setNotes(loadNotes(file.key));
     setMarks(loadMarks(file.key));
+    setInkPages(loadInkPages(file.key));
+    pageEls.current.clear();
     pagesScrollPos.current = 0;
     restored.current = false; userTouched.current = false;
     if (posxTimer.current) window.clearTimeout(posxTimer.current);
@@ -431,10 +465,57 @@ export default function MobileReader(props: Props) {
     setPage(pg);
     setPinPop(null);
     const sc = stageRef.current;
-    if (sc) { sc.scrollTop = 0; sc.scrollLeft = 0; }
+    if (sc) {
+      if (continuousRef.current) {
+        const el = pageEls.current.get(pg);
+        if (el) {
+          sc.scrollTo({
+            top: Math.max(0, el.offsetTop - 20),
+            behavior: motionReducedRef.current ? 'auto' : 'smooth',
+          });
+        }
+      } else {
+        sc.scrollTop = 0; sc.scrollLeft = 0;
+      }
+    }
     persistPage(pg);
     setSheet(null);
   }, [total, persistPage]);
+
+  // continuous scroll → the nearest page becomes current
+  const onStageScroll = useCallback(() => {
+    if (scrollRaf.current) return;
+    scrollRaf.current = requestAnimationFrame(() => {
+      scrollRaf.current = 0;
+      const sc = stageRef.current;
+      if (!sc) return;
+      const top = sc.scrollTop + 80;
+      let best = 1, bestD = Infinity;
+      pageEls.current.forEach((el, p) => {
+        const d = Math.abs(el.offsetTop - top);
+        if (d < bestD) { bestD = d; best = p; }
+      });
+      if (best !== pageRef.current) {
+        setPage(best);
+        persistPage(best);
+      }
+    });
+  }, [persistPage]);
+
+  const toggleContinuous = useCallback((v: boolean) => {
+    setTool(null);
+    setContinuous(v);
+    requestAnimationFrame(() => {
+      const sc = stageRef.current;
+      if (!sc) return;
+      if (v) {
+        const el = pageEls.current.get(pageRef.current);
+        if (el) sc.scrollTop = Math.max(0, el.offsetTop - 20);
+      } else {
+        sc.scrollTop = 0; sc.scrollLeft = 0;
+      }
+    });
+  }, []);
 
   // restore reading position — a pending exact-page open from search wins
   // over everything. kl:posx restores zoom; otherwise fall back to kl:pos.
@@ -472,10 +553,16 @@ export default function MobileReader(props: Props) {
 
   useEffect(() => () => {
     if (posxTimer.current) window.clearTimeout(posxTimer.current);
+    if (scrollRaf.current) cancelAnimationFrame(scrollRaf.current);
   }, []);
 
   // zoom changes re-record the exact position
   useEffect(() => { schedulePosX(pageRef.current); }, [zoom, schedulePosX]);
+
+  // refresh the INK tab when the user finishes annotating
+  useEffect(() => {
+    if (tool === null) setInkPages(loadInkPages(file.key));
+  }, [tool, file.key]);
 
   // in-document full-text search — debounced 300ms, min 2 chars,
   // filtered to this document's key, passages sorted by page
@@ -522,6 +609,14 @@ export default function MobileReader(props: Props) {
     setSheet(null);
     setTool(null);
     setEraseMode(false);
+    // continuous scroll is a read-mode layout — leaving read resets it
+    if (m !== 'read' && continuousRef.current) {
+      setContinuous(false);
+      requestAnimationFrame(() => {
+        const sc = stageRef.current;
+        if (sc) { sc.scrollTop = 0; sc.scrollLeft = 0; }
+      });
+    }
     setMode(m);
     if (m === 'find') {
       window.setTimeout(() => findInputRef.current?.focus(), 120);
@@ -617,6 +712,19 @@ export default function MobileReader(props: Props) {
     setNoteDraft('');
     try { localStorage.setItem(notesKey(file.key), JSON.stringify(next)); } catch { /* ignore */ }
   };
+  const [copiedTs, setCopiedTs] = useState<number | null>(null);
+  // "copy" in the Study bottom-sheet actions: copy a note's text to the
+  // clipboard (notes stay kl:*-compatible — read from the same store)
+  const copyNote = useCallback(async (text: string, ts: number) => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        setCopiedTs(ts);
+        window.setTimeout(() => setCopiedTs(c => (c === ts ? null : c)), 1600);
+      }
+    } catch { /* clipboard unavailable — nothing to do */ }
+  }, []);
+
   const deleteNote = (ts: number) => {
     const next = notes.filter(n => n.ts !== ts);
     setNotes(next);
@@ -650,9 +758,17 @@ export default function MobileReader(props: Props) {
   };
 
   const MODES: Array<{ id: ReaderMode; label: string; aria: string }> = [
-    { id: 'read', label: 'READ', aria: 'Read mode — page navigation and zoom' },
-    { id: 'study', label: 'STUDY', aria: 'Study mode — highlight, notes, draw, bookmarks' },
+    { id: 'read', label: 'READ', aria: 'Read mode — page navigation, zoom, fit, continuous scroll' },
+    { id: 'study', label: 'STUDY', aria: 'Study mode — contents, bookmarks, notes, highlights, tools' },
     { id: 'find', label: 'FIND', aria: 'Find mode — search in this document' },
+  ];
+
+  const STUDY_TABS: Array<{ id: StudyTab; label: string }> = [
+    { id: 'contents', label: 'CONTENTS' },
+    { id: 'bookmarks', label: 'BOOKMARKS' },
+    { id: 'notes', label: 'NOTES' },
+    { id: 'ink', label: 'HIGHLIGHTS' },
+    { id: 'tools', label: 'TOOLS' },
   ];
 
   const TOOLS: Array<{ id: Exclude<StudyTool, null>; label: string; icon: string; aria: string }> = [
@@ -677,6 +793,7 @@ export default function MobileReader(props: Props) {
   const pageNotes = notes.filter(n => n.page === page);
   const pinned = pageNotes.filter(n => typeof n.x === 'number' && typeof n.y === 'number');
   const progress = total ? Math.round((page / total) * 100) : 0;
+  const studyPanelOpen = mode === 'study' && studyTab !== 'tools';
 
   // PAGES sheet: preserve the thumbnail grid scroll position across re-opens
   useEffect(() => {
@@ -688,58 +805,171 @@ export default function MobileReader(props: Props) {
     if (pagesGridRef.current) pagesScrollPos.current = pagesGridRef.current.scrollTop;
   }, []);
 
+  const stripStatus =
+    mode === 'read'
+      ? continuous ? `CONTINUOUS · ${zoom}%` : `${zoom}% · FIT ${fit.toUpperCase()}`
+      : mode === 'study' ? `STUDY · ${STUDY_TABS.find(t => t.id === studyTab)?.label ?? ''}`
+      : ftQuery.trim().length >= 2 ? `${ftTotalMatches} HIT${ftTotalMatches === 1 ? '' : 'S'}` : 'IN-DOCUMENT SEARCH';
+
+  const pageBox = (p: number, w: number, h: number, cont?: boolean) => (
+    <div
+      key={p}
+      className="mr-pagebox"
+      style={{ width: w, height: h }}
+      ref={cont ? (el => { if (el) pageEls.current.set(p, el); else pageEls.current.delete(p); }) : undefined}
+      onPointerDown={cont ? undefined : onPagePointerDown}
+      onPointerUp={cont ? undefined : onPagePointerUp}
+    >
+      <img
+        src={pageImageUrl(file.subj, file.file, p, total)}
+        alt={`Page ${p}`}
+        className="mr-pageimg"
+        draggable={false}
+        loading={cont && p > 6 ? 'lazy' : undefined}
+        onLoad={e => {
+          const im = e.currentTarget;
+          if (im.naturalWidth > 0 && im.naturalHeight > 0) {
+            setImgAR(im.naturalWidth / im.naturalHeight);
+          }
+        }}
+      />
+      {!cont && (
+        <DrawLayer
+          key={`${file.key}-${p}`}
+          page={p}
+          docKey={file.key}
+          ink={inking}
+          color={tool === 'highlight' ? hlColor : penColor}
+          width={tool === 'highlight' ? 10 : 3}
+          erase={tool === 'draw' && eraseMode}
+          apiRef={drawApi}
+        />
+      )}
+      {/* tap-pinned notes, positioned relative to the page (single-page only) */}
+      {!cont && p === page && pinned.map(n => (
+        <span key={n.ts} className="mr-pin-anchor" style={{ left: `${(n.x as number) * 100}%`, top: `${(n.y as number) * 100}%` }}>
+          <button
+            type="button"
+            className={`mr-pin${pinPop === n.ts ? ' on' : ''}`}
+            onClick={ev => { ev.stopPropagation(); setPinPop(pinPop === n.ts ? null : n.ts); }}
+            aria-label={`Note on page ${n.page}: ${n.text}`}
+          >
+            ✎
+          </button>
+          {pinPop === n.ts && (
+            <span className={`mr-pin-pop${(n.y as number) < 0.4 ? ' below' : ''}`} role="dialog" aria-label="Pinned note">
+              <span className="mr-pin-text">{n.text}</span>
+              <span className="mr-pin-actions">
+                <button type="button" className="mr-pin-jump" onClick={() => openSheet('notes')}>ALL NOTES</button>
+                <button type="button" className="mr-pin-del" onClick={() => deleteNote(n.ts)}>DELETE</button>
+              </span>
+            </span>
+          )}
+        </span>
+      ))}
+    </div>
+  );
+
   return (
     <div
       className={`mr-reader${motionReduced ? ' mr-reduced-motion' : ''}`}
       style={{ ['--subject-accent' as any]: accent }}
     >
-      {/* 54px header: back | 1-line ellipsis title | bookmark | more */}
-      <div className="mr-reader-head">
-        <button type="button" className="mr-back" onClick={props.onClose} aria-label="Back to library">‹</button>
-        <div className="mr-titlewrap">
-          <span className="mr-title">{file.title}</span>
+      {/* two-row header — row 1: back | ONE-LINE truncated title |
+          bookmark | overflow (1420 loop: no more compressed two-line stack).
+          Tap the title for the full title + document info. */}
+      <div className="mr-head">
+        <div className="mr-row1">
+          <button type="button" className="mr-back" onClick={props.onClose} aria-label="Back to library">‹</button>
+          <button
+            type="button"
+            className="mr-titlewrap"
+            onClick={() => openSheet('info')}
+            aria-label={`${file.title} — show full title and document info`}
+          >
+            <span className="mr-title">{file.title}</span>
+          </button>
+          <button
+            type="button"
+            className={`mr-iconbtn${props.bookmarked ? ' on' : ''}`}
+            onClick={() => props.onToggleBookmark()}
+            aria-label={props.bookmarked ? 'Remove bookmark' : 'Bookmark'}
+            aria-pressed={props.bookmarked}
+          >
+            {props.bookmarked ? '★' : '☆'}
+          </button>
+          <button type="button" className="mr-iconbtn" onClick={() => openSheet('info')} aria-label="More options">⋯</button>
         </div>
-        <button
-          type="button"
-          className={`mr-iconbtn${props.bookmarked ? ' on' : ''}`}
-          onClick={() => props.onToggleBookmark()}
-          aria-label={props.bookmarked ? 'Remove bookmark' : 'Bookmark'}
-          aria-pressed={props.bookmarked}
-        >
-          {props.bookmarked ? '★' : '☆'}
-        </button>
-        <button type="button" className="mr-iconbtn" onClick={() => openSheet('info')} aria-label="More options">⋯</button>
+        {/* row 2: FULL-WIDTH segmented Read/Study/Find (min 40px, 1420 loop) */}
+        <div className="mr-row2">
+          <div className="mr-modeseg" role="tablist" aria-label="Reader mode">
+            <span
+              className="mr-modepill"
+              aria-hidden="true"
+              style={{ transform: `translateX(${MODES.findIndex(m => m.id === mode) * 100}%)` }}
+            />
+            {MODES.map(m => (
+              <button
+                key={m.id}
+                type="button"
+                role="tab"
+                aria-selected={mode === m.id}
+                className={`mr-modebtn${mode === m.id ? ' on' : ''}`}
+                onClick={() => switchMode(m.id)}
+                aria-label={m.aria}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* 48px modebar: READ·STUDY·FIND segmented + PAGE x/y (tap → PAGES sheet) */}
-      <div className="mr-moderow">
-        <div className="mr-modeseg" role="tablist" aria-label="Reader mode">
-          {MODES.map(m => (
-            <button
-              key={m.id}
-              type="button"
-              role="tab"
-              aria-selected={mode === m.id}
-              className={`mr-modebtn${mode === m.id ? ' on' : ''}`}
-              onClick={() => switchMode(m.id)}
-              aria-label={m.aria}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
+      {/* contextual strip: PAGE n OF m (tap → PAGES sheet) + fit/zoom
+          status + collapse toggle (1420 loop: collapsible page strip) */}
+      <div className={`mr-strip${stripCollapsed ? ' collapsed' : ''}`}>
         <button
           type="button"
-          className="mr-pagebtn"
+          className="mr-strip-page"
           onClick={() => openSheet('pages')}
           aria-label={`Open page thumbnails, currently page ${page} of ${total}`}
         >
-          PAGE {page}/{total} ›
+          PAGE <strong>{page}</strong> OF {total}
+        </button>
+        {!stripCollapsed && (
+          <span className="mr-strip-status" aria-live="polite">{stripStatus}</span>
+        )}
+        <button
+          type="button"
+          className="mr-strip-toggle"
+          onClick={() => setStripCollapsed(v => !v)}
+          aria-label={stripCollapsed ? 'Expand page strip' : 'Collapse page strip'}
+          aria-expanded={!stripCollapsed}
+        >
+          {stripCollapsed ? '▾' : '▴'}
         </button>
       </div>
 
-      {/* study toolbar: 4 explicit tools with VISIBLE selected state */}
+      {/* STUDY: organizer tab bar (chrome, above the panel/stage) */}
       {mode === 'study' && (
+        <div className="mr-studytabs" role="tablist" aria-label="Study organizer">
+          {STUDY_TABS.map(t => (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={studyTab === t.id}
+              className={`mr-stab${studyTab === t.id ? ' on' : ''}`}
+              onClick={() => { setStudyTab(t.id); setSheet(null); }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* STUDY > TOOLS: 4 explicit tools with VISIBLE selected state */}
+      {mode === 'study' && studyTab === 'tools' && (
         <div className="mr-studybar" role="toolbar" aria-label="Study tools">
           {TOOLS.map(t => (
             <button
@@ -762,7 +992,7 @@ export default function MobileReader(props: Props) {
       )}
 
       {/* contextual mini-toolbar per tool: tool controls + Undo + Cancel */}
-      {mode === 'study' && tool === 'highlight' && (
+      {mode === 'study' && studyTab === 'tools' && tool === 'highlight' && (
         <div className="mr-ctxbar" role="toolbar" aria-label="Highlight options">
           <span className="mr-ctx-hint">SWIPE TO HIGHLIGHT</span>
           {HL_COLORS.map(o => (
@@ -780,14 +1010,14 @@ export default function MobileReader(props: Props) {
           <button type="button" className="mr-ctxbtn mr-ctxdone" onClick={() => setTool(null)}>CANCEL</button>
         </div>
       )}
-      {mode === 'study' && tool === 'note' && (
+      {mode === 'study' && studyTab === 'tools' && tool === 'note' && (
         <div className="mr-ctxbar" role="toolbar" aria-label="Note options">
           <span className="mr-ctx-hint">TAP THE PAGE TO PIN A NOTE</span>
           <button type="button" className="mr-ctxbtn" onClick={() => openSheet('notes')}>VIEW NOTES</button>
           <button type="button" className="mr-ctxbtn mr-ctxdone" onClick={() => setTool(null)}>CANCEL</button>
         </div>
       )}
-      {mode === 'study' && tool === 'draw' && (
+      {mode === 'study' && studyTab === 'tools' && tool === 'draw' && (
         <div className="mr-ctxbar" role="toolbar" aria-label="Draw options">
           {PEN_COLORS.map(o => (
             <button
@@ -812,7 +1042,7 @@ export default function MobileReader(props: Props) {
           <button type="button" className="mr-ctxbtn mr-ctxdone" onClick={() => { setTool(null); setEraseMode(false); }}>CANCEL</button>
         </div>
       )}
-      {mode === 'study' && tool === 'bookmark' && (
+      {mode === 'study' && studyTab === 'tools' && tool === 'bookmark' && (
         <div className="mr-ctxbar mr-ctxbar-input" role="toolbar" aria-label="Bookmark options">
           <input
             className="mr-ctx-input"
@@ -828,124 +1058,170 @@ export default function MobileReader(props: Props) {
         </div>
       )}
 
-      {/* .reader-stage: flex-1, centered, page at REAL aspect ratio */}
-      <div
-        ref={stageRef}
-        className="mr-stage"
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-      >
-        <div
-          className="mr-pagebox"
-          style={{ width: boxW, height: boxH }}
-          onPointerDown={onPagePointerDown}
-          onPointerUp={onPagePointerUp}
-        >
-          <img
-            src={pageImageUrl(file.subj, file.file, page, total)}
-            alt={`Page ${page}`}
-            className="mr-pageimg"
-            draggable={false}
-            onLoad={e => {
-              const im = e.currentTarget;
-              if (im.naturalWidth > 0 && im.naturalHeight > 0) {
-                setImgAR(im.naturalWidth / im.naturalHeight);
-              }
-            }}
-          />
-          <DrawLayer
-            key={`${file.key}-${page}`}
-            page={page}
-            docKey={file.key}
-            ink={inking}
-            color={tool === 'highlight' ? hlColor : penColor}
-            width={tool === 'highlight' ? 10 : 3}
-            erase={tool === 'draw' && eraseMode}
-            apiRef={drawApi}
-          />
-          {/* tap-pinned notes, positioned relative to the page */}
-          {pinned.map(n => (
-            <span key={n.ts} className="mr-pin-anchor" style={{ left: `${(n.x as number) * 100}%`, top: `${(n.y as number) * 100}%` }}>
-              <button
-                type="button"
-                className={`mr-pin${pinPop === n.ts ? ' on' : ''}`}
-                onClick={ev => { ev.stopPropagation(); setPinPop(pinPop === n.ts ? null : n.ts); }}
-                aria-label={`Note on page ${n.page}: ${n.text}`}
-              >
-                ✎
-              </button>
-              {pinPop === n.ts && (
-                <span className={`mr-pin-pop${(n.y as number) < 0.4 ? ' below' : ''}`} role="dialog" aria-label="Pinned note">
-                  <span className="mr-pin-text">{n.text}</span>
-                  <span className="mr-pin-actions">
-                    <button type="button" className="mr-pin-jump" onClick={() => openSheet('notes')}>ALL NOTES</button>
-                    <button type="button" className="mr-pin-del" onClick={() => deleteNote(n.ts)}>DELETE</button>
-                  </span>
-                </span>
-              )}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Read mode: page nav + zoom controls ONLY */}
-      {mode === 'read' && (
-        <div className="mr-readbar" role="toolbar" aria-label="Page navigation and zoom">
-          <button type="button" className="mr-rbtn" onClick={() => goToPage(page - 1)}
-            disabled={page <= 1} aria-label="Previous page">‹</button>
-          <button type="button" className="mr-rbtn" onClick={() => setZoom(z => Math.max(60, z - 25))}
-            disabled={zoom <= 60} aria-label="Zoom out">−</button>
-          <button type="button" className="mr-rzoom" onClick={() => setZoom(100)}
-            aria-label="Reset zoom to 100 percent">{zoom}%</button>
-          <button type="button" className="mr-rbtn" onClick={() => setZoom(z => Math.min(300, z + 25))}
-            disabled={zoom >= 300} aria-label="Zoom in">+</button>
-          <button type="button" className="mr-rbtn" onClick={() => goToPage(page + 1)}
-            disabled={page >= total} aria-label="Next page">›</button>
+      {/* STUDY organizer panel (contents / bookmarks / notes / highlights) */}
+      {studyPanelOpen ? (
+        motionReduced ? (
+          <div className="mr-studypanel">
+            <StudyPanelBody
+              studyTab={studyTab}
+              total={total}
+              page={page}
+              file={file}
+              notes={notes}
+              marks={marks}
+              inkPages={inkPages}
+              pagesGridRef={pagesGridRef}
+              savePagesScroll={savePagesScroll}
+              goToPage={goToPage}
+              openSheet={openSheet}
+              deleteNote={deleteNote}
+              deleteMark={deleteMark}
+              copyNote={copyNote}
+              copiedTs={copiedTs}
+            />
+          </div>
+        ) : (
+          <AnimatedContent
+            key={`study-${studyTab}`}
+            trigger="mount"
+            distance={14}
+            duration={0.28}
+            ease="power3.out"
+            once
+            className="mr-ac-panel"
+          >
+            <div className="mr-studypanel">
+              <StudyPanelBody
+                studyTab={studyTab}
+                total={total}
+                page={page}
+                file={file}
+                notes={notes}
+                marks={marks}
+                inkPages={inkPages}
+                pagesGridRef={pagesGridRef}
+                savePagesScroll={savePagesScroll}
+                goToPage={goToPage}
+                openSheet={openSheet}
+                deleteNote={deleteNote}
+                deleteMark={deleteMark}
+                copyNote={copyNote}
+                copiedTs={copiedTs}
+              />
+            </div>
+          </AnimatedContent>
+        )
+      ) : (
+        /* .reader-stage: page at REAL aspect ratio, 20px below the controls */
+        <div className="mr-stagewrap">
+          <div
+            ref={stageRef}
+            className={`mr-stage${continuous ? ' mr-stage-cont' : ''}`}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+            onScroll={continuous ? onStageScroll : undefined}
+          >
+            {continuous
+              ? Array.from({ length: total }, (_, i) => i + 1).map(p => pageBox(p, contW, contH, true))
+              : pageBox(page, boxW, boxH, false)}
+          </div>
+          {/* Gradual Blur feathering on the chrome edges only — never the document */}
+          <GradualBlur position="top" height="20px" strength={1.4} layers={6} zIndex={4} />
+          <GradualBlur position="bottom" height="20px" strength={1.4} layers={6} zIndex={4} />
         </div>
       )}
 
-      {/* Find mode: search field + match count + prev/next match */}
-      {mode === 'find' && (
-        <div className="mr-findpanel">
-          <div className="mr-findbar">
-            <input
-              ref={findInputRef}
-              value={ftQuery}
-              onChange={e => setFtQuery(e.target.value)}
-              placeholder="Search in this document…"
-              aria-label="Search document text"
-              enterKeyHint="search"
-            />
-            <span className="mr-findcount" aria-live="polite">
-              {ftLoading ? '…' : `${ftTotalMatches} HIT${ftTotalMatches === 1 ? '' : 'S'}`}
-            </span>
-            {ftPages.length > 0 && (
-              <span className="mr-findpos" aria-hidden="true">{ftIdx + 1}/{ftPages.length}</span>
-            )}
-            <button type="button" className="mr-findnav" onClick={() => ftStep(-1)}
-              disabled={!ftPages.length} aria-label="Previous match">‹</button>
-            <button type="button" className="mr-findnav" onClick={() => ftStep(1)}
-              disabled={!ftPages.length} aria-label="Next match">›</button>
+      {/* Read mode: page nav + zoom + fit + continuous */}
+      {mode === 'read' && (
+        <div className="mr-readbar" role="toolbar" aria-label="Page navigation and zoom">
+          <div className="mr-readbar-row">
+            <button type="button" className="mr-rbtn" onClick={() => goToPage(page - 1)}
+              disabled={page <= 1} aria-label="Previous page">‹</button>
+            <button type="button" className="mr-rbtn" onClick={() => setZoom(z => Math.max(60, z - 25))}
+              disabled={zoom <= 60} aria-label="Zoom out">−</button>
+            <button type="button" className="mr-rzoom" onClick={() => setZoom(100)}
+              aria-label="Reset zoom to 100 percent">{zoom}%</button>
+            <button type="button" className="mr-rbtn" onClick={() => setZoom(z => Math.min(300, z + 25))}
+              disabled={zoom >= 300} aria-label="Zoom in">+</button>
+            <button type="button" className="mr-rbtn" onClick={() => goToPage(page + 1)}
+              disabled={page >= total} aria-label="Next page">›</button>
           </div>
-          <div className="mr-ft-list mr-findresults">
-            {ftHits.map((h, i) => (
-              <button
-                type="button"
-                key={`${h.page_number}-${i}`}
-                className="mr-ft-hit"
-                onClick={() => goToPage(h.page_number)}
-                aria-label={`Go to page ${h.page_number}`}
-              >
-                <span className="mr-ft-page">P. {h.page_number}</span>
-                <span className="mr-ft-snippet">{h.snippet}</span>
-              </button>
-            ))}
-            {ftQuery.trim().length >= 2 && !ftLoading && ftHits.length === 0 && (
-              <p className="mr-empty">No matches for “{ftQuery.trim()}”.</p>
+          <div className="mr-readbar-row mr-readbar-opts">
+            {!continuous && (
+              <div className="mr-fitseg" role="group" aria-label="Page fit">
+                <button
+                  type="button"
+                  className={`mr-fitbtn${fit === 'width' ? ' on' : ''}`}
+                  onClick={() => setFit('width')}
+                  aria-pressed={fit === 'width'}
+                >
+                  FIT WIDTH
+                </button>
+                <button
+                  type="button"
+                  className={`mr-fitbtn${fit === 'page' ? ' on' : ''}`}
+                  onClick={() => setFit('page')}
+                  aria-pressed={fit === 'page'}
+                >
+                  FIT PAGE
+                </button>
+              </div>
             )}
+            <button
+              type="button"
+              className={`mr-contbtn${continuous ? ' on' : ''}`}
+              onClick={() => toggleContinuous(!continuous)}
+              aria-pressed={continuous}
+              aria-label={continuous ? 'Exit continuous scroll' : 'Continuous scroll — all pages in one column'}
+            >
+              {continuous ? '◉ CONTINUOUS' : '○ CONTINUOUS'}
+            </button>
           </div>
         </div>
+      )}
+
+      {/* Find mode: compact search bar + match count + prev/next + PAGES jump */}
+      {mode === 'find' && (
+        motionReduced ? (
+          <FindPanel
+            ftQuery={ftQuery}
+            setFtQuery={setFtQuery}
+            ftLoading={ftLoading}
+            ftTotalMatches={ftTotalMatches}
+            ftPages={ftPages}
+            ftIdx={ftIdx}
+            ftStep={ftStep}
+            ftHits={ftHits}
+            findInputRef={findInputRef}
+            goToPage={goToPage}
+            openSheet={openSheet}
+          />
+        ) : (
+          <AnimatedContent
+            key="find"
+            trigger="mount"
+            distance={14}
+            duration={0.28}
+            ease="power3.out"
+            once
+            className="mr-ac-panel-bottom"
+          >
+            <FindPanel
+              ftQuery={ftQuery}
+              setFtQuery={setFtQuery}
+              ftLoading={ftLoading}
+              ftTotalMatches={ftTotalMatches}
+              ftPages={ftPages}
+              ftIdx={ftIdx}
+              ftStep={ftStep}
+              ftHits={ftHits}
+              findInputRef={findInputRef}
+              goToPage={goToPage}
+              openSheet={openSheet}
+            />
+          </AnimatedContent>
+        )
       )}
 
       {/* PAGES sheet — numeric input + thumbnail strip */}
@@ -1019,6 +1295,10 @@ export default function MobileReader(props: Props) {
                 <span className="mr-note-page">PAGE {n.page}</span>
                 <span className="mr-note-text">{n.text}</span>
               </button>
+              <button type="button" className="mr-copy" onClick={() => copyNote(n.text, n.ts)}
+                aria-label={copiedTs === n.ts ? 'Note copied' : `Copy note from page ${n.page}`}>
+                {copiedTs === n.ts ? '✓' : '⧉'}
+              </button>
               <button type="button" className="mr-del" onClick={() => deleteNote(n.ts)} aria-label="Delete note">✕</button>
             </div>
           ))}
@@ -1069,7 +1349,7 @@ export default function MobileReader(props: Props) {
           <div className="mr-info-row"><span className="mr-info-k">PAGES</span><span>{total}</span></div>
           <div className="mr-info-row"><span className="mr-info-k">POSITION</span><span>Page {page} of {total} · {progress}% read</span></div>
           <div className="mr-info-row"><span className="mr-info-k">DOCUMENT</span><span>{props.docIndex + 1} of {props.docTotal}</span></div>
-          <div className="mr-info-row"><span className="mr-info-k">MODES</span><span>Read = page navigation + zoom · Study = highlight, tap-to-pin notes, draw with eraser, page bookmarks · Find = in-document text search</span></div>
+          <div className="mr-info-row"><span className="mr-info-k">MODES</span><span>Read = page navigation + zoom + fit + continuous scroll · Study = contents, bookmarks, notes, highlights, annotation tools · Find = in-document text search</span></div>
           <div className="mr-info-row"><span className="mr-info-k">GESTURES</span><span>Pinch or double-tap to zoom · swipe sideways to turn pages</span></div>
           <div className="mr-info-actions">
             <button type="button" className="mr-chip" onClick={() => openSheet('notes')}>Notes</button>
@@ -1083,6 +1363,197 @@ export default function MobileReader(props: Props) {
           </div>
         </div>
       </BottomSheet>
+    </div>
+  );
+}
+
+/* ================= STUDY organizer panel ================= */
+
+function StudyPanelBody({ studyTab, total, page, file, notes, marks, inkPages,
+  pagesGridRef, savePagesScroll, goToPage, openSheet, deleteNote, deleteMark, copyNote, copiedTs }: {
+  studyTab: StudyTab;
+  total: number;
+  page: number;
+  file: DocLite;
+  notes: Note[];
+  marks: Mark[];
+  inkPages: Array<{ page: number; count: number }>;
+  pagesGridRef: React.RefObject<HTMLDivElement | null>;
+  savePagesScroll: () => void;
+  goToPage: (p: number) => void;
+  openSheet: (s: 'pages' | 'notes') => void;
+  deleteNote: (ts: number) => void;
+  deleteMark: (ts: number) => void;
+  copyNote: (text: string, ts: number) => void;
+  copiedTs: number | null;
+}) {
+  if (studyTab === 'contents') {
+    return (
+      <div className="mr-panel-scroll">
+        <p className="mr-panel-hint">Every page — tap to jump.</p>
+        <div className="mr-thumb-grid mr-panel-grid" ref={pagesGridRef} onScroll={savePagesScroll}>
+          {Array.from({ length: total }, (_, i) => i + 1).map(p => (
+            <ThumbTile
+              key={p}
+              page={p}
+              src={pageImageUrl(file.subj, file.file, p, total)}
+              selected={p === page}
+              onGo={() => goToPage(p)}
+              eager={p <= 12}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+  if (studyTab === 'bookmarks') {
+    return (
+      <div className="mr-panel-scroll">
+        {marks.length === 0 ? (
+          <div className="mr-panel-empty">
+            <p className="mr-panel-empty-title">No page marks yet.</p>
+            <p className="mr-panel-empty-sub">Name the page you&rsquo;re on and save it for later.</p>
+            <button type="button" className="mr-panel-cta" onClick={() => openSheet('pages')}>
+              BROWSE PAGES
+            </button>
+          </div>
+        ) : (
+          <div className="mr-mark-list">
+            {marks.map(m => (
+              <div key={m.ts} className="mr-mark-row">
+                <button type="button" className="mr-mark-jump" onClick={() => goToPage(m.page)}
+                  aria-label={`Jump to ${m.name}, page ${m.page}`}>
+                  <span className="mr-mark-name">{m.name}</span>
+                  <span className="mr-mark-page">PAGE {m.page}</span>
+                </button>
+                <button type="button" className="mr-del" onClick={() => deleteMark(m.ts)}
+                  aria-label={`Delete mark ${m.name}`}>✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+  if (studyTab === 'notes') {
+    return (
+      <div className="mr-panel-scroll">
+        {notes.length === 0 ? (
+          <div className="mr-panel-empty">
+            <p className="mr-panel-empty-title">No notes yet.</p>
+            <p className="mr-panel-empty-sub">Capture the idea while it&rsquo;s on the page.</p>
+            <button type="button" className="mr-panel-cta" onClick={() => openSheet('notes')}>
+              ADD A NOTE ON THIS PAGE
+            </button>
+          </div>
+        ) : (
+          <>
+            <button type="button" className="mr-panel-cta mr-panel-cta-row" onClick={() => openSheet('notes')}>
+              ADD A NOTE ON THIS PAGE
+            </button>
+            <div className="mr-note-list">
+              {notes.map(n => (
+                <div key={n.ts} className="mr-note">
+                  <button type="button" className="mr-note-body" onClick={() => goToPage(n.page)}
+                    aria-label={`Jump to note on page ${n.page}`}>
+                    <span className="mr-note-page">PAGE {n.page}</span>
+                    <span className="mr-note-text">{n.text}</span>
+                  </button>
+                  <button type="button" className="mr-copy" onClick={() => copyNote(n.text, n.ts)}
+                    aria-label={copiedTs === n.ts ? 'Note copied' : `Copy note from page ${n.page}`}>
+                    {copiedTs === n.ts ? '✓' : '⧉'}
+                  </button>
+                  <button type="button" className="mr-del" onClick={() => deleteNote(n.ts)} aria-label="Delete note">✕</button>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
+  // ink = highlights + drawings, grouped by page
+  return (
+    <div className="mr-panel-scroll">
+      {inkPages.length === 0 ? (
+        <div className="mr-panel-empty">
+          <p className="mr-panel-empty-title">No highlights yet.</p>
+          <p className="mr-panel-empty-sub">Highlight key passages or sketch over the page — they&rsquo;ll live here.</p>
+        </div>
+      ) : (
+        <div className="mr-mark-list">
+          {inkPages.map(({ page: p, count }) => (
+            <div key={p} className="mr-mark-row">
+              <button type="button" className="mr-mark-jump" onClick={() => goToPage(p)}
+                aria-label={`Jump to page ${p}, ${count} annotations`}>
+                <span className="mr-mark-name">Page {p}</span>
+                <span className="mr-mark-page">{count} STROKE{count === 1 ? '' : 'S'}</span>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ================= FIND compact panel ================= */
+
+function FindPanel({ ftQuery, setFtQuery, ftLoading, ftTotalMatches, ftPages, ftIdx,
+  ftStep, ftHits, findInputRef, goToPage, openSheet }: {
+  ftQuery: string;
+  setFtQuery: (q: string) => void;
+  ftLoading: boolean;
+  ftTotalMatches: number;
+  ftPages: number[];
+  ftIdx: number;
+  ftStep: (dir: 1 | -1) => void;
+  ftHits: Array<{ page_number: number; snippet: string; match_count: number }>;
+  findInputRef: React.RefObject<HTMLInputElement | null>;
+  goToPage: (p: number) => void;
+  openSheet: (s: 'pages') => void;
+}) {
+  return (
+    <div className="mr-findpanel">
+      <div className="mr-findbar">
+        <input
+          ref={findInputRef}
+          value={ftQuery}
+          onChange={e => setFtQuery(e.target.value)}
+          placeholder="Search in this document…"
+          aria-label="Search document text"
+          enterKeyHint="search"
+        />
+        <span className="mr-findcount" aria-live="polite">
+          {ftLoading ? '…' : `${ftTotalMatches} HIT${ftTotalMatches === 1 ? '' : 'S'}`}
+        </span>
+        {ftPages.length > 0 && (
+          <span className="mr-findpos" aria-hidden="true">{ftIdx + 1}/{ftPages.length}</span>
+        )}
+        <button type="button" className="mr-findnav" onClick={() => ftStep(-1)}
+          disabled={!ftPages.length} aria-label="Previous match">‹</button>
+        <button type="button" className="mr-findnav" onClick={() => ftStep(1)}
+          disabled={!ftPages.length} aria-label="Next match">›</button>
+        <button type="button" className="mr-findpages" onClick={() => openSheet('pages')}
+          aria-label="Jump to a page">PAGES</button>
+      </div>
+      <div className="mr-ft-list mr-findresults">
+        {ftHits.map((h, i) => (
+          <button
+            type="button"
+            key={`${h.page_number}-${i}`}
+            className="mr-ft-hit"
+            onClick={() => goToPage(h.page_number)}
+            aria-label={`Go to page ${h.page_number}`}
+          >
+            <span className="mr-ft-page">P. {h.page_number}</span>
+            <span className="mr-ft-snippet">{h.snippet}</span>
+          </button>
+        ))}
+        {ftQuery.trim().length >= 2 && !ftLoading && ftHits.length === 0 && (
+          <p className="mr-empty">No matches for “{ftQuery.trim()}”.</p>
+        )}
+      </div>
     </div>
   );
 }
