@@ -1,14 +1,16 @@
 /* ============================================================
    K/IND Library v3 — Search page (ChatGPT Round A, desktop-only).
-   Dense discovery view. Tokens from src/styles/tokens.css with
+   Instrument discovery view. Tokens from src/styles/tokens.css with
    fallbacks so this page renders before/after that file lands.
+   Round A 2026-11-04: Blur Text title, 58px instrument field, curated
+   result cards (glare, 3px lift, kbd-only selected outline).
    ============================================================ */
 
 .kiA-page {
   max-width: 1040px;
   margin: 0 auto;
   padding: 40px 32px 64px;
-  color: var(--text, #F0EDE5);
+  color: var(--text, #EDEAE2);
   font-family: var(--font-ui, Inter, system-ui, sans-serif);
 }
 
@@ -21,45 +23,90 @@
   font-size: 11px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--text-muted, #6B7585);
+  color: var(--text-muted, #69778D);
+}
+
+.kiA-eyebrow-search {
+  min-height: 16px;
+  margin-bottom: 12px;
+}
+
+.kiA-eyebrow-search .shiny-text {
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
 }
 
 .kiA-title {
   margin: 0;
   font-family: var(--font-display, "Instrument Serif", Georgia, serif);
   font-weight: 400;
-  font-size: clamp(28px, 3.2vw, 36px);
-  line-height: 1.15;
-  color: var(--text, #F0EDE5);
+  font-size: clamp(44px, 4vw, 52px);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  color: var(--text, #EDEAE2);
 }
 
-/* ---------- search field — v2.0: 60px bar, max 760px ---------- */
+/* BlurText renders a <p> with inline flex — keep the editorial type */
+.kiA-title-blur {
+  max-width: 16ch;
+}
+
+/* ---------- search field — 58px instrument bar, max 760px ---------- */
 .kiA-searchwrap {
+  position: relative;
   margin-bottom: 18px;
   max-width: 760px;
 }
 
 .kiA-input {
   width: 100%;
-  height: 60px;
-  padding: 0 22px;
+  height: 58px;
+  padding: 0 84px 0 22px;
   box-sizing: border-box;
-  background: var(--surface-raised, #141C2A);
-  border: 1px solid var(--border, #273448);
+  background: #101722;
+  border: 1px solid var(--border, rgba(151, 178, 211, 0.13));
   border-radius: 16px;
-  color: var(--text, #F0EDE5);
+  color: var(--text, #EDEAE2);
   font-family: var(--font-ui, Inter, system-ui, sans-serif);
   font-size: 17px;
   outline: none;
-  transition: border-color var(--transition, 220ms cubic-bezier(.2,.8,.2,1)),
-              box-shadow var(--transition, 220ms cubic-bezier(.2,.8,.2,1));
+  transition: border-color 250ms cubic-bezier(.2,.8,.2,1),
+              box-shadow 250ms cubic-bezier(.2,.8,.2,1);
 }
 
-.kiA-input::placeholder { color: var(--text-muted, #6B7585); }
+.kiA-input::placeholder { color: var(--text-muted, #69778D); }
 
 .kiA-input:focus {
-  border-color: var(--cyan, #56E0D1);
-  box-shadow: 0 0 0 3px rgba(86, 224, 209, 0.13);
+  border-color: rgba(70, 190, 190, 0.85);
+  box-shadow: 0 0 0 3px rgba(70, 190, 190, 0.14),
+              0 8px 32px -12px rgba(70, 190, 190, 0.25);
+}
+
+.kiA-cmdk-hint {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--surface, #0B1019);
+  border: 1px solid var(--border, rgba(151, 178, 211, 0.13));
+  border-radius: 8px;
+  padding: 0;
+  cursor: pointer;
+  transition: border-color 250ms cubic-bezier(.2,.8,.2,1);
+}
+
+.kiA-cmdk-hint kbd {
+  display: block;
+  padding: 6px 10px;
+  font-family: var(--font-mono, "IBM Plex Mono", ui-monospace, monospace);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary, #8D9BAF);
+}
+
+.kiA-cmdk-hint:hover {
+  border-color: rgba(70, 190, 190, 0.6);
 }
 
 /* ---------- v2.0 filter bar: discipline + type + sort ---------- */
@@ -104,15 +151,15 @@
   font-size: 10px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--text-muted, #6B7585);
+  color: var(--text-muted, #69778D);
 }
 
 .kiA-sort select {
   padding: 8px 12px;
   border-radius: 10px;
-  border: 1px solid var(--border, #273448);
-  background: var(--surface, #0E131D);
-  color: var(--text, #F0EDE5);
+  border: 1px solid var(--border, rgba(151, 178, 211, 0.13));
+  background: var(--surface, #0B1019);
+  color: var(--text, #EDEAE2);
   font-family: var(--font-ui, Inter, system-ui, sans-serif);
   font-size: 13px;
   cursor: pointer;
@@ -122,7 +169,7 @@
 
 .kiA-sort select:hover,
 .kiA-sort select:focus {
-  border-color: var(--text-muted, #6B7585);
+  border-color: var(--text-muted, #69778D);
 }
 
 /* ---------- subject chips ---------- */
@@ -141,7 +188,7 @@
   background: transparent;
   border: 1px solid var(--border, #273449);
   border-radius: 999px;
-  color: var(--text-secondary, #929DAE);
+  color: var(--text-secondary, #8D9BAF);
   font-family: var(--font-mono, "IBM Plex Mono", ui-monospace, monospace);
   font-size: 11px;
   letter-spacing: 0.08em;
@@ -153,9 +200,9 @@
               background var(--transition, 220ms cubic-bezier(.2,.8,.2,1));
 }
 
-.kiA-chip:hover { color: var(--text, #F0EDE5); border-color: var(--text-muted, #6B7585); }
+.kiA-chip:hover { color: var(--text, #EDEAE2); border-color: var(--text-muted, #69778D); }
 
-.kiA-chip-active { color: var(--text, #F0EDE5); }
+.kiA-chip-active { color: var(--text, #EDEAE2); }
 
 .kiA-chip-dot {
   width: 8px; height: 8px;
@@ -163,14 +210,25 @@
   flex: none;
 }
 
-.kiA-chip-dot-all { background: var(--text-secondary, #929DAE); }
+.kiA-chip-dot-all { background: var(--text-secondary, #8D9BAF); }
 
 .kiA-chip-count {
-  color: var(--text-muted, #6B7585);
+  color: var(--text-muted, #69778D);
   font-variant-numeric: tabular-nums;
 }
 
 .kiA-chip-active .kiA-chip-count { color: inherit; opacity: 0.85; }
+
+/* clear-all: quiet dashed chip that resets the subject filter */
+.kiA-chip-clear {
+  border-style: dashed;
+  color: var(--text-muted, #69778D);
+}
+
+.kiA-chip-clear:hover {
+  color: var(--text, #EDEAE2);
+  border-color: rgba(70, 190, 190, 0.6);
+}
 
 /* ---------- evidence line ---------- */
 .kiA-evidence {
@@ -178,7 +236,7 @@
   font-family: var(--font-mono, "IBM Plex Mono", ui-monospace, monospace);
   font-size: 11px;
   letter-spacing: 0.04em;
-  color: var(--text-muted, #6B7585);
+  color: var(--text-muted, #69778D);
   min-height: 16px;
 }
 
@@ -192,27 +250,29 @@
   gap: 12px;
 }
 
-/* ---------- dense result card (~124px row) ---------- */
+/* ---------- curated result card: 108px instrument row ---------- */
 .kiA-card {
+  position: relative;
   display: flex;
   align-items: stretch;
   gap: 18px;
   width: 100%;
-  min-height: 124px;
-  padding: 14px 18px 14px 14px;
+  min-height: 108px;
+  padding: 13px 18px 13px 13px;
   box-sizing: border-box;
-  background: var(--surface, #0E131D);
+  background: #101722;
   border: 1px solid transparent;
   border-radius: var(--radius-md, 14px);
   color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background var(--transition, 220ms cubic-bezier(.2,.8,.2,1)),
-              box-shadow var(--transition, 220ms cubic-bezier(.2,.8,.2,1)),
-              border-color var(--transition, 220ms cubic-bezier(.2,.8,.2,1)),
-              transform var(--transition, 220ms cubic-bezier(.2,.8,.2,1));
-  animation: kiA-enter 420ms cubic-bezier(.2,.8,.2,1) both;
+  overflow: hidden;
+  transition: background 300ms cubic-bezier(.2,.8,.2,1),
+              box-shadow 300ms cubic-bezier(.2,.8,.2,1),
+              border-color 300ms cubic-bezier(.2,.8,.2,1),
+              transform 300ms cubic-bezier(.2,.8,.2,1);
+  animation: kiA-enter 250ms cubic-bezier(.2,.8,.2,1) backwards;
 }
 
 @keyframes kiA-enter {
@@ -220,22 +280,48 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.kiA-card:hover { background: var(--surface-hover, #1B2637); }
+/* glare sweep on hover */
+.kiA-card::after {
+  content: '';
+  position: absolute;
+  inset: -40% -20%;
+  background: linear-gradient(105deg,
+    transparent 42%,
+    rgba(255, 255, 255, 0.10) 50%,
+    transparent 58%);
+  transform: translateX(-130%) skewX(-8deg);
+  transition: transform 650ms cubic-bezier(.2,.8,.2,1);
+  pointer-events: none;
+}
 
+.kiA-card:hover {
+  background: var(--surface-hover, #172438);
+  border-color: color-mix(in srgb, var(--kiA-subject, #8D9BAF) 45%, transparent);
+  transform: translateY(-3px);
+  box-shadow: 0 16px 36px -14px rgba(0, 0, 0, 0.65),
+              0 0 22px -10px color-mix(in srgb, var(--kiA-subject, #8D9BAF) 55%, transparent);
+}
+
+.kiA-card:hover::after {
+  transform: translateX(130%) skewX(-8deg);
+}
+
+/* keyboard-focus only: outline appears ONLY after arrow-key navigation */
 .kiA-card-selected {
-  box-shadow: 0 0 0 1.5px var(--kiA-subject, #929DAE),
-              0 0 22px -8px var(--kiA-subject, #929DAE);
+  border-color: color-mix(in srgb, var(--kiA-subject, #8D9BAF) 70%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--kiA-subject, #8D9BAF) 70%, transparent),
+              0 0 22px -8px var(--kiA-subject, #8D9BAF);
 }
 
 /* thumbnail */
 .kiA-thumb {
   flex: none;
-  width: 80px;
-  height: 108px;
+  width: 66px;
+  height: 78px;
   align-self: center;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-  background: var(--surface-raised, #141C2A);
+  background: var(--surface-raised, #101A2A);
   border: 1px solid var(--border, #273449);
 }
 
@@ -260,10 +346,10 @@
 .kiA-card-title {
   display: block;
   font-family: var(--font-ui, Inter, system-ui, sans-serif);
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 600;
   line-height: 1.35;
-  color: var(--text, #F0EDE5);
+  color: var(--text, #EDEAE2);
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -274,7 +360,7 @@
   gap: 6px;
   font-family: var(--font-mono, "IBM Plex Mono", ui-monospace, monospace);
   font-size: 11px;
-  color: var(--text-muted, #6B7585);
+  color: var(--text-muted, #69778D);
   letter-spacing: 0.02em;
 }
 
@@ -284,9 +370,8 @@
   flex: none;
 }
 
-/* v2.0: page number of the match — mono, subject-tinted */
 .kiA-meta-page {
-  color: var(--kiA-subject, #929DAE);
+  color: var(--kiA-subject, #8D9BAF);
   font-weight: 600;
 }
 
@@ -297,12 +382,12 @@
   overflow: hidden;
   font-size: 13px;
   line-height: 1.5;
-  color: var(--text-secondary, #929DAE);
+  color: var(--text-secondary, #8D9BAF);
 }
 
 .kiA-mark {
   background: rgba(230, 179, 108, 0.28);
-  color: var(--text, #F0EDE5);
+  color: var(--text, #EDEAE2);
   border-radius: 3px;
   padding: 0 1px;
 }
@@ -317,13 +402,13 @@
   gap: 3px;
   font-family: var(--font-mono, "IBM Plex Mono", ui-monospace, monospace);
   font-size: 10px;
-  color: var(--text-muted, #6B7585);
+  color: var(--text-muted, #69778D);
 }
 
 .kiA-badge-score {
   font-size: 15px;
   font-weight: 600;
-  color: var(--kiA-subject, #929DAE);
+  color: var(--kiA-subject, #8D9BAF);
   font-variant-numeric: tabular-nums;
 }
 
@@ -337,18 +422,18 @@
 .kiA-skel {
   display: flex;
   gap: 18px;
-  min-height: 124px;
-  padding: 14px;
+  min-height: 108px;
+  padding: 13px;
   box-sizing: border-box;
-  background: var(--surface, #0E131D);
+  background: #101722;
   border-radius: var(--radius-md, 14px);
 }
 
 .kiA-skel-thumb {
   flex: none;
-  width: 80px;
-  height: 108px;
-  border-radius: 8px;
+  width: 66px;
+  height: 78px;
+  border-radius: 12px;
 }
 
 .kiA-skel-body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
@@ -364,9 +449,9 @@
 
 .kiA-skel-thumb, .kiA-skel-line {
   background: linear-gradient(100deg,
-    var(--surface-raised, #141C2A) 40%,
-    var(--surface-hover, #1B2637) 50%,
-    var(--surface-raised, #141C2A) 60%);
+    var(--surface-raised, #101A2A) 40%,
+    var(--surface-hover, #172438) 50%,
+    var(--surface-raised, #101A2A) 60%);
   background-size: 200% 100%;
   animation: kiA-shimmer 1.4s linear infinite;
 }
@@ -386,13 +471,13 @@
   margin: 0 0 10px;
   font-family: var(--font-display, "Instrument Serif", Georgia, serif);
   font-size: 24px;
-  color: var(--text, #F0EDE5);
+  color: var(--text, #EDEAE2);
 }
 
 .kiA-empty-tip {
   margin: 0;
   font-size: 13px;
-  color: var(--text-muted, #6B7585);
+  color: var(--text-muted, #69778D);
 }
 
 .kiA-idle { padding-top: 8px; }
@@ -403,7 +488,7 @@
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--text-muted, #6B7585);
+  color: var(--text-muted, #69778D);
 }
 
 .kiA-recent {
@@ -415,10 +500,10 @@
 
 .kiA-recent-chip {
   padding: 8px 16px;
-  background: var(--surface, #0E131D);
+  background: var(--surface, #0B1019);
   border: 1px solid var(--border, #273449);
   border-radius: 999px;
-  color: var(--text-secondary, #929DAE);
+  color: var(--text-secondary, #8D9BAF);
   font-size: 13px;
   cursor: pointer;
   transition: background var(--transition, 220ms cubic-bezier(.2,.8,.2,1)),
@@ -427,16 +512,16 @@
 }
 
 .kiA-recent-chip:hover {
-  background: var(--surface-hover, #1B2637);
-  color: var(--text, #F0EDE5);
-  border-color: var(--text-muted, #6B7585);
+  background: var(--surface-hover, #172438);
+  color: var(--text, #EDEAE2);
+  border-color: var(--text-muted, #69778D);
 }
 
 .kiA-hint {
   margin: 0;
   font-size: 13px;
   line-height: 1.6;
-  color: var(--text-muted, #6B7585);
+  color: var(--text-muted, #69778D);
 }
 
 /* ---------- reduced motion ---------- */
@@ -444,4 +529,5 @@
   .kiA-card { animation: none; }
   .kiA-skel-thumb, .kiA-skel-line { animation: none; }
   .kiA-card, .kiA-input, .kiA-chip, .kiA-recent-chip { transition: none; }
+  .kiA-card::after { display: none; }
 }

@@ -298,3 +298,106 @@
 .reader-shell .reader-hint {
   color: var(--text-muted, #6B7585);
 }
+
+/* ==================================================================
+   ChatGPT Round A 2026-11-04 — reader light refinements (Phase 3).
+   No restructure: same 3-column architecture, compact 64px doc bar,
+   deep blue-black canvas, compact instrument study panels.
+   ================================================================== */
+
+/* 64px top doc bar: 13–14px semibold title + thin cyan 1px line */
+.reader-shell.kiA-v2 .ke-reader-header {
+  min-height: 64px;
+  height: 64px;
+  background: var(--surface-raised, #141C2A);
+  border-bottom: 1px solid color-mix(in srgb, var(--cyan, #56E0D1) 35%, var(--border, #273449));
+}
+
+.reader-shell .ke-reader-title-text {
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+/* thumb rail: cyan selected edge + page numbers */
+.reader-shell .reader-thumb.active {
+  border-color: var(--cyan, #56E0D1);
+  box-shadow: 0 0 0 1px var(--cyan, #56E0D1),
+              0 0 14px -2px color-mix(in srgb, var(--cyan, #56E0D1) 60%, transparent),
+              0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+.reader-shell .reader-thumb .reader-thumb-num {
+  font-family: var(--font-mono, "IBM Plex Mono", monospace);
+  font-variant-numeric: tabular-nums;
+}
+
+/* canvas: deep blue-black surface + vignette (inset shadow stays fixed
+ * while pages scroll); the PDF itself is never darkened */
+.reader-shell .reader-document {
+  background: #060B14;
+  box-shadow: inset 0 0 170px rgba(0, 0, 0, 0.52);
+}
+
+/* soft page shadow stays; paper keeps its original colors */
+.reader-shell .reader-doc-page .ke-reader-page {
+  box-shadow: 0 28px 64px rgba(0, 0, 0, 0.6), 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+/* compact instrument study panels: tighter rows, accent edge per tool */
+.reader-shell .reader-launch-btn {
+  position: relative;
+  padding: 9px 12px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.reader-shell .reader-launch-btn::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--muted, #818A9B);
+}
+
+.reader-shell .reader-launch-btn.kiA-tool-bookmarks::before {
+  background: #F0B86B;
+  box-shadow: 0 0 8px rgba(240, 184, 107, 0.7);
+}
+
+.reader-shell .reader-launch-btn.kiA-tool-notes::before {
+  background: var(--cyan, #56E0D1);
+  box-shadow: 0 0 8px rgba(86, 224, 209, 0.7);
+}
+
+.reader-shell .reader-launch-btn.kiA-tool-contents::before {
+  background: var(--em2, #62A5FF);
+  box-shadow: 0 0 8px rgba(98, 165, 255, 0.7);
+}
+
+.reader-shell .reader-launch-btn .row-title {
+  font-size: 13px;
+}
+
+.reader-shell .reader-launch-btn .row-meta {
+  font-size: 11px;
+}
+
+.reader-shell .reader-launch-btn:hover {
+  border-color: color-mix(in srgb, var(--cyan, #56E0D1) 40%, var(--border, #273449));
+}
+
+/* bottom bar: grouped instrument controls, cyan-tinted top line */
+.reader-shell .reader-bottombar {
+  border-top: 1px solid color-mix(in srgb, var(--cyan, #56E0D1) 22%, var(--border, #273449));
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reader-shell .reader-document {
+    box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.4);
+  }
+}

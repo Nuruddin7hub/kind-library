@@ -1,0 +1,163 @@
+/* ============================================================
+   K/IND FIELD EDITION — mobile background system
+   (ChatGPT Round B critique, 2026-11-04, 1420 loop — "OBSIDIAN ATLAS").
+   EXACT SPEC:
+     --void #070a10 · --navy #0b1422 · --panel #101c2b
+     deep midnight base + broad top atmospheric glow +
+     SUBJECT-COLORED lighting via .mobile-shell[data-subject] +
+     32px grid fading toward bottom + grain +
+     soft radial illumination behind cards · continuous while scrolling.
+   MOBILE ONLY — every selector is scoped to .mobile-shell, which exists
+   only on the mobile branch of App.tsx. Desktop is untouched.
+   ============================================================ */
+
+.mobile-shell {
+  --void: #070a10;
+  --navy: #0b1422;
+  --panel: #101c2b;
+  --field-teal: #32d3bd;
+  --field-blue: #579dff;
+  --field-violet: #a77bff;
+  --field-amber: #d9a35b;
+  position: relative;
+  background-color: var(--void);
+  background-repeat: no-repeat;
+}
+
+/* ——— film grain .022, continuous while scrolling ——— */
+.mobile-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0.022;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ——— 32px grid, fading toward the bottom ——— */
+.mobile-shell::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(140, 170, 205, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(140, 170, 205, 0.055) 1px, transparent 1px);
+  background-size: 32px 32px;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 34%, transparent 78%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 34%, transparent 78%);
+}
+
+/* ——— soft radial illumination behind cards (page-agnostic) ——— */
+.mobile-shell .mobile-cardlight {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(120% 46% at 50% 30%, rgba(150, 180, 220, 0.045), transparent 62%);
+}
+
+/* ——— page identities: broad top atmospheric glow + per-page lighting ——— */
+
+/* HOME — teal/blue field */
+.mobile-shell.ap-page-home {
+  background-image:
+    radial-gradient(96% 48% at 50% -8%, rgba(50, 211, 189, 0.17), transparent 62%),
+    radial-gradient(70% 40% at 85% 12%, rgba(87, 157, 255, 0.13), transparent 60%),
+    radial-gradient(80% 50% at 50% 108%, rgba(41, 43, 101, 0.35), transparent 65%);
+}
+
+/* LIBRARY + SAVED — navy/blue archive */
+.mobile-shell.ap-page-library,
+.mobile-shell.ap-page-saved {
+  background-image:
+    radial-gradient(88% 36% at 50% -6%, rgba(87, 157, 255, 0.15), transparent 60%),
+    radial-gradient(60% 34% at 12% 4%, rgba(50, 211, 189, 0.07), transparent 55%),
+    linear-gradient(180deg, rgba(11, 20, 34, 0.55), transparent 34%);
+}
+
+/* SEARCH — navy with a teal instrument glow */
+.mobile-shell.ap-page-search {
+  background-image:
+    radial-gradient(76% 32% at 50% -6%, rgba(50, 211, 189, 0.12), transparent 58%),
+    radial-gradient(60% 30% at 90% 6%, rgba(87, 157, 255, 0.1), transparent 55%),
+    linear-gradient(180deg, rgba(11, 20, 34, 0.5), transparent 30%);
+}
+
+/* ——— subject-colored lighting via data-subject (exact spec) ——— */
+
+/* EM2 — deep blue */
+.mobile-shell[data-subject="em2"] {
+  background-color: #070a12;
+  background-image:
+    radial-gradient(88% 38% at 50% -6%, rgba(87, 157, 255, 0.17), transparent 60%),
+    radial-gradient(52% 30% at 88% 8%, rgba(87, 157, 255, 0.09), transparent 55%),
+    linear-gradient(180deg, #0c1322, #070a12 42%);
+}
+
+/* SIGNALS — violet */
+.mobile-shell[data-subject="signals"] {
+  background-color: #0a0812;
+  background-image:
+    radial-gradient(88% 38% at 50% -6%, rgba(167, 123, 255, 0.16), transparent 60%),
+    radial-gradient(52% 30% at 10% 8%, rgba(167, 123, 255, 0.08), transparent 55%),
+    linear-gradient(180deg, #120e20, #0a0812 42%);
+}
+
+/* FIS — bronze/amber: bronze gradients + warm radial light + paper grain
+ * + architectural linework + spotlight */
+.mobile-shell[data-subject="fis"] {
+  background-color: #0b0a08;
+  background-image:
+    radial-gradient(88% 40% at 50% -6%, rgba(217, 163, 91, 0.17), transparent 60%),
+    radial-gradient(46% 30% at 50% 34%, rgba(217, 163, 91, 0.07), transparent 60%),
+    /* architectural linework: faint vertical rules */
+    repeating-linear-gradient(90deg, rgba(217, 163, 91, 0.035) 0 1px, transparent 1px 56px),
+    linear-gradient(180deg, #14110c, #0b0a08 42%);
+}
+/* paper grain over the FIS field (behind content, above the base layers) */
+.mobile-shell[data-subject="fis"] .mobile-papergrain {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.55' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23p)'/%3E%3C/svg%3E");
+}
+
+/* DIGITAL — circuit/teal: Circuit Lab accents #42D9B5 / #1C938A / #0A2425 */
+.mobile-shell[data-subject="digital"] {
+  background-color: #0a2425;
+  background-image:
+    radial-gradient(88% 38% at 78% -6%, rgba(66, 217, 181, 0.18), transparent 60%),
+    radial-gradient(55% 30% at 8% 6%, rgba(28, 147, 138, 0.12), transparent 55%),
+    linear-gradient(180deg, #0d2b2c, #0a2425 40%, #060d0f 100%);
+}
+
+/* The mobile page content scrolls above the fixed grain/grid layers. */
+.mobile-shell > .mobile-page,
+.mobile-shell > .msi {
+  position: relative;
+  z-index: 3;
+}
+
+/* Subject index pages: keep the component transparent so the
+ * mobile-shell identity shows through edge to edge. */
+.mobile-shell[data-subject] .msi {
+  background: transparent;
+}
+
+/* Mobile pages must not paint their own opaque page background over the
+ * field identity. Component surfaces (cards, sheets) keep theirs. */
+.mobile-shell.ap-page-home .mh,
+.mobile-shell.ap-page-library .ml-root,
+.mobile-shell.ap-page-search .ms-root {
+  background: transparent;
+}
+
+/* Reduced motion: keep the static identity, drop nothing visual. */
+@media (prefers-reduced-motion: reduce) {
+  .mobile-shell::after { display: none; }
+}

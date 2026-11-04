@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
+import BlurText from '../bits/BlurText';
+import ShinyText from '../bits/ShinyText';
 import {
   SUBJECTS,
   subjectOf,
@@ -92,6 +94,27 @@ export default function SearchPage(props: SearchPageProps) {
   } = props;
 
   const [recent, setRecent] = useState<string[]>(readRecent);
+  // Rotating eyebrow: DISCOVER / RETRIEVE / EXPLORE (static when reduced-motion).
+  const [eyebrowWord, setEyebrowWord] = useState(0);
+  const [reduceMotion] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+  useEffect(() => {
+    if (reduceMotion) return;
+    const iv = window.setInterval(() => setEyebrowWord(w => (w + 1) % 3), 3400);
+    return () => window.clearInterval(iv);
+  }, [reduceMotion]);
+  // Keyboard-focus only: the selected-card outline appears ONLY after the
+  // user actually navigates with the arrow keys — never a permanent outline
+  // on the first result. Mouse hover clears it.
+  const [kbdSel, setKbdSel] = useState(false);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') setKbdSel(true);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   // Refresh the chips whenever the field is cleared back to empty.
   useEffect(() => {
@@ -120,8 +143,27 @@ export default function SearchPage(props: SearchPageProps) {
   return (
     <div className="kiA-page">
       <header className="kiA-head">
-        <p className="kiA-eyebrow">Discover</p>
-        <h1 className="kiA-title">Search the archive</h1>
+        <p className="kiA-eyebrow kiA-eyebrow-search" key={eyebrowWord}>
+          <ShinyText
+            text={['DISCOVER', 'RETRIEVE', 'EXPLORE'][eyebrowWord]}
+            color="#6B7585"
+            shineColor="#CDE8E4"
+            speed={5}
+            delay={1}
+            trigger="loop"
+            glow={0}
+            disabled={reduceMotion}
+          />
+        </p>
+        <BlurText
+          text="Search the archive."
+          animateBy="words"
+          direction="top"
+          delay={100}
+          stepDuration={0.45}
+          trigger="load"
+          className="kiA-title kiA-title-blur"
+        />
       </header>
 
       <div className="kiA-searchwrap">
@@ -136,6 +178,14 @@ export default function SearchPage(props: SearchPageProps) {
           spellCheck={false}
           autoComplete="off"
         />
+        <button
+          type="button"
+          className="kiA-cmdk-hint"
+          onClick={() => inputRef.current?.focus()}
+          aria-label="Focus search (Command K)"
+        >
+          <kbd>⌘K</kbd>
+        </button>
       </div>
 
       {/* v2.0 filter bar: discipline + type + sort, working together */}
@@ -177,6 +227,16 @@ export default function SearchPage(props: SearchPageProps) {
               </button>
             );
           })}
+          {searchSubject !== 'all' && (
+            <button
+              type="button"
+              className="kiA-chip kiA-chip-clear"
+              onClick={() => onSubjectChange('all')}
+              aria-label="Clear subject filter"
+            >
+              Clear ✕
+            </button>
+          )}
         </div>
 
         <div className="kiA-filterbar-row">
@@ -252,7 +312,7 @@ export default function SearchPage(props: SearchPageProps) {
             const color = v2SubjectColor(hit.subj);
             const file = hit.file || hit.key.split('::')[2] || '';
             const thumb = pageImageUrl(hit.subj, file, 1, hit.pages);
-            const isSel = i === selected;
+            const isSel = i === selected && kbdSel;
             const preview = hit.excerpt || hit.passages?.[0]?.snippet || '';
             const pg = hitPage(hit);
             return (
@@ -262,7 +322,7 @@ export default function SearchPage(props: SearchPageProps) {
                   className={'kiA-card' + (isSel ? ' kiA-card-selected' : '')}
                   style={{ '--kiA-subject': color, animationDelay: `${Math.min(i, 9) * 36}ms` } as CSSProperties}
                   onClick={() => { onSelect(i); onOpen(hit); }}
-                  onMouseEnter={() => { if (i !== selected) onSelect(i); }}
+                  onMouseEnter={() => { setKbdSel(false); if (i !== selected) onSelect(i); }}
                 >
                   <span className="kiA-thumb" aria-hidden="true">
                     {thumb && file ? (

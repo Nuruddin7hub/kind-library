@@ -1,36 +1,31 @@
-/* K/IND Library — Overview page (desktop). All classes prefixed kiA-. */
+/* K/IND Library — Overview page (desktop). All classes prefixed kiA-.
+ * Archive Control Room — ChatGPT Round A, 2026-11-04. */
 
 .kiA {
   max-width: 1600px; /* v2.0 spec */
   margin: 0 auto;
   padding: 0 48px 64px;
-  color: var(--text, #F0EDE5);
+  color: var(--text, #EDEAE2);
 }
 
-/* ---------------- Hero ---------------- */
+/* ---------------- Hero: Archive Control Room ---------------- */
 
 .kiA-hero {
   position: relative;
-  min-height: 340px;
-  padding: 72px 0 56px;
+  padding: 56px 0 48px;
   overflow: hidden;
 }
 
-.kiA-hero-aurora {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 35%;
-  pointer-events: none;
+.kiA-controlroom {
+  min-height: 490px;
 }
 
 .kiA-hero-inner {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-  gap: 48px;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 56px;
   align-items: center;
 }
 
@@ -39,36 +34,48 @@
   font-size: 11px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--text-muted, #6B7585);
+  color: var(--text-muted, #69778D);
   margin: 0 0 18px;
 }
 
-/* v2.0: 76px Instrument Serif headline, React Bits SplitText entrance.
- * SplitText renders inline-block with className appended — the wrapper h1
- * carries the editorial type styles, which inherit into the split words. */
+.kiA-eyebrow .shiny-text {
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+
+/* Split Text headline — word-by-word entrance, once per load.
+ * Spec: 68–76px serif, warm ivory #E8E4DB, lh 0.98, max 700px. */
 .kiA-headline {
   display: block;
   font-family: var(--font-display, "Instrument Serif", serif);
-  font-size: clamp(56px, 5.5vw, 76px);
-  line-height: 1.02;
+  font-size: clamp(56px, 5.4vw, 74px);
+  line-height: 0.98;
   letter-spacing: -0.015em;
-  color: var(--text, #F0EDE5);
+  color: #E8E4DB;
   font-weight: 400;
   margin: 0;
-  max-width: 12ch;
+  max-width: 700px;
+}
+
+.kiA-headline .split-word {
+  display: inline-block;
+  padding-bottom: 0.08em;
+  margin-bottom: -0.08em;
 }
 
 .kiA-hero-sub {
   font-family: var(--font-ui, Inter, sans-serif);
   font-size: 17px;
-  color: var(--text-secondary, #929DAE);
-  margin: 22px 0 26px;
+  color: var(--text-secondary, #8D9BAF);
+  margin: 20px 0 26px;
 }
 
-/* v2.0: archive stats with CountUp — real data, never hardcoded */
+/* stats row with vertical separators, CountUp once */
 .kiA-stats {
   display: flex;
-  gap: 36px;
+  align-items: stretch;
+  gap: 0;
   margin: 0 0 30px;
   padding: 0;
 }
@@ -76,14 +83,26 @@
 .kiA-stat {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
+  padding-right: 36px;
+  margin-right: 36px;
+  border-right: 1px solid var(--border, rgba(151, 178, 211, 0.13));
+}
+
+/* Each .kiA-stat sits alone inside a [role=listitem] wrapper, so the
+ * row-end reset must target the last wrapper — :last-child on .kiA-stat
+ * itself would match every stat. */
+.kiA-stats > div:last-child .kiA-stat {
+  border-right: none;
+  padding-right: 0;
+  margin-right: 0;
 }
 
 .kiA-stat-num {
   font-family: var(--font-mono, "IBM Plex Mono", monospace);
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 500;
-  color: var(--text, #F0EDE5);
+  color: var(--text, #EDEAE2);
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
@@ -95,75 +114,247 @@
 
 .kiA-stat-label {
   font-family: var(--font-mono, "IBM Plex Mono", monospace);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.22em;
-  color: var(--text-muted, #6B7585);
+  color: var(--text-muted, #69778D);
 }
 
-.kiA-search {
-  display: flex;
-  gap: 10px;
-  max-width: 540px;
-}
+/* ---------------- Specular button (primary actions) ---------------- */
 
-.kiA-search-input {
-  flex: 1;
-  min-width: 0;
-  height: 52px;
-  background: var(--surface-raised, #141C2A);
-  border: 1px solid var(--border, #273449);
-  border-radius: var(--radius-md, 14px);
-  color: var(--text, #F0EDE5);
-  padding: 0 18px;
-  font-family: var(--font-ui, Inter, sans-serif);
-  font-size: 15px;
-  outline: none;
-  transition: var(--transition, 220ms cubic-bezier(.2,.8,.2,1));
-}
-
-.kiA-search-input::placeholder {
-  color: var(--text-muted, #6B7585);
-}
-
-.kiA-search-input:focus {
-  border-color: var(--text-secondary, #929DAE);
-}
-
-.kiA-search-btn {
-  height: 52px;
-  padding: 0 28px;
-  background: var(--text, #F0EDE5);
-  color: #080A0F;
+.kiA-specular {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  height: 54px;
+  padding: 0 30px;
+  background: var(--text, #EDEAE2);
+  color: #07090E;
   border: none;
   border-radius: var(--radius-md, 14px);
   font-family: var(--font-ui, Inter, sans-serif);
   font-weight: 600;
   font-size: 15px;
   cursor: pointer;
-  transition: var(--transition, 220ms cubic-bezier(.2,.8,.2,1));
+  overflow: hidden;
+  isolation: isolate;
+  transition: transform 250ms cubic-bezier(.2,.8,.2,1),
+              box-shadow 250ms cubic-bezier(.2,.8,.2,1);
 }
 
-.kiA-search-btn:hover {
-  opacity: 0.85;
+/* specular sheen sweep */
+.kiA-specular::after {
+  content: '';
+  position: absolute;
+  inset: -40% -20%;
+  z-index: 1;
+  background: linear-gradient(105deg,
+    transparent 42%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 58%);
+  transform: translateX(-130%) skewX(-8deg);
+  transition: transform 650ms cubic-bezier(.2,.8,.2,1);
+  pointer-events: none;
 }
 
-/* Knowledge-map artwork */
+.kiA-specular:hover::after {
+  transform: translateX(130%) skewX(-8deg);
+}
+
+.kiA-specular:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 36px -10px rgba(240, 237, 229, 0.35);
+}
+
+.kiA-specular > * {
+  position: relative;
+  z-index: 2;
+}
+
+.kiA-specular-arrow {
+  font-weight: 400;
+  transition: transform 250ms cubic-bezier(.2,.8,.2,1);
+}
+
+.kiA-specular:hover .kiA-specular-arrow {
+  transform: translateX(4px);
+}
+
+/* ghost variant for secondary actions on dark */
+.kiA-specular--ghost {
+  background: transparent;
+  color: var(--text, #EDEAE2);
+  border: 1px solid var(--border, rgba(151, 178, 211, 0.13));
+  height: 50px;
+}
+
+.kiA-specular--ghost::after {
+  background: linear-gradient(105deg,
+    transparent 42%,
+    rgba(255, 255, 255, 0.14) 50%,
+    transparent 58%);
+}
+
+.kiA-specular--ghost:hover {
+  border-color: var(--cyan, #42D9D0);
+  box-shadow: 0 12px 32px -12px rgba(86, 224, 209, 0.45);
+}
+
+.kiA-hero-divider {
+  border: none;
+  border-top: 1px solid var(--border, rgba(151, 178, 211, 0.13));
+  margin: 34px 0 30px;
+  max-width: 560px;
+}
+
+/* ---------------- Study activity card (in-hero) ---------------- */
+
+.kiA-continue .kiA-eyebrow {
+  margin-bottom: 14px;
+}
+
+.kiA-activity {
+  position: relative;
+  max-width: 560px;
+  padding: 26px 28px 28px;
+  overflow: hidden;
+}
+
+.kiA-activity::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--subj);
+  box-shadow: 0 0 18px var(--subj);
+}
+
+.kiA-activity-kicker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono, "IBM Plex Mono", monospace);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--subj);
+  margin: 0 0 12px;
+}
+
+.kiA-activity-title {
+  font-family: var(--font-display, "Instrument Serif", serif);
+  font-weight: 400;
+  font-size: clamp(22px, 2.2vw, 28px);
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  color: var(--text, #EDEAE2);
+  margin: 0 0 10px;
+}
+
+.kiA-activity-meta {
+  font-family: var(--font-mono, "IBM Plex Mono", monospace);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, #69778D);
+  margin: 0 0 16px;
+}
+
+.kiA-activity .kiA-progress {
+  margin-bottom: 22px;
+}
+
+.kiA-activity-btn {
+  height: 48px;
+  font-size: 14px;
+}
+
+/* compact discovery state — replaces the big empty card */
+.kiA-qa-empty-compact {
+  max-width: 560px;
+  padding: 24px 26px;
+  border: 1px dashed rgba(151, 178, 211, 0.25);
+  border-radius: var(--radius-lg, 20px);
+  background: var(--surface, #0B1019);
+}
+
+.kiA-qa-empty-compact-title {
+  font-family: var(--font-ui, Inter, sans-serif);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text, #EDEAE2);
+  margin: 0 0 6px;
+}
+
+.kiA-qa-empty-compact-sub {
+  font-family: var(--font-ui, Inter, sans-serif);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-secondary, #8D9BAF);
+  margin: 0 0 18px;
+}
+
+.kiA-specular--sm {
+  height: 44px;
+  padding: 0 22px;
+  font-size: 13px;
+}
+
+/* ---------------- Network frame (right column) ---------------- */
 
 .kiA-hero-art {
   display: flex;
   justify-content: center;
 }
 
-.kiA-kmap {
+.kiA-netframe {
+  position: relative;
   width: 100%;
-  max-width: 420px;
-  height: auto;
+  max-width: 460px;
+  aspect-ratio: 380 / 300;
+  border: 1px solid var(--border, rgba(151, 178, 211, 0.13));
+  border-radius: var(--radius-lg, 20px);
+  background:
+    radial-gradient(120% 120% at 50% 40%, rgba(18, 61, 96, 0.35), transparent 70%),
+    var(--surface, #0B1019);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.kiA-constellation {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.kiA-constellation-particles {
+  -webkit-mask-image: radial-gradient(88% 88% at 50% 50%, black 40%, transparent 92%);
+  mask-image: radial-gradient(88% 88% at 50% 50%, black 40%, transparent 92%);
+}
+
+.kiA-net-glow {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(60% 55% at 50% 45%, rgba(86, 224, 209, 0.08), transparent 75%);
+}
+
+.kiA-kmap {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.kiA-cgrid-line {
+  stroke: rgba(130, 166, 200, 0.16);
 }
 
 .kiA-kmap-link {
-  stroke: var(--border, #273449);
+  stroke: rgba(150, 180, 220, 0.35);
   stroke-width: 1;
-  opacity: 0.75;
 }
 
 .kiA-kmap-ring {
@@ -173,11 +364,76 @@
   opacity: 0.5;
   transform-box: fill-box;
   transform-origin: center;
-  animation: kiA-ring 2.6s ease-out infinite;
+  animation: kiA-ring 4.8s ease-out infinite;
 }
 
 .kiA-kmap-node {
-  filter: drop-shadow(0 0 6px currentColor);
+  filter: drop-shadow(0 0 8px currentColor);
+}
+
+.kiA-cnode {
+  cursor: pointer;
+  outline: none;
+}
+
+.kiA-cnode .kiA-kmap-node,
+.kiA-cnode .kiA-cnode-halo {
+  transition: transform 220ms cubic-bezier(.2,.8,.2,1), opacity 220ms ease;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.kiA-cnode:hover .kiA-kmap-node,
+.kiA-cnode:focus-visible .kiA-kmap-node {
+  transform: scale(1.35);
+}
+
+.kiA-cnode:hover .kiA-cnode-halo,
+.kiA-cnode:focus-visible .kiA-cnode-halo {
+  opacity: 1.4;
+}
+
+.kiA-cnode:focus-visible .kiA-kmap-node {
+  stroke: #DCE8F4;
+  stroke-width: 1.5;
+}
+
+/* tooltip: hidden until hover/focus, shows subject name + doc count */
+.kiA-ctip {
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 200ms ease, transform 200ms cubic-bezier(.2,.8,.2,1);
+  pointer-events: none;
+}
+
+.kiA-cnode:hover .kiA-ctip,
+.kiA-cnode:focus-visible .kiA-ctip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.kiA-ctip-box {
+  fill: rgba(11, 16, 25, 0.94);
+  stroke: rgba(151, 178, 211, 0.28);
+  stroke-width: 1;
+}
+
+.kiA-ctip-title {
+  font-family: var(--font-ui, Inter, sans-serif);
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--text, #EDEAE2);
+}
+
+.kiA-ctip-count {
+  font-family: var(--font-mono, "IBM Plex Mono", monospace);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+
+/* small motes travelling along the connection lines */
+.kiA-kmap-mote {
+  filter: drop-shadow(0 0 5px currentColor);
 }
 
 @keyframes kiA-ring {
@@ -186,7 +442,7 @@
     opacity: 0.7;
   }
   100% {
-    transform: scale(2.2);
+    transform: scale(2.4);
     opacity: 0;
   }
 }
@@ -194,8 +450,15 @@
 .kiA-kmap-label {
   font-family: var(--font-mono, "IBM Plex Mono", monospace);
   font-size: 10px;
-  letter-spacing: 0.12em;
-  fill: var(--text-muted, #6B7585);
+  letter-spacing: 0.14em;
+  fill: var(--text-secondary, #8D9BAF);
+}
+
+.kiA-kmap-caption {
+  font-family: var(--font-mono, "IBM Plex Mono", monospace);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  fill: var(--text-muted, #69778D);
 }
 
 /* ---------------- Sections ---------------- */
@@ -204,11 +467,20 @@
   padding: 44px 0;
 }
 
+.kiA-hero-anim,
+.kiA-section-anim {
+  display: block;
+}
+
+.kiA-section-anim {
+  visibility: hidden;
+}
+
 .kiA-section-title {
   font-family: var(--font-display, "Instrument Serif", serif);
   font-weight: 400;
   font-size: clamp(28px, 3vw, 36px);
-  color: var(--text, #F0EDE5);
+  color: var(--text, #EDEAE2);
   margin: 0 0 24px;
 }
 
@@ -229,7 +501,20 @@
   flex-direction: column;
   height: 100%;
   border-radius: 12px;
-  padding: 10px 12px;
+  padding: 18px 20px 20px;
+}
+
+.kiA-subj-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20px;
+  right: 20px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--subj);
+  box-shadow: 0 0 16px var(--subj);
+  opacity: 0.85;
 }
 
 .kiA-subj-card::after {
@@ -265,14 +550,14 @@
   font-family: var(--font-mono, "IBM Plex Mono", monospace);
   font-size: 22px;
   font-weight: 500;
-  color: var(--text, #F0EDE5);
+  color: var(--text, #EDEAE2);
   font-variant-numeric: tabular-nums;
 }
 
 .kiA-subj-count-suffix {
   font-size: 11px;
   letter-spacing: 0.14em;
-  color: var(--text-muted, #6B7585);
+  color: var(--text-muted, #69778D);
   font-weight: 400;
 }
 
@@ -286,12 +571,12 @@
 
 .kiA-art {
   width: 100%;
-  height: 96px;
+  height: 120px;
   display: block;
 }
 
 .kiA-art-faint {
-  stroke: var(--border, #273448);
+  stroke: var(--border, rgba(151, 178, 211, 0.13));
   stroke-width: 1;
   opacity: 0.35;
 }
@@ -315,131 +600,36 @@
 
 .kiA-subj-title {
   font-family: var(--font-display, "Instrument Serif", serif);
-  font-size: 24px;
+  font-size: 30px;
   font-weight: 400;
   letter-spacing: -0.01em;
-  color: var(--text, #F0EDE5);
+  color: var(--text, #EDEAE2);
   margin: 0 0 6px;
+}
+
+.kiA-subj-cta {
+  margin-top: auto;
+  padding-top: 14px;
+  font-family: var(--font-mono, "IBM Plex Mono", monospace);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--subj);
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 220ms ease, transform 220ms cubic-bezier(.2,.8,.2,1);
+}
+
+.magic-bento__card:hover .kiA-subj-cta {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .kiA-subj-desc {
   font-family: var(--font-ui, Inter, sans-serif);
   font-size: 13px;
-  color: var(--text-secondary, #929DAE);
+  color: var(--text-secondary, #8D9BAF);
   margin: 0;
-}
-
-/* ---------------- Continue studying: horizontal featured band ---------------- */
-
-.kiA-feat {
-  display: flex;
-  gap: 40px;
-  align-items: center;
-  background:
-    radial-gradient(120% 160% at 0% 0%, color-mix(in srgb, var(--subj) 9%, transparent), transparent 55%),
-    var(--surface, #0E131D);
-  border: 1px solid var(--border, #273448);
-  border-radius: var(--radius-lg, 20px);
-  padding: 36px 40px;
-  position: relative;
-  overflow: hidden;
-}
-
-.kiA-feat::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: var(--subj);
-  box-shadow: 0 0 18px var(--subj);
-}
-
-.kiA-feat-tilt {
-  flex: none;
-  border-radius: var(--radius-md, 14px);
-}
-
-.kiA-feat-cover {
-  width: 190px;
-  aspect-ratio: 3 / 4;
-  object-fit: cover;
-  display: block;
-  border-radius: var(--radius-md, 14px);
-  border: 1px solid var(--border, #273448);
-  background: var(--surface-raised, #141C2A);
-  box-shadow: 0 30px 60px -18px rgba(0, 0, 0, 0.7);
-}
-
-.kiA-feat-body {
-  flex: 1;
-  min-width: 0;
-}
-
-.kiA-feat-kicker {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-family: var(--font-mono, "IBM Plex Mono", monospace);
-  font-size: 11px;
-  letter-spacing: 0.24em;
-  color: var(--subj);
-  margin: 0 0 14px;
-}
-
-.kiA-feat-title {
-  font-family: var(--font-display, "Instrument Serif", serif);
-  font-weight: 400;
-  font-size: clamp(26px, 2.6vw, 38px);
-  line-height: 1.1;
-  letter-spacing: -0.01em;
-  color: var(--text, #F0EDE5);
-  margin: 0 0 12px;
-}
-
-.kiA-feat-meta {
-  font-family: var(--font-mono, "IBM Plex Mono", monospace);
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  color: var(--text-muted, #6B7585);
-  margin: 0 0 18px;
-}
-
-.kiA-progress {
-  height: 6px;
-  background: var(--surface-raised, #141C2A);
-  border-radius: 999px;
-  overflow: hidden;
-  margin-bottom: 24px;
-  max-width: 420px;
-}
-
-.kiA-progress-fill {
-  height: 100%;
-  background: var(--subj, var(--text-secondary, #929DAE));
-  border-radius: 999px;
-  box-shadow: 0 0 12px color-mix(in srgb, var(--subj) 60%, transparent);
-  transition: width 600ms var(--transition, 220ms cubic-bezier(.2,.8,.2,1));
-}
-
-.kiA-feat-btn {
-  height: 48px;
-  padding: 0 28px;
-  background: var(--text, #F0EDE5);
-  color: #080A0F;
-  border: none;
-  border-radius: var(--radius-md, 14px);
-  font-family: var(--font-ui, Inter, sans-serif);
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  transition: var(--transition, 220ms cubic-bezier(.2,.8,.2,1));
-}
-
-.kiA-feat-btn:hover {
-  box-shadow: 0 0 24px -6px var(--subj);
-  transform: translateY(-1px);
 }
 
 /* ---------------- Recently added: horizontal strip ---------------- */
@@ -451,7 +641,7 @@
   padding: 4px 2px 16px;
   scroll-snap-type: x mandatory;
   scrollbar-width: thin;
-  scrollbar-color: var(--surface-hover, #1B2637) transparent;
+  scrollbar-color: var(--surface-hover, #172438) transparent;
 }
 
 .kiA-strip-card {
@@ -478,8 +668,8 @@
   aspect-ratio: 3 / 4;
   border-radius: var(--radius-sm, 8px);
   overflow: hidden;
-  border: 1px solid var(--border, #273448);
-  background: var(--surface-raised, #141C2A);
+  border: 1px solid var(--border, rgba(151, 178, 211, 0.13));
+  background: var(--surface-raised, #101A2A);
   transition: transform var(--transition, 220ms cubic-bezier(.2,.8,.2,1)),
               border-color var(--transition, 220ms cubic-bezier(.2,.8,.2,1)),
               box-shadow var(--transition, 220ms cubic-bezier(.2,.8,.2,1));
@@ -502,7 +692,7 @@
 
 .kiA-strip-btn:hover .kiA-strip-cover {
   transform: translateY(-5px);
-  border-color: var(--border, #273448);
+  border-color: var(--border, rgba(151, 178, 211, 0.13));
   box-shadow: 0 18px 36px -14px rgba(0, 0, 0, 0.7);
 }
 
@@ -518,7 +708,7 @@
   font-size: 13px;
   font-weight: 600;
   line-height: 1.35;
-  color: var(--text, #F0EDE5);
+  color: var(--text, #EDEAE2);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -527,9 +717,9 @@
 
 .kiA-strip-meta {
   font-family: var(--font-mono, "IBM Plex Mono", monospace);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.06em;
-  color: var(--text-muted, #6B7585);
+  color: var(--text-muted, #69778D);
   display: flex;
   align-items: center;
   gap: 7px;
@@ -543,12 +733,98 @@
   flex-shrink: 0;
 }
 
+/* ---------------- Quick access ---------------- */
+
+.kiA-qa {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.kiA-qa-col {
+  padding: 22px 22px 14px;
+}
+
+.kiA-qa-label {
+  font-family: var(--font-mono, "IBM Plex Mono", monospace);
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--text-muted, #69778D);
+  margin: 0 0 6px;
+}
+
+.kiA-qa-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.kiA-qa-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 4px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: background var(--transition, 220ms cubic-bezier(.2,.8,.2,1));
+}
+
+.kiA-qa-list li:last-child .kiA-qa-row { border-bottom: none; }
+
+.kiA-qa-row:hover { background: rgba(151, 178, 211, 0.04); }
+
+.kiA-qa-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.kiA-qa-row-title {
+  font-family: var(--font-ui, Inter, sans-serif);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text, #EDEAE2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kiA-qa-row-meta {
+  font-family: var(--font-mono, "IBM Plex Mono", monospace);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, #69778D);
+}
+
+.kiA-qa-row-arrow {
+  flex: none;
+  color: var(--text-muted, #69778D);
+  font-size: 14px;
+  transition: transform var(--transition, 220ms cubic-bezier(.2,.8,.2,1)),
+              color var(--transition, 220ms cubic-bezier(.2,.8,.2,1));
+}
+
+.kiA-qa-row:hover .kiA-qa-row-arrow {
+  transform: translateX(4px);
+  color: var(--text, #EDEAE2);
+}
+
 /* ---------------- Empty states ---------------- */
 
 .kiA-empty {
   font-family: var(--font-ui, Inter, sans-serif);
   font-size: 14px;
-  color: var(--text-muted, #6B7585);
+  color: var(--text-muted, #69778D);
   max-width: 560px;
 }
 
@@ -566,9 +842,17 @@
   .kiA-hero-art {
     display: none;
   }
+}
 
-  .kiA-cont {
-    flex-direction: column;
-    align-items: flex-start;
+@media (prefers-reduced-motion: reduce) {
+  .kiA-kmap-ring {
+    animation: none;
+  }
+  .kiA-specular::after {
+    display: none;
+  }
+  .kiA-headline .split-word {
+    padding-bottom: 0;
+    margin-bottom: 0;
   }
 }
