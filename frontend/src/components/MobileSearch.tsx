@@ -13,23 +13,37 @@ import type { SearchHit } from '../shared';
 import { SUBJECTS, sectionLabel, subjectOf, matchKindsOf, matchScore, hitOpenPage, pageImageUrl } from '../shared';
 import DocCover from './DocCover';
 import BottomSheet from './BottomSheet';
+import SpecularButton from '../bits/SpecularButton';
+import GlareHover from '../bits/GlareHover';
+import ShinyText from '../bits/ShinyText';
+import AnimatedContent from '../bits/AnimatedContent';
 import './DocCover.css';
 import './MobileSearch.css';
+
+export interface RecentDoc {
+  key: string;
+  title: string;
+  subj: string;
+}
 
 export interface MobileSearchProps {
   query: string;
   onQueryChange: (q: string) => void;
   results: SearchHit[];             // already debounced full-text from parent
   searching: boolean;
+  searchError?: boolean;            // /api/search failed — show retry state
+  onRetry?: () => void;             // re-run the search, preserving query+filters
   totalMatches: number;
   searchSubject: string;            // subject pill filter
   onSubjectChange: (s: string) => void;
   currentSubject: string;           // for scope "Current subject"
   subjectCounts: Record<string, number>;
   recentKeys: string[];             // kl:recent order, for "recent" sort
+  recentDocs?: RecentDoc[];         // recently opened docs (empty-query state)
   bookmarks: string[];
   onToggleBookmark: (key: string) => void;
   onOpenHit: (hit: SearchHit, page?: number) => void;  // parent sets reader start page then opens
+  onOpenRecent?: (key: string) => void; // open a recently-opened doc from the empty state
   onBack: () => void;
   onClearAll: () => void;
 }
@@ -63,15 +77,17 @@ function readStored<T extends string>(key: string, valid: readonly T[], fallback
 
 interface CardProps {
   hit: SearchHit;
+  index: number;                  // position in the results — cover number
   query: string;
   bookmarked: boolean;
+  reducedMotion: boolean;
   onToggleBookmark: (key: string) => void;
   onOpenHit: (hit: SearchHit, page?: number) => void;
 }
 
 /** Highlight query words inside a snippet using safe text nodes + <mark>
  *  spans — never raw HTML. */
-function highlightText(text: string, query: string): ReactNode[] {
+function highlightText(text: string, query: string, cls = 'ms-hl'): ReactNode[] {
   const words = query.trim().split(/\s+/).filter(w => w.length > 1);
   if (!words.length) return [text];
   const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -79,10 +95,16 @@ function highlightText(text: string, query: string): ReactNode[] {
   const out: ReactNode[] = [];
   text.split(re).forEach((part, i) => {
     out.push(i % 2 === 1
-      ? <mark key={i} className="ms-hl">{part}</mark>
+      ? <mark key={i} className={cls}>{part}</mark>
       : part);
   });
   return out;
+}
+
+/** Query fragment in result titles: muted teal background, original
+ *  typography (no font/weight change on the mark itself). */
+function highlightTitle(title: string, query: string): ReactNode[] {
+  return highlightText(title, query, 'ms-hl-t');
 }
 
 /** Honest match-kind label — never a fabricated relevance percentage. */
@@ -97,7 +119,7 @@ function matchLabel(hit: SearchHit, query: string): string {
   return 'Subject match';
 }
 
-function SearchCard({ hit, query, bookmarked, onToggleBookmark, onOpenHit }: CardProps) {
+function SearchCard({ hit, index, query, bookmarked, reducedMotion, onToggleBookmark, onOpenHit }: CardProps) {
   const kinds = matchKindsOf(hit);
   const isText = kinds.includes('text');
   const subj = subjectOf(hit.subj);
@@ -111,7 +133,8 @@ function SearchCard({ hit, query, bookmarked, onToggleBookmark, onOpenHit }: Car
     : passages.reduce((s, p) => s + (p.match_count || 0), 0);
   const pageCount = Math.max(1, new Set((hit.passages ?? []).map(p => p.page_number)).size);
 
-  // Whole-card clickable divider row (P1-4): no nested <button> inside <button>.
+  // Whole-card opens the doc (P1-4): the card is a div with role=button, so
+  // inner real buttons (OPEN, bookmark, page links) stay valid HTML.
   const open = () => onOpenHit(hit);
   const onCardKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.target !== e.currentTarget) return; // let inner buttons handle their own keys
@@ -130,57 +153,98 @@ function SearchCard({ hit, query, bookmarked, onToggleBookmark, onOpenHit }: Car
       onKeyDown={onCardKeyDown}
       aria-label={`Open ${hit.title}`}
     >
-      <DocCover
-        src={thumb}
-        subj={hit.subj}
-        docIndex={openPage}
-        docType={sectionLabel(hit.section)}
-        className="ms-thumb"
-      />
+      <GlareHover
+        mode="click"
+        glareOpacity={0.28}
+        glareSize={26}
+        transitionDuration={500}
+        className="ms-thumb-glare"
+        style={{
+          ['--gh-width' as any]: '48px',
+          ['--gh-height' as any]: '64px',
+          ['--gh-br' as any]: '6px',
+          flex: '0 0 48px',
+          alignSelf: 'flex-start',
+        }}
+      >
+        <DocCover
+          src={thumb}
+          subj={hit.subj}
+          docIndex={index + 1}
+          docType={sectionLabel(hit.section)}
+          title={hit.title}
+          seed={hit.key}
+          className="ms-thumb"
+        />
+      </GlareHover>
 
       <div className="ms-card-main">
-        <p className="ms-micro" style={{ color }}>{code} · {sectionLabel(hit.section).toUpperCase()}</p>
-        <h3 className="ms-title">{hit.title}</h3>
-        <p className="ms-kindline" style={{ color }}>{matchLabel(hit, query)}</p>
-        {isText ? (
-          <>
-            <p className="ms-matchline">
-              {matchCount} MATCH{matchCount === 1 ? '' : 'ES'} · {pageCount} PAGE{pageCount === 1 ? '' : 'S'}
-            </p>
-            <div className="ms-excerpts">
-              {passages.map((p, i) => (
-                <div className="ms-excerpt" key={`${p.page_number}-${i}`}>
-                  <p className="ms-excerpt-text">{highlightText(p.snippet, query)}</p>
-                  <button
-                    type="button"
-                    className="ms-page-go"
-                    onClick={(e) => { e.stopPropagation(); onOpenHit(hit, p.page_number); }}
-                    aria-label={`Open ${hit.title} at page ${p.page_number}`}
-                  >
-                    PAGE {pad2(p.page_number)} →
-                  </button>
-                </div>
-              ))}
-            </div>
-          </>
-        ) : (
-          <p className="ms-meta">
-            {sectionLabel(hit.section)} · {hit.pages} PAGES · PDF
-          </p>
-        )}
-        {/* span (not a button) so the whole card stays one tab stop */}
-        <span className="ms-open-link" aria-hidden="true">OPEN →</span>
+        {/* query fragment highlighted in the title (muted teal, original type) */}
+        <h3 className="ms-title">{highlightTitle(hit.title, query)}</h3>
+        {/* consistent metadata order: type · subject · pages */}
+        <p className="ms-micro" style={{ color }}>
+          {sectionLabel(hit.section).toUpperCase()} · {code} · {hit.pages} PAGES
+        </p>
+        {/* honest match-kind label — never a fabricated relevance percentage.
+            ShinyText sparingly on the tiny label only; title stays readable. */}
+        <p className="ms-kindline">
+          {reducedMotion ? (
+            <span style={{ color }}>{matchLabel(hit, query)}</span>
+          ) : (
+            <ShinyText
+              text={matchLabel(hit, query)}
+              color={color}
+              shineColor="rgba(255,255,255,0.9)"
+              speed={3.5}
+              shineWidth={28}
+              trigger="loop"
+              className="ms-kindline-shine"
+            />
+          )}
+          {isText && matchCount > 0 && (
+            <span className="ms-kindline-count"> · {matchCount} MATCH{matchCount === 1 ? '' : 'ES'} · {pageCount} PAGE{pageCount === 1 ? '' : 'S'}</span>
+          )}
+        </p>
       </div>
 
-      <button
-        type="button"
-        className={`ms-bookmark${bookmarked ? ' on' : ''}`}
-        aria-label={bookmarked ? `Remove bookmark for ${hit.title}` : `Bookmark ${hit.title}`}
-        aria-pressed={bookmarked}
-        onClick={(e) => { e.stopPropagation(); onToggleBookmark(hit.key); }}
-      >
-        {bookmarked ? '★' : '☆'}
-      </button>
+      <div className="ms-card-actions">
+        <button
+          type="button"
+          className={`ms-bookmark${bookmarked ? ' on' : ''}`}
+          aria-label={bookmarked ? `Remove bookmark for ${hit.title}` : `Bookmark ${hit.title}`}
+          aria-pressed={bookmarked}
+          onClick={(e) => { e.stopPropagation(); onToggleBookmark(hit.key); }}
+        >
+          {bookmarked ? '★' : '☆'}
+        </button>
+        {/* OPEN: quieter than before, still a clear 44px target */}
+        <button
+          type="button"
+          className="ms-open"
+          onClick={(e) => { e.stopPropagation(); open(); }}
+          aria-label={`Open ${hit.title}`}
+        >
+          OPEN
+        </button>
+      </div>
+
+      {isText && (
+        <div className="ms-excerpts">
+          {passages.map((p, i) => (
+            <div className="ms-excerpt" key={`${p.page_number}-${i}`}>
+              <p className="ms-excerpt-text">{highlightText(p.snippet, query)}</p>
+              <button
+                type="button"
+                className="ms-page-go"
+                onClick={(e) => { e.stopPropagation(); onOpenHit(hit, p.page_number); }}
+                aria-label={`Open ${hit.title} at page ${p.page_number}`}
+              >
+                PAGE {pad2(p.page_number)} →
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -189,7 +253,7 @@ const pad2 = (n: number) => String(n).padStart(2, '0');
 
 export default function MobileSearch(props: MobileSearchProps) {
   const {
-    query, onQueryChange, results, searching, totalMatches,
+    query, onQueryChange, results, searching,
     searchSubject, onSubjectChange, currentSubject, subjectCounts,
     recentKeys, bookmarks, onToggleBookmark, onOpenHit, onBack, onClearAll,
   } = props;
@@ -202,6 +266,10 @@ export default function MobileSearch(props: MobileSearchProps) {
     readStored(SORT_KEY, SORTS.map(s => s.id), 'relevance'));
   useEffect(() => { try { localStorage.setItem(SCOPE_KEY, scope); } catch { /* ignore */ } }, [scope]);
   useEffect(() => { try { localStorage.setItem(SORT_KEY, sort); } catch { /* ignore */ } }, [sort]);
+
+  // reduced-motion: static fallbacks for the specular Apply button
+  const [reducedMotion] = useState(() =>
+    typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
   // secondary-filter sheet state — committed on Apply
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -247,12 +315,49 @@ export default function MobileSearch(props: MobileSearchProps) {
   }, [filtered, sort, query, recentKeys]);
 
   const docCount = useMemo(() => new Set(filtered.map(h => h.key)).size, [filtered]);
-  const matchCount = scope === 'all'
-    ? totalMatches
-    : filtered.reduce((sum, h) => sum + (h.match_count ?? 1), 0);
 
   const currentSubj = subjectOf(currentSubject);
   const queryWords = query.trim().split(/\s+/).filter(Boolean);
+
+  const sortLabel =
+    sort === 'title' ? 'TITLE'
+    : sort === 'recent' ? 'RECENT'
+    : 'BEST MATCH';
+
+  // recent searches — real kl:* data only (debounced record of queries the
+  // user actually ran; never invented suggestions)
+  const SEARCHES_KEY = 'kl:searches';
+  const [searches, setSearches] = useState<string[]>(() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem(SEARCHES_KEY) || '[]');
+      return Array.isArray(raw) ? raw.filter((s: unknown) => typeof s === 'string').slice(0, 8) : [];
+    } catch { return []; }
+  });
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) return;
+    const t = window.setTimeout(() => {
+      try {
+        const raw = JSON.parse(localStorage.getItem(SEARCHES_KEY) || '[]');
+        const prev = Array.isArray(raw) ? raw.filter((s: unknown) => typeof s === 'string' && s !== q) : [];
+        const next = [q, ...prev].slice(0, 8);
+        localStorage.setItem(SEARCHES_KEY, JSON.stringify(next));
+        setSearches(next);
+      } catch { /* ignore — quota */ }
+    }, 1500);
+    return () => window.clearTimeout(t);
+  }, [query]);
+
+  // popular subjects — real counts, top 2
+  const popularSubjects = useMemo(() =>
+    SUBJECTS
+      .map(s => ({ s, n: subjectCounts[s.id] ?? 0 }))
+      .sort((a, b) => b.n - a.n)
+      .slice(0, 2),
+  [subjectCounts]);
+
+  // empty-query state: real recently-opened docs
+  const recentDocs = (props.recentDocs ?? []).slice(0, 4);
 
   return (
     <div className="ms-root mobile-page">
@@ -316,9 +421,19 @@ export default function MobileSearch(props: MobileSearchProps) {
       </div>
 
       <div className="ms-section">
+        {/* count + FILTERS on one compact row — "N RESULTS" + honest sort label */}
+        {/* compact result header (1420 loop):
+            "03 RESULTS — SORT: BEST MATCH — FILTER" */}
         <div className="ms-results-bar">
           <p className="ms-results-head" aria-live="polite">
-            {searching ? 'SEARCHING…' : `${docCount} DOCUMENTS · ${matchCount} MATCHES`}
+            {searching ? 'SEARCHING…' : (
+              <>
+                {String(docCount).padStart(2, '0')} RESULTS
+                <span className="ms-results-sep" aria-hidden="true"> — </span>
+                SORT: {sortLabel}
+                <span className="ms-results-sep" aria-hidden="true"> — </span>
+              </>
+            )}
           </p>
           {/* secondary filters live in the bottom sheet (Apply + Reset) */}
           <button
@@ -327,14 +442,81 @@ export default function MobileSearch(props: MobileSearchProps) {
             onClick={openSheet}
             aria-label={`Search filters, ${secondaryActive} active`}
           >
-            FILTERS
+            FILTER
             {secondaryActive > 0 && <span className="ms-badge">{secondaryActive}</span>}
           </button>
         </div>
 
-        {query.trim() === '' && !searching ? (
+        {props.searchError && !searching ? (
           <div className="ms-empty">
-            <p className="ms-empty-hint">Try ‘laplace’, ‘epistemology’, ‘boolean’…</p>
+            <p className="ms-empty-title">Search didn&rsquo;t reach the index.</p>
+            <p className="ms-empty-hint">Your query and filters are kept — try again.</p>
+            {props.onRetry && (
+              <button type="button" className="ms-retry-btn" onClick={props.onRetry}>
+                RETRY SEARCH
+              </button>
+            )}
+          </div>
+        ) : query.trim() === '' && !searching ? (
+          <div className="ms-empty">
+            {/* recent-search area (1420 loop): real kl:* data only —
+                recent searches / popular subjects / recently opened */}
+            {searches.length > 0 && (
+              <div className="ms-empty-group">
+                <p className="ms-empty-label">RECENT SEARCHES</p>
+                <div className="ms-chips">
+                  {searches.map(s => (
+                    <button
+                      type="button"
+                      key={s}
+                      className="ms-chip"
+                      onClick={() => onQueryChange(s)}
+                      aria-label={`Search again for ${s}`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="ms-empty-group">
+              <p className="ms-empty-label">POPULAR SUBJECTS</p>
+              <div className="ms-chips">
+                {popularSubjects.map(({ s, n }) => (
+                  <button
+                    type="button"
+                    key={s.id}
+                    className="ms-chip"
+                    onClick={() => onSubjectChange(s.id)}
+                    aria-label={`Filter search to ${s.name}`}
+                  >
+                    {s.code} · {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {recentDocs.length > 0 && (
+              <div className="ms-empty-group">
+                <p className="ms-empty-label">RECENTLY OPENED</p>
+                <div className="ms-recent-list">
+                  {recentDocs.map(d => (
+                    <button
+                      type="button"
+                      key={d.key}
+                      className="ms-recent-row"
+                      onClick={() => props.onOpenRecent?.(d.key)}
+                      aria-label={`Open ${d.title}`}
+                    >
+                      <span className="ms-recent-code" style={{ color: subjectOf(d.subj)?.color }}>
+                        {subjectOf(d.subj)?.code ?? d.subj.toUpperCase()}
+                      </span>
+                      <span className="ms-recent-title">{d.title}</span>
+                      <span className="ms-recent-go" aria-hidden="true">›</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : !searching && filtered.length === 0 ? (
           <div className="ms-empty">
@@ -347,6 +529,15 @@ export default function MobileSearch(props: MobileSearchProps) {
                   onClick={() => onQueryChange(queryWords[0])}
                 >
                   Try fewer words
+                </button>
+              )}
+              {scope !== 'titles' && (
+                <button
+                  type="button"
+                  className="ms-chip"
+                  onClick={() => setScope('titles')}
+                >
+                  Try titles only
                 </button>
               )}
               {searchSubject !== 'all' && (
@@ -364,19 +555,55 @@ export default function MobileSearch(props: MobileSearchProps) {
               Clear search
             </button>
           </div>
-        ) : (
+        ) : searching ? (
           <div className="ms-results-list">
-            {sorted.map(hit => (
+            {/* loading state: 3 skeleton rows (animation disabled under
+                prefers-reduced-motion via CSS) */}
+            {[0, 1, 2].map(i => (
+              <div className="ms-skel" key={i} aria-hidden="true" />
+            ))}
+          </div>
+        ) : reducedMotion ? (
+          <div className="ms-results-list">
+            {sorted.map((hit, i) => (
               <SearchCard
                 key={hit.key}
                 hit={hit}
+                index={i}
                 query={query}
                 bookmarked={bookmarks.includes(hit.key)}
+                reducedMotion={reducedMotion}
                 onToggleBookmark={onToggleBookmark}
                 onOpenHit={onOpenHit}
               />
             ))}
           </div>
+        ) : (
+          // short stagger when a new query resolves — keyed by the resolved
+          // query so returning from a document (same query) never replays it
+          <AnimatedContent
+            key={`msq-${query}-${scope}-${sort}-${searchSubject}`}
+            trigger="mount"
+            distance={12}
+            duration={0.3}
+            ease="power3.out"
+            stagger={0.04}
+            once
+            className="ms-results-list"
+          >
+            {sorted.map((hit, i) => (
+              <SearchCard
+                key={hit.key}
+                hit={hit}
+                index={i}
+                query={query}
+                bookmarked={bookmarks.includes(hit.key)}
+                reducedMotion={reducedMotion}
+                onToggleBookmark={onToggleBookmark}
+                onOpenHit={onOpenHit}
+              />
+            ))}
+          </AnimatedContent>
         )}
       </div>
 
@@ -391,9 +618,28 @@ export default function MobileSearch(props: MobileSearchProps) {
             <button type="button" className="ms-btn-ghost" onClick={resetSheet}>
               Reset
             </button>
-            <button type="button" className="ms-btn-primary" onClick={applySheet}>
-              Apply
-            </button>
+            {reducedMotion ? (
+              <button type="button" className="ms-btn-primary" onClick={applySheet}>
+                Apply
+              </button>
+            ) : (
+              <SpecularButton
+                type="button"
+                size="sm"
+                className="ms-btn-primary"
+                onClick={applySheet}
+                tint="#38D5C1"
+                tintOpacity={0.5}
+                textColor="#062A26"
+                radius={12}
+                intensity={0.85}
+                idleIntensity={0.3}
+                autoAnimate
+                followMouse={false}
+              >
+                Apply
+              </SpecularButton>
+            )}
           </div>
         }
       >
