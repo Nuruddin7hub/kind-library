@@ -135,10 +135,12 @@ html, body, #root {
   --sidebar-width: 232px;
   --topbar-height: 68px;
   --content-padding: 44px;
-  /* Round C P0: shared mobile nav clearance — ONE rule for every mobile
-     screen (home, library, search, subject, saved). The floating dock is
-     64px tall + 8px offset + safe-area; 28px breathing room above it. */
-  --nav-height: 64px;
+  /* ChatGPT Round B (2026-11-04, 1420 loop): shared mobile nav clearance —
+     ONE rule for every mobile screen (home, library, search, subject,
+     saved). The floating dock is 66px tall + safe-area; the page clears it
+     with breathing room. Safe-area counted ONCE here — component padding
+     must not add env(safe-area-inset-bottom) again. */
+  --nav-height: 66px;
   --radius-sm: 10px;
   --radius-md: 18px;
   --radius-lg: 24px;
@@ -2288,11 +2290,13 @@ button.ke-stat:hover {
   .ke-featured-bar > div { transition: none; }
 }
 
-/* ---------- Round C P0: shared mobile nav clearance ----------
+/* ---------- ChatGPT Round B (2026-11-04, 1420 loop): shared mobile nav clearance ----------
  * Apply `mobile-page` to every mobile screen root (home, library, search,
- * subject, saved). The last row always scrolls fully above the 64px dock
- * (+8px offset + safe-area). Safe-area counted ONCE here — component
- * padding must not add env(safe-area-inset-bottom) again. */
+ * subject, saved). Every mobile root clears the fixed 66px dock with
+ * padding-bottom: calc(90px + env(safe-area-inset-bottom)), and respects
+ * the top safe area. Safe-area counted ONCE here — component padding must
+ * not add env(safe-area-inset-bottom) again. */
 .mobile-page {
-  padding-bottom: calc(var(--nav-height) + 28px + env(safe-area-inset-bottom));
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: calc(90px + env(safe-area-inset-bottom));
 }

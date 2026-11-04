@@ -92,15 +92,15 @@ export function subjectOf(id: string): Subject | undefined {
   return SUBJECTS.find(s => s.id === id);
 }
 
-/** Obsidian Archive v2.0 identity palette (ChatGPT Round A, 2026-11-03).
+/** Obsidian Atlas v3.0 identity palette (ChatGPT Round A, 2026-11-04 ~14:20).
  *  DESKTOP ONLY — mobile views keep the legacy SUBJECTS colors above
  *  byte-identical, so desktop components must use v2SubjectColor() while
  *  every mobile component keeps reading SUBJECTS[].color. */
 export const V2_SUBJECT_COLORS: Record<string, string> = {
-  em2: '#62A5FF',
-  signals: '#B28AFF',
-  fis: '#E9B36A',
-  digital: '#42D8C6',
+  em2: '#5B9FFF',
+  signals: '#B18AFF',
+  fis: '#E5A34C',
+  digital: '#42D9B5',
 };
 
 /** Desktop (v2.0) subject color — the exact spec identity tokens. */
