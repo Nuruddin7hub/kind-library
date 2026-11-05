@@ -16,6 +16,7 @@
   --subject-accent: #38D5C1;
   position: fixed;
   inset: 0;
+  height: 100dvh; /* Round B P0 (Fix R3): controls stay fixed, canvas scrolls */
   z-index: 200;
   display: flex;
   flex-direction: column;
@@ -231,6 +232,163 @@
   letter-spacing: 0.12em;
   color: var(--subject-accent);
   white-space: nowrap;
+}
+
+/* Round C re-score: page status row separators — PAGE 01/17 | 100% | toggle */
+.mr-strip-sep {
+  color: rgba(255, 255, 255, 0.22);
+  font-size: 10px;
+  user-select: none;
+}
+
+/* ---------- horizontal thumbnail strip (Round C re-score) ----------
+ * Below the page: current highlighted + adjacent + numbers + page
+ * indicator. Collapsible via the status-row toggle. Aspect ratio
+ * preserved (contain); no Aurora/Particles in the viewport. */
+.mr-thumbstrip {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+  background: #0A0E15;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  z-index: 5;
+}
+.mr-thumbstrip-count {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #59E4D2; /* Round B P2: current page indicator cyan */
+  min-width: 44px;
+  text-align: center;
+}
+.mr-thumbstrip-rail {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 2px;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, black 20px, black calc(100% - 20px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, black 20px, black calc(100% - 20px), transparent 100%);
+}
+.mr-thumbstrip-rail::-webkit-scrollbar { display: none; }
+.mr-ts-thumb {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #0D1320;
+  cursor: pointer;
+  min-width: 44px; /* Round B P2: 44x56px minimum tap target */
+  min-height: 56px;
+  transition: border-color 150ms ease, box-shadow 150ms ease, opacity 150ms ease;
+}
+.mr-ts-thumb img {
+  width: 40px;
+  height: 53px;
+  object-fit: contain; /* never stretched/cropped */
+  border-radius: 4px;
+  background: #111827;
+  display: block;
+}
+.mr-ts-thumb.on {
+  border-color: #59E4D2; /* Round B P2: cyan active outline */
+  box-shadow: 0 0 0 1px #59E4D2, 0 0 14px rgba(89, 228, 210, 0.25);
+}
+.mr-ts-num {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.55);
+  transition: color 150ms ease;
+}
+.mr-ts-thumb.on .mr-ts-num { color: #59E4D2; /* Round B P2: current page number cyan */ }
+/* Round C P1: visible keyboard-focus state on filmstrip thumbnails
+   (target already 44x56px min from Round B). */
+.mr-ts-thumb:focus-visible {
+  outline: 2px solid #59E4D2;
+  outline-offset: 2px;
+}
+
+/* ---------- STUDY bottom sheet (Round C re-score) ----------
+ * 5 actions, 56px rows, 44px+ targets, kl:* byte-compatible. */
+.mr-study-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  /* Round C P2: home-indicator clearance — the sheet body adds 16px, so
+     the last action clears the indicator only once the safe-area inset
+     is added here. env() is 0 on desktop/emulation: no visual change. */
+  padding: 4px 0 calc(8px + env(safe-area-inset-bottom, 0px));
+}
+.mr-study-action {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(16, 24, 39, 0.72);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 150ms var(--ease-premium, cubic-bezier(0.22, 1, 0.36, 1)), border-color 160ms ease;
+}
+.mr-study-action:active {
+  transform: scale(0.98);
+  border-color: rgba(50, 211, 189, 0.45);
+}
+.mr-study-action-icon {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(50, 211, 189, 0.1);
+  border: 1px solid rgba(50, 211, 189, 0.25);
+  color: var(--subject-accent);
+  font-size: 17px;
+}
+.mr-study-action-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #F2F4F8;
+}
+.mr-study-action-sub {
+  font-family: var(--font-ui, 'Inter', system-ui, sans-serif);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.55);
+  text-transform: none;
+}
+.mr-study-action-go {
+  flex: 0 0 auto;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 18px;
 }
 
 /* ---------- STUDY organizer tabs ---------- */
@@ -479,7 +637,9 @@
   overflow: auto;
   /* spec: page starts 16–24px below the controls */
   padding: 20px 12px;
-  background: #0B0F17; /* deep charcoal/navy */
+  background:
+    radial-gradient(120% 90% at 50% 30%, rgba(50, 211, 189, 0.06) 0%, transparent 55%),
+    #0B0F17; /* deep charcoal/navy — Round C re-score: subtle radial viewport, no Aurora/Particles */
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
 }
@@ -490,9 +650,12 @@
 
 .mr-pagebox {
   position: relative;
-  /* top-aligned: the page starts 20px below the controls (stage padding),
-   * never stranded vertically centred in empty space */
-  margin: 0 auto;
+  /* Round B P0 (Fix R1): margin auto centres the page vertically +
+   * horizontally in the stage when it fits (FIT PAGE, landscape pages);
+   * auto margins collapse to 0 when the page overflows (zoom / FIT WIDTH),
+   * so the top stays reachable by scrolling. Never stretched — the box is
+   * sized from the image's real aspect ratio. */
+  margin: auto;
   flex: 0 0 auto;
   background: #0A0E15;
   border: 1px solid rgba(160, 175, 195, 0.28); /* grey border */
@@ -523,6 +686,12 @@
   display: block;
   user-select: none;
   -webkit-user-select: none;
+  /* Round B P2: 150ms fade on page change (the page box remounts per page) */
+  animation: mr-page-in 150ms ease;
+}
+@keyframes mr-page-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* ink canvas: invisible to gestures unless a pen/highlighter tool is active */
@@ -700,7 +869,15 @@
 
 .mr-findpanel {
   flex: 0 0 auto;
-  max-height: 46%;
+  /* Round C P0 fix: 46% of the READER, not of the panel's own content
+     height. The old `max-height: 46%` resolved against the
+     AnimatedContent wrapper — whose height IS the panel's content height
+     — so it capped the panel at 46% of its own content (75px) and the
+     scrollable results list collapsed to a 14px sliver, clipping the
+     zero-results feedback (and most hit rows) out of view. dvh is
+     definite, so the cap now means what it says; the list scrolls
+     within it. */
+  max-height: 46dvh;
   display: flex;
   flex-direction: column;
   background: #0B101B;
@@ -809,6 +986,94 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* ---------- FIND zero-results feedback (Round C P0) ----------
+ * Quiet inline contextual state, not a large empty-state illustration.
+ * Spec tokens: margin 12px 0, padding 12px 14px, 1px border
+ * rgba(255,255,255,.08), radius 12px, bg rgba(255,255,255,.025);
+ * label #39d8c3 600 10px monospace .09em; body #929baa 12px/1.5. */
+.mr-ft-status {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+}
+.mr-ft-status-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  color: #39d8c3;
+}
+.mr-ft-status-body {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #929baa;
+}
+.mr-ft-goto {
+  margin-top: 10px;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--subject-accent) 50%, transparent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--subject-accent);
+  background: transparent;
+  cursor: pointer;
+}
+
+/* ---------- honest match banner (Round C P1) ----------
+ * Shown when the reader was opened from a search result, on the matched
+ * page only. Same quiet tokens as the FIND status state; plain snippet
+ * text — never a faked phrase highlight. */
+.mr-matchbanner {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 8px 12px 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+}
+.mr-matchbanner-label {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  color: #39d8c3;
+  white-space: nowrap;
+}
+.mr-matchbanner-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #929baa;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.mr-matchbanner-close {
+  flex: 0 0 auto;
+  min-width: 44px;
+  min-height: 44px;
+  margin: -12px -8px -12px 0;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 14px;
+  cursor: pointer;
 }
 
 /* ---------- bottom sheets (pages / pin / notes / marks / info) ---------- */
@@ -1046,7 +1311,12 @@
 /* ---------- reduced motion ---------- */
 .mr-reduced-motion .mr-thumb-frame img { transition: none; }
 .mr-reduced-motion .mr-thumb-shimmer { animation: none; }
+.mr-reduced-motion .mr-pageimg { animation: none; }
+.mr-reduced-motion .mr-ts-thumb,
+.mr-reduced-motion .mr-ts-num { transition: none; }
 @media (prefers-reduced-motion: reduce) {
   .mr-thumb-frame img { transition: none; }
   .mr-thumb-shimmer { animation: none; }
+  .mr-pageimg { animation: none; }
+  .mr-ts-thumb, .mr-ts-num { transition: none; }
 }
