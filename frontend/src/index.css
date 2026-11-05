@@ -1,4 +1,5 @@
 @import './styles/tokens.css';
+@import './styles/atlas-tokens.css';
 @import "tailwindcss";
 
 @theme {
@@ -2292,11 +2293,37 @@ button.ke-stat:hover {
 
 /* ---------- ChatGPT Round B (2026-11-04, 1420 loop): shared mobile nav clearance ----------
  * Apply `mobile-page` to every mobile screen root (home, library, search,
- * subject, saved). Every mobile root clears the fixed 66px dock with
- * padding-bottom: calc(90px + env(safe-area-inset-bottom)), and respects
- * the top safe area. Safe-area counted ONCE here — component padding must
- * not add env(safe-area-inset-bottom) again. */
+ * subject, saved). Round C re-score P0: shared bottom-nav safe area —
+ *   --nav-height: 66px (the dock), --nav-bottom: 8px,
+ *   --content-safe-bottom: 66 + 8 + 24 + safe-area — applied to the ACTUAL
+ *   scrollable content container of EVERY mobile page (hero, library,
+ *   search, digital, fis, saved). The reader keeps its own controls
+ *   (global nav hidden) and is exempt. Safe-area counted ONCE here —
+ * component padding must not add env(safe-area-inset-bottom) again. */
+:root {
+  --nav-height: 66px;
+  --nav-bottom: 8px;
+  --content-safe-bottom: calc(66px + 8px + 24px + env(safe-area-inset-bottom));
+}
 .mobile-page {
   padding-top: env(safe-area-inset-top);
-  padding-bottom: calc(90px + env(safe-area-inset-bottom));
+  padding-bottom: var(--content-safe-bottom);
+  /* Round C re-score: shared atmospheric background — base near-black navy
+   * + one large soft subject-colored radial light + grid fading to
+   * transparent at the bottom + fine grain. ONE animated bg per screen
+   * (Aurora/Particles) sits on top of this static shell. */
+  --subject-glow: rgba(50, 211, 189, 0.12);
+  background:
+    radial-gradient(120% 50% at 50% 0%, var(--subject-glow) 0%, transparent 60%),
+    linear-gradient(180deg, transparent 55%, #070B12 100%),
+    linear-gradient(rgba(150, 180, 215, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(150, 180, 215, 0.05) 1px, transparent 1px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E"),
+    #070B12;
+  background-size: auto, auto, 32px 32px, 32px 32px, 140px 140px, auto;
 }
+/* subject glows — exact Round C values */
+.mobile-page[data-subject="em2"] { --subject-glow: rgba(67, 132, 255, 0.19); }
+.mobile-page[data-subject="signals"] { --subject-glow: rgba(160, 112, 255, 0.18); }
+.mobile-page[data-subject="fis"] { --subject-glow: rgba(201, 133, 56, 0.19); }
+.mobile-page[data-subject="digital"] { --subject-glow: rgba(40, 205, 166, 0.19); }

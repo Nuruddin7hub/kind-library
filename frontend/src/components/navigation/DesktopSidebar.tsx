@@ -1,4 +1,3 @@
-import LineSidebar from '../../bits/LineSidebar';
 import { SUBJECTS, getSubjectCounts, v2SubjectColor } from '../../shared';
 import type { LibFile } from '../../shared';
 import type { CSSProperties } from 'react';
@@ -15,48 +14,46 @@ interface DesktopSidebarProps {
   activeSubject?: string | null;
 }
 
-const NAV_ITEMS: Array<{ label: string; view: SidebarView }> = [
-  { label: 'OVERVIEW', view: 'overview' },
-  { label: 'LIBRARY', view: 'library' },
-  { label: 'SEARCH', view: 'search' },
-  { label: 'RECENT', view: 'recent' },
-  { label: 'BOOKMARKS', view: 'bookmarks' },
+const NAV_ITEMS: Array<{ label: string; view: SidebarView; numeral: string }> = [
+  { label: 'OVERVIEW', view: 'overview', numeral: 'I' },
+  { label: 'LIBRARY', view: 'library', numeral: 'II' },
+  { label: 'SEARCH', view: 'search', numeral: 'III' },
+  { label: 'RECENT', view: 'recent', numeral: 'IV' },
+  { label: 'BOOKMARKS', view: 'bookmarks', numeral: 'V' },
 ];
 
-/** Desktop-only navigation shell — ChatGPT Round A, 2026-11-03.
- *  Main nav uses the vendored React Bits LineSidebar (proximity response,
- *  subject-neutral active state). The DISCIPLINES rows are hand-built:
- *  LineSidebar items are plain strings with no custom-label slot, so the
- *  dot + code + name + count rows use a hover line-grow effect instead. */
+/** Desktop-only navigation — ATLAS edition "Institutional Register".
+ *  248px fixed register plate: brand cartouche, roman-numeral main nav,
+ *  the four-discipline plate registry, and an archive-status footer.
+ *  Props unchanged so App.tsx integration stays identical. */
 export default function DesktopSidebar({ files, view, onNavigate, onGoSubject, activeSubject }: DesktopSidebarProps) {
   const counts = getSubjectCounts(files);
-  const activeNav = NAV_ITEMS.findIndex((n) => n.view === view);
+  const total = files.length;
 
   return (
     <aside className="kiA-sidebar" aria-label="Archive navigation">
       <div className="kiA-brand">
-        <div className="kiA-brand-mark">K/IND</div>
-        <div className="kiA-brand-sub">THE KNOWLEDGE ARCHIVE</div>
+        <div className="kiA-brand-frame">
+          <div className="kiA-brand-mark">K/IND</div>
+          <div className="kiA-brand-sub">THE KNOWLEDGE INSTRUMENT</div>
+        </div>
+        <div className="kiA-brand-est">FIELD EDITION / 004</div>
       </div>
 
       <nav className="kiA-mainnav" aria-label="Sections">
-        <LineSidebar
-          key={view}
-          items={NAV_ITEMS.map((n) => n.label)}
-          defaultActive={activeNav >= 0 ? activeNav : null}
-          onItemClick={(i) => onNavigate(NAV_ITEMS[i].view)}
-          accentColor="var(--text)"
-          textColor="var(--text-secondary)"
-          markerColor="var(--border)"
-          showIndex={false}
-          showMarker={false}
-          proximityRadius={90}
-          maxShift={12}
-          falloff="smooth"
-          fontSize={0.78}
-          itemGap={20}
-          className="kiA-linesidebar"
-        />
+        {NAV_ITEMS.map((n) => (
+          <button
+            key={n.view}
+            type="button"
+            className={`kiA-nav${view === n.view ? ' kiA-nav--active' : ''}`}
+            onClick={() => onNavigate(n.view)}
+            aria-current={view === n.view ? 'page' : undefined}
+          >
+            <span className="kiA-nav-numeral" aria-hidden="true">{n.numeral}</span>
+            <span className="kiA-nav-label">{n.label}</span>
+            <span className="kiA-nav-tick" aria-hidden="true" />
+          </button>
+        ))}
       </nav>
 
       <div className="kiA-section">
@@ -72,13 +69,12 @@ export default function DesktopSidebar({ files, view, onNavigate, onGoSubject, a
               aria-label={`${s.name} — ${counts[s.id] ?? 0} documents`}
               aria-current={activeSubject === s.id ? 'true' : undefined}
             >
-              <span className="kiA-subj-num">{s.num}</span>
               <span className="kiA-subj-dot" aria-hidden="true" />
               <span className="kiA-subj-meta">
                 <span className="kiA-subj-code">{s.code}</span>
-                <span className="kiA-subj-name">{s.name}</span>
+                <span className="kiA-subj-name">{s.short}</span>
               </span>
-              <span className="kiA-subj-count">{counts[s.id] ?? 0}</span>
+              <span className="kiA-subj-count">{String(counts[s.id] ?? 0).padStart(2, '0')}</span>
             </button>
           ))}
         </div>
@@ -87,7 +83,7 @@ export default function DesktopSidebar({ files, view, onNavigate, onGoSubject, a
       <div className="kiA-status" aria-label="Archive status">
         <span className="kiA-status-dot" aria-hidden="true" />
         <span className="kiA-status-text">ARCHIVE ONLINE</span>
-        <span className="kiA-status-count">{files.length} DOCS</span>
+        <span className="kiA-status-count">{total} DOCUMENTS</span>
       </div>
     </aside>
   );

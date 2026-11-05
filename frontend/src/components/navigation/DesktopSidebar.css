@@ -1,259 +1,250 @@
-/* K/IND desktop sidebar — ChatGPT Round A. All classes kiA- prefixed. */
+/* ATLAS edition sidebar — the Institutional Register (248px, fixed).
+ * Mounted only on the desktop branch (.kiA-desktop). All selectors are
+ * .kiA- prefixed and never leak to mobile. */
 
 .kiA-sidebar {
   position: fixed;
   left: 0;
   top: 0;
-  width: var(--sidebar-width);
+  width: var(--atlas-sidebar, 248px);
   height: 100dvh;
   z-index: 40;
   display: flex;
   flex-direction: column;
-  gap: 28px;
-  padding: 30px 20px 20px;
-  /* rich midnight navy — Obsidian Atlas v3.0 */
+  gap: 30px;
+  padding: 34px 0 22px;
   background:
-    radial-gradient(120% 60% at 50% 0%, rgba(151, 178, 211, 0.05), transparent 60%),
-    linear-gradient(180deg, var(--midnight, #101A2A) 0%, var(--obsidian, #0B1019) 100%);
-  border-right: 1px solid var(--border-subtle);
+    linear-gradient(180deg, rgba(17, 28, 43, 0.96), rgba(8, 13, 22, 0.98));
+  border-right: 1px solid var(--atlas-hairline, rgba(216, 209, 194, 0.14));
   overflow-y: auto;
   overflow-x: hidden;
+  font-family: var(--atlas-ui, 'Manrope', sans-serif);
 }
 
-/* brand */
-.kiA-brand-mark {
-  font-family: var(--font-display);
-  font-size: 34px;
-  line-height: 1;
-  color: var(--text);
-  letter-spacing: 0.01em;
-  text-shadow: 0 0 24px rgba(151, 178, 211, 0.25);
+/* ---- brand cartouche ---- */
+.kiA-brand {
+  padding: 0 22px;
 }
-
-.kiA-brand-sub {
-  margin-top: 8px;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.24em;
-  color: var(--text-muted);
+.kiA-brand-frame {
+  border-top: 1px solid var(--atlas-hairline, rgba(216, 209, 194, 0.14));
+  border-bottom: 1px solid var(--atlas-hairline, rgba(216, 209, 194, 0.14));
+  padding: 14px 0;
+  position: relative;
 }
-
-/* main nav — vendored LineSidebar skin */
-.kiA-mainnav {
-  margin: 0 -20px;
-  padding: 0 20px;
-}
-
-.kiA-linesidebar ul {
-  padding-top: 0;
-  padding-bottom: 0;
-}
-
-/* inner label span of the vendored component: uppercase, letter-spaced, Inter */
-.kiA-linesidebar li > span > span {
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  font-weight: 600;
-  font-family: var(--font-ui);
-}
-
-/* active item — Round A 2026-11-04 refined: narrow luminous cyan indicator
- * + tinted background; 220ms slide */
-.kiA-linesidebar li[aria-current='true'] {
-  background: color-mix(in srgb, var(--cyan, #42D9D0) 8%, transparent);
-  border-radius: var(--radius-sm);
-  box-shadow: inset 0 0 24px -12px rgba(86, 224, 209, 0.35);
-  transition: background 220ms cubic-bezier(.2,.8,.2,1);
-}
-
-.kiA-linesidebar li[aria-current='true'] > span > span {
-  color: var(--text, #EDEAE2);
-}
-
-.kiA-linesidebar li[aria-current='true']::after {
+.kiA-brand-frame::before,
+.kiA-brand-frame::after {
   content: '';
   position: absolute;
-  left: -14px;
+  left: 0;
+  right: 0;
+  height: 3px;
+}
+.kiA-brand-frame::before {
   top: 3px;
+  border-top: 1px solid var(--atlas-hairline-soft, rgba(216, 209, 194, 0.08));
+}
+.kiA-brand-frame::after {
   bottom: 3px;
-  width: 2px;
-  border-radius: 2px;
-  background: var(--cyan, #42D9D0);
-  box-shadow: 0 0 10px rgba(86, 224, 209, 0.8), 0 0 22px rgba(86, 224, 209, 0.4);
-  transition: top 220ms cubic-bezier(.2,.8,.2,1), bottom 220ms cubic-bezier(.2,.8,.2,1);
+  border-bottom: 1px solid var(--atlas-hairline-soft, rgba(216, 209, 194, 0.08));
 }
-
-/* disciplines */
-.kiA-section-label {
-  font-family: var(--font-mono);
+.kiA-brand-mark {
+  font-family: var(--atlas-display, 'Cormorant Garamond', serif);
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--atlas-ink, #f2ecdd);
+  letter-spacing: 0.04em;
+}
+.kiA-brand-sub {
+  margin-top: 6px;
   font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: var(--atlas-parchment-faint, #6e685b);
+}
+.kiA-brand-est {
+  margin-top: 12px;
+  font-size: 8.5px;
+  font-weight: 600;
   letter-spacing: 0.24em;
-  color: var(--text-muted);
-  margin-bottom: 10px;
-  padding: 0 4px;
+  color: var(--atlas-parchment-faint, #6e685b);
+  opacity: 0.8;
 }
 
+/* ---- main nav: roman numerals + small caps ---- */
+.kiA-mainnav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 14px;
+}
+.kiA-nav {
+  position: relative;
+  display: grid;
+  grid-template-columns: 30px 1fr 3px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 8px;
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 200ms ease;
+}
+.kiA-nav:hover {
+  background: rgba(216, 209, 194, 0.05);
+}
+.kiA-nav-numeral {
+  font-family: var(--atlas-display, 'Cormorant Garamond', serif);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--atlas-parchment-faint, #6e685b);
+  transition: color 200ms ease;
+}
+.kiA-nav-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.26em;
+  color: var(--atlas-parchment-dim, #a79e8b);
+  transition: color 200ms ease, letter-spacing 200ms ease;
+}
+.kiA-nav-tick {
+  width: 3px;
+  height: 22px;
+  border-radius: 2px;
+  background: var(--atlas-signal, #65d9d0);
+  opacity: 0;
+  transform: scaleY(0.3);
+  transition: opacity 220ms ease, transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 0 10px rgba(101, 217, 208, 0.8);
+}
+.kiA-nav--active .kiA-nav-label {
+  color: var(--atlas-ink, #f2ecdd);
+  letter-spacing: 0.3em;
+}
+.kiA-nav--active .kiA-nav-numeral {
+  color: var(--atlas-signal, #65d9d0);
+}
+.kiA-nav--active .kiA-nav-tick {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+/* ---- discipline register ---- */
+.kiA-section {
+  padding: 0 14px;
+  margin-top: 6px;
+}
+.kiA-section-label {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.32em;
+  color: var(--atlas-parchment-faint, #6e685b);
+  padding: 0 8px 10px;
+}
 .kiA-subjects {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
-
 .kiA-subj {
-  position: relative;
-  display: flex;
+  display: grid;
+  grid-template-columns: 30px 1fr auto;
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 9px 8px;
-  background: transparent;
+  padding: 10px 8px;
+  background: none;
   border: 0;
-  border-radius: var(--radius-sm);
+  border-left: 2px solid transparent;
+  border-radius: 0 8px 8px 0;
   cursor: pointer;
   text-align: left;
-  transition: background var(--transition);
+  transition: background 200ms ease, border-color 200ms ease;
 }
-
 .kiA-subj:hover {
-  background: var(--surface-raised);
+  background: rgba(216, 209, 194, 0.05);
 }
-
 .kiA-subj-num {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-muted);
-  min-width: 18px;
+  font-family: var(--atlas-display, 'Cormorant Garamond', serif);
+  font-size: 13px;
+  font-style: italic;
+  color: var(--atlas-parchment-faint, #6e685b);
 }
-
-.kiA-subj-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: var(--subj);
-  box-shadow: 0 0 8px var(--subj);
-  flex: none;
-}
-
 .kiA-subj-meta {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
-  flex: 1;
 }
-
 .kiA-subj-code {
-  font-family: var(--font-ui);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: var(--text);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  color: var(--atlas-parchment, #d8d1c2);
 }
-
 .kiA-subj-name {
-  font-family: var(--font-ui);
-  font-size: 11px;
-  letter-spacing: 0.02em;
-  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--atlas-parchment-faint, #6e685b);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
-/* right-aligned counts, tabular numerals */
 .kiA-subj-count {
-  margin-left: auto;
-  font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--text-muted);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
-  transition: color var(--transition);
+  letter-spacing: 0.1em;
+  color: var(--atlas-parchment-faint, #6e685b);
 }
-
-.kiA-subj:hover .kiA-subj-count {
+.kiA-subj--active {
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--subj) 12%, transparent),
+    transparent 75%);
+  border-left-color: var(--subj);
+}
+.kiA-subj--active .kiA-subj-num {
   color: var(--subj);
 }
-
-/* luminous active indicator — subject-colored, per discipline */
-.kiA-subj--active {
-  background: color-mix(in srgb, var(--subj) 10%, transparent);
-  border-radius: var(--radius-sm);
+.kiA-subj--active .kiA-subj-count {
+  color: var(--atlas-parchment, #d8d1c2);
 }
 
-.kiA-subj--active::before {
-  content: '';
-  position: absolute;
-  left: -8px;
-  top: 6px;
-  bottom: 6px;
-  width: 3px;
-  border-radius: 3px;
-  background: var(--subj);
-  box-shadow: 0 0 12px var(--subj), 0 0 28px color-mix(in srgb, var(--subj) 60%, transparent);
-  transition: top var(--motion-sidebar, 250ms cubic-bezier(.2,.8,.2,1)),
-              bottom var(--motion-sidebar, 250ms cubic-bezier(.2,.8,.2,1));
-}
-
-.kiA-subj--active .kiA-subj-code { color: var(--subj); }
-.kiA-subj--active .kiA-subj-count { color: var(--text-secondary); }
-
-/* hover line-grow — subject-colored underline that sweeps in */
-.kiA-subj::after {
-  content: '';
-  position: absolute;
-  left: 8px;
-  right: 8px;
-  bottom: 4px;
-  height: 1px;
-  background: var(--subj);
-  opacity: 0.7;
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform var(--transition);
-  pointer-events: none;
-}
-
-.kiA-subj:hover::after {
-  transform: scaleX(1);
-}
-
-/* status — pinned to the bottom */
+/* ---- status footer ---- */
 .kiA-status {
   margin-top: auto;
+  padding: 16px 22px 0;
+  border-top: 1px solid var(--atlas-hairline-soft, rgba(216, 209, 194, 0.08));
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 4px 2px;
-  border-top: 1px solid var(--border-subtle);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: var(--atlas-parchment-faint, #6e685b);
 }
-
 .kiA-status-dot {
   width: 7px;
   height: 7px;
-  border-radius: 999px;
-  background: #34d399; /* literal status green — not a discipline color */
-  box-shadow: 0 0 8px rgba(52, 211, 153, 0.8);
-  flex: none;
-  animation: kiA-pulse 2.4s ease-in-out infinite;
+  border-radius: 50%;
+  background: var(--atlas-signal, #65d9d0);
+  box-shadow: 0 0 8px rgba(101, 217, 208, 0.9);
+  animation: kiA-pulse 2.6s ease-in-out infinite;
 }
-
+.kiA-status-count {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--atlas-parchment-dim, #a79e8b);
+}
 @keyframes kiA-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.45; }
 }
 
-.kiA-status-text {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  color: var(--text-secondary);
-}
-
-.kiA-status-count {
-  margin-left: auto;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
+@media (prefers-reduced-motion: reduce) {
+  .kiA-status-dot { animation: none; }
 }

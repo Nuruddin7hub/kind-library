@@ -1,69 +1,75 @@
-/* K/IND desktop topbar — ChatGPT Round A. All classes kiA- prefixed. */
-
+/* ATLAS edition topbar — 64px instrument bar, desktop only. */
 .kiA-topbar {
   position: sticky;
   top: 0;
   z-index: 30;
-  height: 56px; /* v2.0 spec */
+  height: var(--atlas-topbar, 64px);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 28px;
-  background: color-mix(in srgb, var(--bg) 82%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border-subtle);
+  padding: 0 8px;
+  background: linear-gradient(180deg, rgba(8, 13, 22, 0.92), rgba(8, 13, 22, 0.72));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--atlas-hairline, rgba(216, 209, 194, 0.14));
+  font-family: var(--atlas-ui, 'Manrope', sans-serif);
 }
 
 .kiA-topbar-left {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 14px;
 }
-
-.kiA-topbar-eyebrow {
-  font-family: var(--font-mono);
+.kiA-topbar-wordmark {
   font-size: 10px;
-  letter-spacing: 0.24em;
-  color: var(--text-muted);
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  color: var(--atlas-parchment, #d8d1c2);
 }
-
+.kiA-topbar-div {
+  width: 1px;
+  height: 18px;
+  background: var(--atlas-hairline, rgba(216, 209, 194, 0.14));
+}
 .kiA-topbar-date {
-  font-family: var(--font-ui);
-  font-size: 13px;
-  color: var(--text-secondary);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--atlas-parchment-faint, #6e685b);
+  font-variant-numeric: tabular-nums;
 }
 
+/* ⌘K instrument button */
 .kiA-cmdk {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 14px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--text-secondary);
-  font-family: var(--font-ui);
-  font-size: 13px;
+  gap: 12px;
+  padding: 9px 14px;
+  background: var(--atlas-midnight, #111c2b);
+  border: 1px solid var(--atlas-hairline, rgba(216, 209, 194, 0.14));
+  border-radius: 10px;
   cursor: pointer;
-  transition:
-    background var(--transition),
-    border-color var(--transition),
-    color var(--transition);
+  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
 }
-
 .kiA-cmdk:hover {
-  background: var(--surface-hover);
-  border-color: var(--border);
-  color: var(--text);
+  border-color: rgba(101, 217, 208, 0.55);
+  box-shadow: 0 0 0 1px rgba(101, 217, 208, 0.35), 0 6px 20px -8px rgba(101, 217, 208, 0.4);
+  transform: translateY(-1px);
 }
-
 .kiA-cmdk-key {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--atlas-signal, #65d9d0);
+  border: 1px solid rgba(101, 217, 208, 0.4);
+  border-radius: 6px;
+  padding: 3px 8px;
+  background: rgba(101, 217, 208, 0.08);
 }
-
-.kiA-cmdk:hover .kiA-cmdk-key {
-  color: var(--text-secondary);
+.kiA-cmdk-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--atlas-parchment-dim, #a79e8b);
 }
