@@ -401,3 +401,94 @@
     box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.4);
   }
 }
+
+/* ==================================================================
+   ChatGPT Round A 2026-11-05 — THE READING ROOM (ATLAS edition).
+   All selectors scoped to .reader-shell (desktop reader only; the
+   mobile reader uses .ap-reader classes and never matches).
+   Tokens: Obsidian #080D16 · Midnight #111C2B · Parchment #D8D1C2 ·
+   Signal #65D9D0 · Cormorant Garamond display / Manrope UI.
+   ================================================================== */
+
+/* header: parchment serif title + signal hairline */
+.reader-shell.kiA-v2 .ke-reader-header {
+  background: linear-gradient(180deg, #0c1322, #080d16);
+  border-bottom: 1px solid rgba(101, 217, 208, 0.35);
+}
+.reader-shell .ke-reader-title-text {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #f2ecdd;
+}
+.reader-shell .ke-reader-submeta {
+  font-family: 'Manrope', 'Instrument Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #6e685b;
+}
+.reader-shell .ke-reader-btn {
+  font-family: 'Manrope', 'Instrument Sans', sans-serif;
+}
+.reader-shell .ke-reader-btn:hover:not(:disabled) {
+  background: rgba(216, 209, 194, 0.07);
+  color: #f2ecdd;
+}
+
+/* reading progress: signal → subject gradient */
+.reader-shell .ke-reader-progress > div {
+  background: linear-gradient(90deg, #65d9d0, var(--subj-color, #65d9d0));
+  box-shadow: 0 0 12px rgba(101, 217, 208, 0.55);
+}
+
+/* thumb rail: signal selected edge + serif page numbers */
+.reader-shell .reader-thumb.active {
+  border-color: #65d9d0;
+  box-shadow: 0 0 0 1px #65d9d0,
+              0 0 16px -2px rgba(101, 217, 208, 0.6),
+              0 4px 14px rgba(0, 0, 0, 0.4);
+}
+.reader-shell .reader-thumb .reader-thumb-num {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-size: 12px;
+  color: #a79e8b;
+}
+
+/* canvas: obsidian depth + vignette (PDF paper untouched) */
+.reader-shell .reader-document {
+  background: #080d16;
+  box-shadow: inset 0 0 190px rgba(0, 0, 0, 0.6);
+}
+
+/* study rail: instrument panels with parchment labels */
+.reader-shell .reader-panel {
+  background: #0b111d;
+}
+.reader-shell .reader-launch-btn,
+.reader-shell .reader-tool-row {
+  background: #111c2b;
+  border: 1px solid rgba(216, 209, 194, 0.1);
+  font-family: 'Manrope', 'Instrument Sans', sans-serif;
+}
+.reader-shell .reader-launch-btn .row-title,
+.reader-shell .reader-tool-row .row-title {
+  color: #d8d1c2;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.reader-shell .reader-tabs button.active {
+  background: rgba(101, 217, 208, 0.12);
+  color: #f2ecdd;
+  box-shadow: inset 0 -2px 0 #65d9d0;
+}
+
+/* bottom bar: obsidian, signal-tinted top line, tabular numerals */
+.reader-shell .reader-bottombar {
+  background: #0b111d;
+  border-top: 1px solid rgba(101, 217, 208, 0.28);
+  font-family: 'Manrope', 'Instrument Sans', sans-serif;
+}

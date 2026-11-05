@@ -1,0 +1,53 @@
+/* MaskedHeading — masked word-reveal for atlas display headlines. */
+.mkh {
+  display: block;
+}
+
+.mkh .mkh-word {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  /* descender clearance inside the mask */
+  padding-bottom: 0.09em;
+  margin-bottom: -0.09em;
+}
+
+.mkh .mkh-word--static {
+  overflow: visible;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+.mkh .mkh-rise {
+  display: inline-block;
+  transform: translateY(115%);
+  opacity: 0;
+  animation: mkh-rise 0.95s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.mkh .mkh-rise em {
+  font-style: italic;
+}
+
+@keyframes mkh-rise {
+  0% {
+    transform: translateY(115%);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mkh .mkh-rise {
+    animation: none;
+    transform: none;
+    opacity: 1;
+  }
+}

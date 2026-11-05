@@ -1,11 +1,11 @@
-// K/IND Library — layered global desktop background (ChatGPT Round A 2026-11-04).
-// Three layers, all behind content (z-index -1), desktop only:
-//   1. Atmospheric — restrained Aurora, upper-center (blue/cyan/violet)
-//   2. Architectural — barely-visible 64px grid + coordinate marks
-//   3. Material — film grain ~0.025 + inset edge lighting
-// Reduced-motion users skip the Aurora layer entirely.
+// K/IND Library — ATLAS edition global background (2026-11-05).
+// A surveyor's graticule over obsidian: fine 96px map grid, bolder
+// meridian lines on a 480px tile, coordinate ticks in the corners, a soft
+// signal-tinted glow at the top, and very-low-opacity film grain.
+// Fixed, z-index -1, behind content. Desktop only — App.tsx never mounts
+// this on the mobile branch. Reduced-motion skips the (already static)
+// glow breathing.
 import { useState } from 'react';
-import Aurora from '../bits/Aurora';
 import Noise from '../bits/Noise';
 import './GlobalBackdrop.css';
 
@@ -18,24 +18,11 @@ export default function GlobalBackdrop() {
 
   return (
     <div className="kiA-backdrop" aria-hidden="true">
-      <div className="kiA-backdrop-glow" />
-      {!reduceMotion && (
-        <div className="kiA-backdrop-aurora">
-          <Aurora
-            colorStops={['#123D60', '#126B70', '#25254B']}
-            amplitude={0.65}
-            blend={0.7}
-            speed={0.18}
-            opacity={0.22}
-            layers={2}
-            mouseInteraction={false}
-            intro={true}
-            paused={reduceMotion}
-          />
-        </div>
-      )}
-      <div className="kiA-backdrop-grid" />
-      <Noise opacity={0.025} className="kiA-backdrop-grain" />
+      <div className="kiA-backdrop-glow" data-anim={!reduceMotion} />
+      <div className="kiA-backdrop-graticule" />
+      <div className="kiA-backdrop-meridian" />
+      <div className="kiA-backdrop-ticks" />
+      <Noise opacity={0.022} className="kiA-backdrop-grain" />
     </div>
   );
 }

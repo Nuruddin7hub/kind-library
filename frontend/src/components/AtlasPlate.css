@@ -1,0 +1,102 @@
+/* ATLAS edition document plate — desktop only. */
+.kiA-ap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 300px;
+  padding: 20px 20px 16px;
+  background: linear-gradient(180deg, #16233a, #111c2b);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.kiA-ap::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--subj);
+  opacity: 0.9;
+}
+
+/* inner frame with corner ticks */
+.kiA-ap-frame {
+  position: absolute;
+  inset: 10px;
+  border: 1px solid rgba(216, 209, 194, 0.1);
+  border-radius: 6px;
+  pointer-events: none;
+}
+.kiA-ap-tick {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border: 1px solid rgba(216, 209, 194, 0.35);
+}
+.kiA-ap-tick--tl { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
+.kiA-ap-tick--tr { top: -1px; right: -1px; border-left: 0; border-bottom: 0; }
+.kiA-ap-tick--bl { bottom: -1px; left: -1px; border-right: 0; border-top: 0; }
+.kiA-ap-tick--br { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
+
+.kiA-ap-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  position: relative;
+  z-index: 1;
+}
+.kiA-ap-plate {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.26em;
+  color: var(--atlas-parchment-faint, #6e685b);
+}
+.kiA-ap-code {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+}
+
+.kiA-ap-title {
+  margin: 0 0 10px;
+  font-family: var(--atlas-display, 'Cormorant Garamond', serif);
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.28;
+  color: var(--atlas-ink, #f2ecdd);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+.kiA-ap-meta {
+  margin: 0 0 auto;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--atlas-parchment-dim, #a79e8b);
+  font-variant-numeric: tabular-nums;
+  position: relative;
+  z-index: 1;
+}
+.kiA-ap-ornwrap {
+  margin-top: 12px;
+  opacity: 0.85;
+  position: relative;
+  z-index: 1;
+}
+.kiA-ap-orn {
+  display: block;
+  width: 100%;
+  height: 44px;
+}
+.kiA-ap-phi {
+  font-family: var(--atlas-display, 'Cormorant Garamond', serif);
+  font-style: italic;
+  font-size: 40px;
+}

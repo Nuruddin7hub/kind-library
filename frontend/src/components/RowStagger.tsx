@@ -1,17 +1,17 @@
 // K/IND mobile engine — RowStagger (ChatGPT Round B critique 2026-11-04,
-// 1420 loop: "Animated List HIGH PRIORITY").
-// Spec-exact entrance: 40ms stagger (35–50ms), 200ms duration (180–250ms),
-// translateY(10px) → 0 (8–12px), fade — entrance only, never replays.
+// 1420 loop: "Animated List HIGH PRIORITY"; Round C re-score 2026-11-04:
+// 8px travel, 220ms duration (0.2–0.25s), 40ms stagger (0.035–0.05s),
+// once, uniform — NO horizontal animation, entrance only, never replays.
 // Implemented directly on the React Bits AnimatedList *pattern* (stagger +
 // animate-once, no new deps) so the timing matches the spec exactly:
-// the vendored AnimatedList's 620ms spring engine cannot hit 180–250ms.
+// the vendored AnimatedList's 620ms spring engine cannot hit 200–250ms.
 // Mobile only; desktop untouched.
 
 import { Children, useEffect, useRef, useState, type ReactNode } from 'react';
 
 const STAGGER_MS = 40;   // spec: 35–50ms
-const DURATION_MS = 200; // spec: 180–250ms
-const RISE_PX = 10;      // spec: 8–12px
+const DURATION_MS = 220; // spec: 200–250ms
+const RISE_PX = 8;       // spec: 8px travel, vertical only
 const MAX_STAGGER = 24;  // cap the cascade so long lists don't lag
 
 export default function RowStagger({ children }: { children: ReactNode }) {

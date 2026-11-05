@@ -141,7 +141,12 @@ def api_search():
         subject_matched = q in meta and len(q) > 2
         if subject_matched:
             score += 4
-        # full-text match — rank pages by hit count, keep top 2 as passages
+        # full-text match — rank pages by hit count; return ALL matching
+        # pages as passages (rank order) so the mobile FIND panel can
+        # truthfully report per-page hits and jump to every match.
+        # (Previously top 2 only — FIND could then wrongly claim "0 hits"
+        # on a page whose matches ranked 3rd+.) Other consumers only read
+        # passages[0] (best page), so this changes no other surface.
         page_hits = []
         for pi, ptext in enumerate(d.get("text", [])):
             low = ptext.lower()
@@ -154,7 +159,7 @@ def api_search():
             {"page_number": pi + 1,
              "snippet": make_excerpt(d["text"][pi], q),
              "match_count": hits}
-            for pi, hits in page_hits[:2]
+            for pi, hits in page_hits
         ]
         match_kinds = []
         if title_matched:

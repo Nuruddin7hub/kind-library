@@ -1,86 +1,91 @@
-/* K/IND Library — layered global desktop background (Obsidian Atlas v3.0,
- * ChatGPT Round A 2026-11-04 ~14:20).
- * Four layers, all behind content (z-index -1), desktop only:
- *   0. Deep navy-to-black base gradient (Void)
- *   1. Atmospheric — restrained Aurora, upper-center (blue/cyan/violet),
- *      + 2 subtle radial glows for fulfilled background depth
- *   2. Architectural — 48px low-opacity technical grid + coordinate marks,
- *      masked toward the top
- *   3. Material — fine film grain (tiny seamless feTurbulence noise SVG)
- *      + inset edge lighting
- * Reduced-motion users skip the Aurora layer entirely. */
-
+/* ATLAS edition backdrop — surveyor's graticule over obsidian.
+ * Mounted inside .kiA-desktop only (desktop branch). Fixed, behind content. */
 .kiA-backdrop {
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
   overflow: hidden;
-  /* 0 — deep navy-to-black gradient */
   background:
-    linear-gradient(178deg, #0A1322 0%, #080D17 34%, #07090E 72%, #05070B 100%);
+    radial-gradient(1200px 520px at 50% -8%, rgba(101, 217, 208, 0.075), transparent 62%),
+    radial-gradient(900px 480px at 82% -6%, rgba(182, 155, 255, 0.055), transparent 60%),
+    #080d16;
 }
 
-/* 1a — two subtle atmospheric radial glows (static, cheap) */
+/* gentle glow breathing (static when reduced-motion) */
 .kiA-backdrop-glow {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(52% 34% at 22% 6%, rgba(91, 159, 255, 0.075), transparent 70%),
-    radial-gradient(44% 30% at 82% 10%, rgba(66, 217, 208, 0.055), transparent 70%);
+    radial-gradient(700px 320px at 50% -4%, rgba(101, 217, 208, 0.05), transparent 65%);
+}
+.kiA-backdrop-glow[data-anim="true"] {
+  animation: kiA-glow-breathe 11s ease-in-out infinite;
+}
+@keyframes kiA-glow-breathe {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 1; }
 }
 
-/* 1b — Atmospheric: restrained aurora, upper-center, masked into the void */
-.kiA-backdrop-aurora {
-  position: absolute;
-  top: -14%;
-  left: 6%;
-  right: -6%;
-  height: 64%;
-  -webkit-mask-image:
-    radial-gradient(95% 100% at 55% 0%, black 35%, transparent 92%),
-    linear-gradient(to bottom, black 55%, transparent 100%);
-  -webkit-mask-composite: source-in;
-  mask-image:
-    radial-gradient(95% 100% at 55% 0%, black 35%, transparent 92%),
-    linear-gradient(to bottom, black 55%, transparent 100%);
-  mask-composite: intersect;
-}
-
-/* 2 — Architectural: 48px low-opacity technical grid + faint coordinate
- * cross-marks on a 240px tile, masked toward the top */
-.kiA-backdrop-grid {
+/* fine 96px map grid */
+.kiA-backdrop-graticule {
   position: absolute;
   inset: 0;
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cg stroke='rgba(151,178,211,0.11)' stroke-width='1'%3E%3Cpath d='M8 2v12M2 8h12'/%3E%3C/g%3E%3C/svg%3E"),
-    repeating-linear-gradient(to right, rgba(151, 178, 211, 0.035) 0 1px, transparent 1px 48px),
-    repeating-linear-gradient(to bottom, rgba(151, 178, 211, 0.035) 0 1px, transparent 1px 48px);
-  background-size: 240px 240px, auto, auto;
-  -webkit-mask-image:
-    linear-gradient(to bottom, black 0%, transparent 88%),
-    radial-gradient(125% 95% at 50% 18%, black 25%, transparent 82%);
-  -webkit-mask-composite: source-in;
-  mask-image:
-    linear-gradient(to bottom, black 0%, transparent 88%),
-    radial-gradient(125% 95% at 50% 18%, black 25%, transparent 82%);
-  mask-composite: intersect;
+    linear-gradient(rgba(216, 209, 194, 0.038) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(216, 209, 194, 0.038) 1px, transparent 1px);
+  background-size: 96px 96px;
+  mask-image: radial-gradient(1200px 900px at 50% 30%, black 30%, transparent 100%);
+  -webkit-mask-image: radial-gradient(1200px 900px at 50% 30%, black 30%, transparent 100%);
 }
 
-/* 3 — Material: fine film grain (tiny seamless feTurbulence noise SVG) +
- * inset edge lighting. The vendored Noise bit is fixed/z-45 by default —
- * re-pin it to this layer. */
+/* bolder meridian lines every 480px */
+.kiA-backdrop-meridian {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(216, 209, 194, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(216, 209, 194, 0.06) 1px, transparent 1px);
+  background-size: 480px 480px;
+  mask-image: radial-gradient(1100px 800px at 50% 26%, black 20%, transparent 95%);
+  -webkit-mask-image: radial-gradient(1100px 800px at 50% 26%, black 20%, transparent 95%);
+}
+
+/* coordinate ticks in the four corners */
+.kiA-backdrop-ticks {
+  position: absolute;
+  inset: 22px;
+  opacity: 0.5;
+}
+.kiA-backdrop-ticks::before,
+.kiA-backdrop-ticks::after {
+  content: '';
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(216, 209, 194, 0.22);
+}
+.kiA-backdrop-ticks::before {
+  top: 0;
+  left: 0;
+  border-right: 0;
+  border-bottom: 0;
+}
+.kiA-backdrop-ticks::after {
+  bottom: 0;
+  right: 0;
+  border-left: 0;
+  border-top: 0;
+}
+
 .rb-noise.kiA-backdrop-grain {
   position: absolute;
   inset: 0;
   z-index: 0;
 }
 
-.kiA-backdrop::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  box-shadow:
-    inset 0 1px 0 rgba(220, 232, 244, 0.05),
-    inset 0 0 240px rgba(0, 0, 0, 0.42);
+@media (prefers-reduced-motion: reduce) {
+  .kiA-backdrop-glow[data-anim="true"] {
+    animation: none;
+  }
 }
