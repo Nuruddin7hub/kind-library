@@ -220,7 +220,8 @@ export default function MobileLibrary(props: MobileLibraryProps) {
   const grouped = indexSubject === 'all';
 
   return (
-    <div className={`ml-root mobile-page${reducedMotion ? ' ml-reduced' : ''}`}>
+    <div className={`ml-root mobile-page${reducedMotion ? ' ml-reduced' : ''}`}
+      data-subject={indexSubject !== 'all' ? indexSubject : undefined}>
       <header className="ml-header">
         {!reducedMotion && (
           <div className="ml-dither" aria-hidden="true">

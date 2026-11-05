@@ -46,7 +46,7 @@
 .ml-title {
   position: relative;
   z-index: 1;
-  margin: 0;
+  margin: 0 0 16px; /* spec hierarchy: 16px below "The archive." */
   font-family: var(--font-display);
   font-weight: 400;
   font-size: 34px; /* 31–34px serif title */
@@ -86,10 +86,10 @@
   box-shadow: 0 0 0 2px rgba(56, 213, 193, 0.25);
 }
 
-/* ---------- subject rail (visible edge fade both sides) ---------- */
+/* ---------- subject rail (visible edge fade both sides; spec: 12px gaps) ---------- */
 .ml-rail {
   display: flex;
-  gap: 8px;
+  gap: 12px; /* spec hierarchy: 12px chip gaps */
   overflow-x: auto;
   margin: 10px -18px 0;
   padding: 2px 18px 6px;
@@ -119,12 +119,12 @@
   background: var(--surface-raised);
 }
 
-/* ---------- tools row: 40px mono toolbar ---------- */
+/* ---------- tools row: 40px mono toolbar (spec: compact count+filter row, 12px) ---------- */
 .ml-tools {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 8px;
+  margin-top: 12px;
 }
 .ml-count {
   font-family: var(--font-mono);
@@ -203,17 +203,25 @@
   line-height: 1;
 }
 
-/* ---------- document list ---------- */
-/* Round B 2026-11-04 (1420 loop): 9px gaps match the .ki-entrance stagger grid */
+/* ---------- document list ----------
+ * Round C re-score P0 — exact .document-list spec: 1-col grid, 10px gap,
+ * padding 0 16px calc(108px + safe-area). The list breaks out of .ml-root's
+ * 18px gutters (margin 0 -18px) to land the spec's exact 16px; the 108px
+ * bottom clearance IS the dock clearance for this page, so the shared
+ * .mobile-page bottom padding is zeroed on .ml-root (counted once).
+ * Library + Saved both render .ml-list. */
 .ml-list {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-  margin-top: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  margin: 10px -18px 0;
+  padding: 0 16px calc(108px + env(safe-area-inset-bottom));
 }
+.ml-root.mobile-page { padding-bottom: 0; }
 
-/* ---------- subject groups: collapsible sticky heads, solid bg, subject-accent edge ---------- */
-.ml-group { margin-top: 4px; }
+/* ---------- subject groups: collapsible sticky heads, solid bg, subject-accent edge ----------
+ * Round C re-score: 2px subject-color marker + uppercase label (14px). */
+.ml-group { margin: 0; }
 .ml-group-head {
   position: sticky;
   top: 64px; /* docks below the sticky 48px filter bar + padding (z-index 20) */
@@ -222,8 +230,8 @@
   align-items: center;
   gap: 8px;
   width: 100%;
-  margin: 6px -18px 4px;
-  padding: 8px 18px 8px 28px;
+  margin: 8px 0 6px;
+  padding: 10px 4px 10px 14px;
   min-height: 44px;
   background: var(--bg); /* solid — no backdrop bleed of rows scrolling under */
   border: none;
@@ -233,25 +241,34 @@
   text-align: left;
   color: inherit;
 }
+/* Round B P1: expanded subject — cyan left edge + faint cyan wash so the
+ * open group reads clearly; inactive headers exactly as-is. The 2px border
+ * is offset by 2px less left padding so the label never shifts. */
+.ml-group-head[aria-expanded="true"] {
+  border-left: 2px solid #59E4D2;
+  background: rgba(89, 228, 210, 0.045);
+  padding-left: 12px;
+}
 .ml-group-head::before {
   content: '';
   position: absolute;
-  left: 18px;
-  top: 9px;
-  bottom: 9px;
-  width: 3px;
+  left: 4px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px; /* spec: 2px subject-color marker */
   border-radius: 2px;
   background: var(--group-accent, #38D5C1); /* set inline from tsx: s.color */
 }
 .ml-group-code {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.14em;
 }
 .ml-group-name {
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  color: rgba(255, 255, 255, 0.72);
+  font-size: 14px; /* spec: uppercase label (14px) */
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.85);
 }
 .ml-group-count {
   margin-left: auto;
@@ -264,7 +281,8 @@
   color: var(--group-accent, #38D5C1);
   transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
-.ml-group-chev.closed { transform: rotate(-90deg); }
+/* Round B P1: chevron rotates a full 180° on expand/collapse (▾ ↔ ▴) */
+.ml-group-chev.closed { transform: rotate(180deg); }
 
 /* ---------- empty state ---------- */
 .ml-empty {

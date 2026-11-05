@@ -7,7 +7,7 @@
 // Never invent reading progress or document types.
 // Desktop is untouched — mobile only. All classes prefixed msi-.
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import './MobileSubjectIndex.css';
 import MobileDocRow, { type RowFile } from './MobileDocRow';
 import DocCover from './DocCover';
@@ -151,20 +151,18 @@ function DigitalArt({ animated }: { animated: boolean }) {
         <circle cx="16" cy="58" r="4" fill="none" stroke={signal} strokeWidth="1.5" opacity="0.95" />
         <circle cx="16" cy="98" r="4" fill="none" stroke={signal} strokeWidth="1.5" opacity="0.95" />
         <circle cx="196" cy="78" r="4" fill="none" stroke={signal} strokeWidth="1.5" opacity="0.95" />
-        {/* TWO signal pulses on independent cycles: A→Y (3.2s) and B→Y (4.6s).
-            Gated by `animated` (parent passes false when reduced motion). */}
+        {/* Live-instrument pulses (Round C re-score): A and B inputs travel
+            into the gate; the Y output fires on a delay — only after BOTH
+            inputs arrive (both high). .logic-pulse stroke-dasharray CSS,
+            no SMIL. pathLength=100 normalises the dash units. */}
         {animated && (
           <g>
-            <circle r="4" fill={signal}>
-              <animateMotion dur="3.2s" repeatCount="indefinite" calcMode="linear"
-                keyTimes="0;0.62;1" keyPoints="0;1;1"
-                path="M16 58 C60 58 80 78 108 78 H196" />
-            </circle>
-            <circle r="3" fill="#ffffff" opacity="0.85">
-              <animateMotion dur="4.6s" begin="1.1s" repeatCount="indefinite" calcMode="linear"
-                keyTimes="0;0.7;1" keyPoints="0;1;1"
-                path="M16 98 C60 98 80 78 108 78 H196" />
-            </circle>
+            <path className="logic-pulse logic-pulse-a" pathLength={100}
+              d="M16 58 H66 C90 58 96 78 112 78 H150" />
+            <path className="logic-pulse logic-pulse-b" pathLength={100}
+              d="M16 98 H66 C90 98 96 78 112 78 H150" />
+            <path className="logic-pulse logic-pulse-y" pathLength={100}
+              d="M150 78 H196" />
           </g>
         )}
         <text x="4" y="62" fontFamily="var(--font-mono)" fontSize="12" fill={signal} opacity="0.95">A</text>
@@ -172,6 +170,9 @@ function DigitalArt({ animated }: { animated: boolean }) {
         <text x="204" y="82" fontFamily="var(--font-mono)" fontSize="12" fill={signal} opacity="0.95">Y</text>
         <text x="70" y="28" fontFamily="var(--font-mono)" fontSize="10" fill="#ffffff" opacity="0.55">AND</text>
       </g>
+      {/* technical label: mono, spaced, teal (Round C re-score) */}
+      <text x="24" y="20" fontFamily="var(--font-mono)" fontSize="8.5" letterSpacing="2"
+        fill={signal} opacity="0.85">LOGIC GATE / AND / 2 INPUTS · 1 OUTPUT</text>
       {/* truth table: the gate's behaviour, stated plainly */}
       <text x="272" y="52" fontFamily="var(--font-mono)" fontSize="11" fill="#ffffff" opacity="0.6">A B │ Y</text>
       <text x="272" y="76" fontFamily="var(--font-mono)" fontSize="12" fill={signal} opacity="0.92">0 0 │ 0</text>
@@ -272,28 +273,29 @@ function SubjectArtwork({ subject, accent, animated }: { subject: string; accent
  *  explanation, an EXPLORE button that runs a real library search, and a
  *  bronze serif ? at ~42% width. No auto-rotation. */
 function BigQuestionsCard({
-  accent, questions, onSearchQuery,
+  accent, onSearchQuery,
 }: {
   accent: string;
   questions: string[];
   onSearchQuery?: (q: string) => void;
 }) {
+  // Round C re-score: exact composition per the FIELD EDITION Round 2 audit.
   return (
     <div className="msi-bigq" aria-label="The big question">
       <div className="msi-bigq-left">
-        <span className="msi-bigq-label">THE BIG QUESTION</span>
-        <span className="msi-bigq-rule" aria-hidden="true" />
-        <p className="msi-bigq-q-big">{questions[0]}</p>
+        <span className="msi-bigq-label">THE BIG QUESTION · 01</span>
+        <span className="msi-bigq-field">FIELD NOTE</span>
+        <p className="msi-bigq-q-big">“What makes something true?”</p>
         <p className="msi-bigq-desc">
-          Four documents on what exists, what can be known, and whether truth holds.
+          Knowledge, belief and the limits of certainty.
         </p>
         {onSearchQuery && (
           <button
             type="button"
             className="msi-bigq-btn"
-            onClick={() => onSearchQuery(questions[0])}
+            onClick={() => onSearchQuery('What makes something true?')}
           >
-            EXPLORE THE COLLECTION →
+            EXPLORE THE QUESTION →
           </button>
         )}
         <span className="msi-bigq-rule" aria-hidden="true" />
@@ -435,9 +437,22 @@ export default function MobileSubjectIndex({
 }: Props) {
   const theme = THEMES[subject] || THEMES.em2;
   const [activeSection, setActiveSection] = useState('all');
+  const chipsRef = useRef<HTMLDivElement>(null);
 
   // filter resets when the subject changes
   useEffect(() => { setActiveSection('all'); }, [subject]);
+
+  // selected chip stays visible: center it in the rail (scroll affordance —
+  // the edge fade never masks the active chip; the final chip stays
+  // discoverable by scrolling)
+  useEffect(() => {
+    const rail = chipsRef.current;
+    if (!rail) return;
+    const active = rail.querySelector('.msi-chip.on') as HTMLElement | null;
+    if (active) {
+      active.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+    }
+  }, [activeSection]);
 
   // distinct document types = distinct real sections (never invented)
   const typeCount = useMemo(() => new Set(files.map(f => f.section)).size, [files]);
@@ -501,7 +516,7 @@ export default function MobileSubjectIndex({
   };
 
   return (
-    <div className="msi" data-subject={subject} key={subject} style={{ ['--subject-accent' as any]: accent }}>
+    <div className={`msi${subject === 'fis' ? ' fis-shell' : ''}`} data-subject={subject} key={subject} style={{ ['--subject-accent' as any]: accent }}>
       {onBack && (
         <button className="msi-back" onClick={onBack} aria-label="Back to all documents">
           ‹ LIBRARY
@@ -566,11 +581,14 @@ export default function MobileSubjectIndex({
             <button
               type="button"
               key={qc.q}
-              className="msi-qcard"
+              className={`msi-qcard${i === 0 ? ' featured' : ''}`}
               onClick={() => onSearchQuery?.(qc.q)}
               aria-label={`${qc.q} — explore the collection`}
             >
-              <span className="msi-qcard-num" aria-hidden="true">Q.{String(i + 1).padStart(2, '0')}</span>
+              <span className="msi-qcard-top">
+                <span className="msi-qcard-num" aria-hidden="true">Q.{String(i + 1).padStart(2, '0')}</span>
+                <span className="msi-qcard-ch" aria-hidden="true">{qc.meta.split(' · ')[0]}</span>
+              </span>
               <span className="msi-qcard-q">{qc.q}</span>
               <span className="msi-qcard-desc">{qc.desc}</span>
               <span className="msi-qcard-foot">
@@ -604,7 +622,7 @@ export default function MobileSubjectIndex({
       {categories.length > 1 && (
         <div className="msi-cats">
           <p className="msi-cats-label">BROWSE BY TYPE</p>
-          <div className="msi-chips" role="group" aria-label="Filter documents by type">
+          <div className="msi-chips" ref={chipsRef} role="group" aria-label="Filter documents by type">
             <button
               type="button"
               className={`msi-chip${activeSection === 'all' ? ' on' : ''}`}
@@ -670,7 +688,11 @@ export default function MobileSubjectIndex({
 
       <div className="msi-listhead">
         <span className="msi-eyebrow">{theme.listLabel}</span>
-        <span className="msi-eyebrow dim">{filtered.length} DOCUMENTS</span>
+        {/* Round C re-score: digital gets the exact collection divider with
+            the REAL document count from the archive data */}
+        <span className="msi-eyebrow dim">
+          {subject === 'digital' ? `THE COLLECTION — ${files.length} DOCUMENTS` : `${filtered.length} DOCUMENTS`}
+        </span>
       </div>
       <div className="msi-list">
         <RowStagger>

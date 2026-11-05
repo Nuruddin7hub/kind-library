@@ -12,7 +12,7 @@
 // SVG artwork, subject bottom edge, art never behind text) · AnimatedContent
 // section entrances. Desktop untouched. Mobile only.
 
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, useState, type CSSProperties, type ReactNode } from 'react';
 import type { LibFile } from '../shared';
 import { SUBJECTS, pageImageUrl, relTime, subjectOf } from '../shared';
 import Aurora from '../bits/Aurora';
@@ -42,6 +42,7 @@ export interface MobileHomeProps {
   totalDocs: number;
   totalPages: number;
   subjectCounts: Record<string, number>;
+  subjectPages: Record<string, number>; // Round C re-score: real per-subject page totals
   resume: ResumeInfo | null;          // real saved progress (kl:pos)
   recent: RecentInfo[];               // recently opened, max ~5
   reducedMotion: boolean;
@@ -138,17 +139,18 @@ function NetworkField({ animate, onNodeTap }: {
   animate: boolean;
   onNodeTap: (id: string) => void;
 }) {
+  // Round C re-score: node spacing +8–10% — (64,64),(216,64),(64,236),(216,236)
   const nodes = [
-    { x: 70, y: 72, s: SUBJECTS[0] },   // EM2
-    { x: 210, y: 72, s: SUBJECTS[1] },  // SIGNALS
-    { x: 70, y: 228, s: SUBJECTS[2] },  // FIS
-    { x: 210, y: 228, s: SUBJECTS[3] }, // DIGITAL
+    { x: 64, y: 64, s: SUBJECTS[0] },   // EM2
+    { x: 216, y: 64, s: SUBJECTS[1] },  // SIGNALS
+    { x: 64, y: 236, s: SUBJECTS[2] },  // FIS
+    { x: 216, y: 236, s: SUBJECTS[3] }, // DIGITAL
   ];
   const grid: string[] = [];
   for (let x = 0; x <= 280; x += 20) grid.push(`M${x},0 V300`);
-  for (let y = 0; y <= 300; y += 20) grid.push(`M0,${y} H280`);
+  for (let y = 0; y <= 300; y += 20) grid.push(`M0,${y} H300`);
   const links: Array<[number, number]> = [[0, 1], [2, 3], [0, 2], [1, 3], [0, 3], [1, 2]];
-  const SIGNAL_PATH = 'M70,72 L210,228'; // EM2 → DIGITAL diagonal
+  const SIGNAL_PATH = 'M64,64 L216,236'; // EM2 → DIGITAL diagonal
   return (
     <svg className="mh-network" viewBox="0 0 280 300" preserveAspectRatio="xMidYMid meet" role="img"
       aria-label="Knowledge field: the four disciplines, connected. Tap a node to preview it.">
@@ -180,7 +182,8 @@ function NetworkField({ animate, onNodeTap }: {
           <title>{n.s.name}</title>
           {/* 52px invisible tap target (44px minimum, thumb-friendly) */}
           <circle cx={n.x} cy={n.y} r="26" fill="transparent" />
-          <circle cx={n.x} cy={n.y} r="26" fill="url(#mh-halo)" opacity="0.5" />
+          {/* faint subject-color outer halo (Round C re-score) */}
+          <circle cx={n.x} cy={n.y} r="26" fill={n.s.color} opacity="0.1" />
           <circle cx={n.x} cy={n.y} r="13" fill={n.s.color} opacity="0.22"
             className={animate ? 'mh-halo-pulse' : undefined} style={{ animationDelay: `${i * 0.7}s` }} />
           <circle cx={n.x} cy={n.y} r="5.5" fill={n.s.color} opacity="0.95" />
@@ -204,7 +207,7 @@ function NetworkField({ animate, onNodeTap }: {
           </circle>
           {/* arrival pulse on the destination node: same 4.5s period,
               delayed by the travel time (~2.9s), one pulse per cycle */}
-          <circle cx="210" cy="228" r="10" fill="none" stroke="#32D3BD"
+          <circle cx="216" cy="236" r="10" fill="none" stroke="#32D3BD"
             strokeWidth="1.5" className="mh-arrival-pulse" />
         </g>
       )}
@@ -224,10 +227,21 @@ function MaybeAnim({ children, reducedMotion, ...props }: {
 
 export default function MobileHome(props: MobileHomeProps) {
   const {
-    totalDocs, totalPages, subjectCounts, resume, recent,
+    totalDocs, totalPages, subjectCounts, subjectPages, resume, recent,
     reducedMotion, onOpenSubject, onOpenReader, onSearch,
   } = props;
   const [query, setQuery] = useState('');
+  // Round B P2 CountUp: play once per tab session — the flag survives a
+  // back-nav (MobileHome remounts on tab change), so the metrics never
+  // restart. New key, no existing kl:* schema touched.
+  const [heroCounted, setHeroCounted] = useState(() => {
+    try { return sessionStorage.getItem('kl:hero-counted') === '1'; } catch { return false; }
+  });
+  const markHeroCounted = useCallback(() => {
+    try { sessionStorage.setItem('kl:hero-counted', '1'); } catch { /* ignore */ }
+    setHeroCounted(true);
+  }, []);
+  const showCountUp = !reducedMotion && !heroCounted;
   // constellation node preview (Round B 2026-11-04, 1420 loop): tapping a
   // node shows a per-subject preview with the real document count
   const [preview, setPreview] = useState<string | null>(null);
@@ -325,6 +339,7 @@ export default function MobileHome(props: MobileHomeProps) {
               const s = SUBJECTS.find(x => x.id === preview);
               if (!s) return null;
               const count = subjectCounts[s.id] ?? 0;
+              const pages = subjectPages[s.id] ?? 0;
               return (
                 <div className="mh-preview" role="dialog" aria-label={`${s.name} preview`}>
                   <button
@@ -337,7 +352,7 @@ export default function MobileHome(props: MobileHomeProps) {
                   </button>
                   <span className="mh-preview-code" style={{ color: s.color }}>{s.code}</span>
                   <span className="mh-preview-name">{s.name}</span>
-                  <span className="mh-preview-count">{count} DOCUMENTS</span>
+                  <span className="mh-preview-count">{count} DOCUMENTS · {pages.toLocaleString('en-US')} PAGES</span>
                   <button
                     type="button"
                     className="mh-preview-open"
@@ -389,33 +404,34 @@ export default function MobileHome(props: MobileHomeProps) {
           </form>
 
           {/* three stat figures — ONE connected strip with dividers,
-              LIBRARY METRICS micro label; CountUp once, all real counts */}
-          <div className="mh-stats" aria-label="Library statistics">
+              LIBRARY METRICS micro label; CountUp once, all real counts.
+              Round C re-score: .hero-metrics editorial strip */}
+          <div className="mh-stats hero-metrics" aria-label="Library statistics">
             <p className="mh-stats-eyebrow">LIBRARY METRICS</p>
             <div className="mh-stats-strip">
               <div className="mh-stat">
                 <span className="mh-stat-num">
-                  {reducedMotion ? totalDocs : (
-                    <CountUp to={totalDocs} from={0} duration={1.4} trigger="load" className="mh-countup" />
-                  )}
+                  {showCountUp ? (
+                    <CountUp to={totalDocs} from={0} duration={1.2} trigger="view" onEnd={markHeroCounted} className="mh-countup" />
+                  ) : totalDocs}
                 </span>
                 <span className="mh-stat-label">DOCUMENTS</span>
               </div>
               <div className="mh-stat-divider" aria-hidden="true" />
               <div className="mh-stat">
                 <span className="mh-stat-num">
-                  {reducedMotion ? SUBJECTS.length : (
-                    <CountUp to={SUBJECTS.length} from={0} duration={1.1} trigger="load" className="mh-countup" />
-                  )}
+                  {showCountUp ? (
+                    <CountUp to={SUBJECTS.length} from={0} duration={1.0} trigger="view" onEnd={markHeroCounted} className="mh-countup" />
+                  ) : SUBJECTS.length}
                 </span>
                 <span className="mh-stat-label">DISCIPLINES</span>
               </div>
               <div className="mh-stat-divider" aria-hidden="true" />
               <div className="mh-stat">
                 <span className="mh-stat-num">
-                  {reducedMotion ? totalPages.toLocaleString('en-US') : (
-                    <CountUp to={totalPages} from={0} duration={1.6} separator="," trigger="load" className="mh-countup" />
-                  )}
+                  {showCountUp ? (
+                    <CountUp to={totalPages} from={0} duration={1.2} separator="," trigger="view" onEnd={markHeroCounted} className="mh-countup" />
+                  ) : totalPages.toLocaleString('en-US')}
                 </span>
                 <span className="mh-stat-label">PAGES</span>
               </div>
@@ -426,6 +442,8 @@ export default function MobileHome(props: MobileHomeProps) {
 
       {/* 8 — Disciplines: signature cards (SpotlightCard, tap/focus) */}
       <section className="mh-section mh-section--tiles">
+        {/* Round C re-score: eyebrow before the discipline section */}
+        <p className="mh-section-eyebrow">EXPLORE THE ARCHIVE</p>
         <h2 className="mh-section-head">YOUR DISCIPLINES</h2>
         <MaybeAnim
           reducedMotion={reducedMotion}
