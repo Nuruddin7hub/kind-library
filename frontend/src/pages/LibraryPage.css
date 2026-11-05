@@ -1,731 +1,348 @@
-/* K/IND Library — ChatGPT Round A, desktop Library page rebuild (part D).
- * All classes prefixed kiA-. Desktop only; mobile styles untouched. */
+/* K/IND Library — Library page, ATLAS edition (2026-11-05). "SUBJECT EDITION".
+ * All classes kiA- prefixed, desktop only. */
 
-/* ---- Design tokens — Obsidian Archive v2.0 (ChatGPT Round A, 2026-11-03).
- *  Scoped to the page root; this page is desktop-only, so the v2.0 values
- *  live here directly. ---- */
 .kiA-page {
-  --kiA-bg: #07090E;
-  --kiA-surface: #0B1019;
-  --kiA-surface-raised: #101A2A;
-  --kiA-surface-hover: #172438;
-  --kiA-border: rgba(151, 178, 211, 0.13);
-  --kiA-border-subtle: rgba(151, 178, 211, 0.07);
-  --kiA-text: #EDEAE2;
-  --kiA-text-secondary: #8D9BAF;
-  --kiA-text-muted: #69778D;
-  --kiA-cyan: #42D9D0;
-  --kiA-em2: #5B9FFF;
-  --kiA-signals: #B18AFF;
-  --kiA-fis: #E5A34C;
-  --kiA-digital: #42D9B5;
-  --kiA-font-display: "Instrument Serif", Georgia, serif;
-  --kiA-font-ui: "Inter", system-ui, -apple-system, sans-serif;
-  --kiA-font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
-  --kiA-radius-sm: 8px;
-  --kiA-radius-md: 14px;
-  --kiA-radius-lg: 20px;
-  --kiA-transition: 220ms cubic-bezier(.2,.8,.2,1);
-
-  color: var(--kiA-text);
-  font-family: var(--kiA-font-ui);
-  padding: 56px 48px 96px;
-  max-width: 1680px;
-  margin: 0 auto;
+  padding: 56px 0 0;
+  color: var(--atlas-parchment, #d8d1c2);
 }
 
-/* ---------- header ---------- */
-.kiA-head { margin-bottom: 36px; }
-
-.kiA-eyebrow {
-  font-family: var(--kiA-font-mono);
-  font-size: 11px;
-  letter-spacing: 0.32em;
-  color: var(--kiA-text-muted);
-  margin: 0 0 14px;
+/* ---------- edition header ---------- */
+.kiA-head {
+  position: relative;
+  margin-bottom: 40px;
 }
-
-.kiA-title {
-  font-family: var(--kiA-font-display);
-  font-size: clamp(40px, 4.5vw, 64px);
-  font-weight: 400;
-  letter-spacing: -0.01em;
-  margin: 0 0 12px;
+.kiA-head::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: -22px;
+  width: 64px;
+  height: 3px;
+  background: var(--ed-accent, var(--atlas-signal, #65d9d0));
+  border-radius: 2px;
+  box-shadow: 0 0 14px var(--ed-accent, var(--atlas-signal, #65d9d0));
 }
-
-.kiA-editorial {
-  font-family: var(--kiA-font-display);
-  font-style: italic;
-  font-size: 22px;
-  color: var(--kiA-fis);
-  margin: 0 0 8px;
+.kiA-ed-title {
+  font-size: 64px;
+  max-width: 18ch;
 }
-
-.kiA-subline {
-  font-family: var(--kiA-font-mono);
-  font-size: 12.5px;
-  color: var(--kiA-text-secondary);
-  margin: 0;
+.kiA-ed-subline {
+  margin: 20px 0 0;
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  color: var(--atlas-parchment-dim, #a79e8b);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---------- controls ---------- */
 .kiA-controls {
-  margin-bottom: 32px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  margin-bottom: 34px;
 }
-
 .kiA-tabs {
   display: flex;
+  gap: 8px;
   flex-wrap: wrap;
-  gap: 8px;
+  margin-bottom: 20px;
 }
-
 .kiA-tab {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 9px 14px;
-  border-radius: var(--kiA-radius-sm);
-  border: 1px solid var(--kiA-border-subtle);
-  background: var(--kiA-surface);
-  color: var(--kiA-text-secondary);
-  font-family: var(--kiA-font-mono);
-  font-size: 12px;
+  gap: 9px;
+  padding: 9px 16px;
+  background: transparent;
+  border: 1px solid var(--atlas-hairline, rgba(216, 209, 194, 0.14));
+  border-radius: 999px;
   cursor: pointer;
-  transition: background var(--kiA-transition), color var(--kiA-transition), border-color var(--kiA-transition);
+  transition: border-color 200ms ease, background 200ms ease, box-shadow 200ms ease;
 }
-
-.kiA-tab:hover { background: var(--kiA-surface-hover); color: var(--kiA-text); }
-
+.kiA-tab:hover {
+  border-color: rgba(216, 209, 194, 0.35);
+}
 .kiA-tab--active {
-  background: var(--kiA-surface-hover);
-  color: var(--kiA-text);
-  border-color: var(--kiA-border);
+  background: rgba(216, 209, 194, 0.07);
+  border-color: var(--subj, var(--atlas-signal, #65d9d0));
+  box-shadow: 0 0 0 1px var(--subj, var(--atlas-signal, #65d9d0));
 }
-
 .kiA-tab-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  flex: none;
 }
-
-.kiA-tab-dot--all { background: var(--kiA-text-muted); }
-
-.kiA-tab-code { letter-spacing: 0.08em; font-weight: 600; }
-
-.kiA-tab-count { color: var(--kiA-text-muted); font-size: 11px; }
+.kiA-tab-code {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  color: var(--atlas-parchment, #d8d1c2);
+}
+.kiA-tab-count {
+  font-size: 10.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--atlas-parchment-faint, #6e685b);
+}
 
 .kiA-controls-row {
   display: flex;
+  align-items: center;
+  gap: 14px;
   flex-wrap: wrap;
+}
+.kiA-search {
+  flex: 1 1 240px;
+  max-width: 340px;
+  height: 44px;
+  padding: 0 18px;
+  background: var(--atlas-midnight, #111c2b);
+  border: 1px solid var(--atlas-hairline, rgba(216, 209, 194, 0.14));
+  border-radius: 10px;
+  color: var(--atlas-ink, #f2ecdd);
+  font-family: var(--atlas-ui, 'Manrope', sans-serif);
+  font-size: 13.5px;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+.kiA-search::placeholder {
+  color: var(--atlas-parchment-faint, #6e685b);
+}
+.kiA-search:focus {
+  outline: none;
+  border-color: rgba(101, 217, 208, 0.6);
+  box-shadow: 0 0 0 1px rgba(101, 217, 208, 0.4);
+}
+
+.kiA-type-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.kiA-chip {
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid var(--atlas-hairline, rgba(216, 209, 194, 0.14));
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--atlas-parchment-dim, #a79e8b);
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+.kiA-chip:hover {
+  border-color: rgba(216, 209, 194, 0.35);
+  color: var(--atlas-parchment, #d8d1c2);
+}
+.kiA-chip--active {
+  background: rgba(101, 217, 208, 0.1);
+  border-color: rgba(101, 217, 208, 0.55);
+  color: var(--atlas-ink, #f2ecdd);
+}
+
+.kiA-sort {
+  display: flex;
   align-items: center;
   gap: 10px;
 }
-
-.kiA-search {
-  flex: 1 1 220px;
-  max-width: 320px;
-  padding: 10px 14px;
-  border-radius: var(--kiA-radius-sm);
-  border: 1px solid var(--kiA-border-subtle);
-  background: var(--kiA-surface);
-  color: var(--kiA-text);
-  font-family: var(--kiA-font-ui);
-  font-size: 13.5px;
-  outline: none;
-  transition: border-color var(--kiA-transition), background var(--kiA-transition);
-}
-
-.kiA-search::placeholder { color: var(--kiA-text-muted); }
-
-.kiA-search:focus { border-color: var(--kiA-border); background: var(--kiA-surface-raised); }
-
-.kiA-type-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-
-.kiA-chip {
-  padding: 8px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--kiA-border-subtle);
-  background: transparent;
-  color: var(--kiA-text-secondary);
-  font-family: var(--kiA-font-ui);
-  font-size: 12.5px;
-  cursor: pointer;
-  transition: all var(--kiA-transition);
-}
-
-.kiA-chip:hover { color: var(--kiA-text); border-color: var(--kiA-border); }
-
-.kiA-chip--active {
-  background: var(--kiA-surface-hover);
-  color: var(--kiA-text);
-  border-color: var(--kiA-border);
-}
-
-.kiA-sort { display: inline-flex; align-items: center; gap: 8px; }
-
 .kiA-sort-label {
-  font-family: var(--kiA-font-mono);
-  font-size: 11px;
-  color: var(--kiA-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  color: var(--atlas-parchment-faint, #6e685b);
 }
-
 .kiA-sort select {
-  padding: 9px 12px;
-  border-radius: var(--kiA-radius-sm);
-  border: 1px solid var(--kiA-border-subtle);
-  background: var(--kiA-surface);
-  color: var(--kiA-text);
-  font-family: var(--kiA-font-ui);
-  font-size: 13px;
+  height: 40px;
+  padding: 0 12px;
+  background: var(--atlas-midnight, #111c2b);
+  border: 1px solid var(--atlas-hairline, rgba(216, 209, 194, 0.14));
+  border-radius: 10px;
+  color: var(--atlas-parchment, #d8d1c2);
+  font-family: var(--atlas-ui, 'Manrope', sans-serif);
+  font-size: 12.5px;
+  font-weight: 600;
   cursor: pointer;
-  outline: none;
 }
 
 .kiA-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 9px 14px;
-  border-radius: var(--kiA-radius-sm);
-  border: 1px solid var(--kiA-border-subtle);
-  background: var(--kiA-surface);
-  color: var(--kiA-text-secondary);
-  font-family: var(--kiA-font-ui);
-  font-size: 13px;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  background: transparent;
+  border: 1px solid var(--atlas-hairline, rgba(216, 209, 194, 0.14));
+  border-radius: 10px;
+  color: var(--atlas-parchment-dim, #a79e8b);
+  font-family: var(--atlas-ui, 'Manrope', sans-serif);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   cursor: pointer;
-  transition: all var(--kiA-transition);
+  transition: all 180ms ease;
 }
-
-.kiA-toggle:hover { color: var(--kiA-text); border-color: var(--kiA-border); }
-
+.kiA-toggle:hover {
+  border-color: rgba(216, 209, 194, 0.35);
+  color: var(--atlas-parchment, #d8d1c2);
+}
 .kiA-toggle--on {
-  background: var(--kiA-surface-hover);
-  color: var(--kiA-text);
-  border-color: var(--kiA-border);
+  background: rgba(101, 217, 208, 0.1);
+  border-color: rgba(101, 217, 208, 0.55);
+  color: var(--atlas-ink, #f2ecdd);
+}
+.kiA-view-toggle {
+  display: flex;
+  gap: 6px;
 }
 
-.kiA-view-toggle { display: inline-flex; gap: 6px; }
-
-/* ---------- grid ---------- */
+/* ---------- plate grid ---------- */
 .kiA-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 22px;
 }
-
-@media (max-width: 1439px) {
-  .kiA-grid { grid-template-columns: repeat(3, minmax(230px, 1fr)); }
+.kiA-card {
+  border-radius: var(--atlas-radius, 14px);
 }
-
-@media (max-width: 1099px) {
-  .kiA-grid { grid-template-columns: repeat(2, minmax(230px, 1fr)); }
-}
-
-/* SpotlightCard override — keep the vendored glow, restyle the shell.
- * v2.0: hover lifts -5px with a subject-colored border + glow. */
-.spotlight-card.kiA-card {
-  padding: 0;
-  border-radius: var(--kiA-radius-md);
-  background-color: var(--kiA-surface);
-  border: 1px solid var(--kiA-border-subtle);
-  box-shadow: none;
+.kiA-card-inner {
+  display: flex;
+  flex-direction: column;
   cursor: pointer;
-  transition: transform var(--kiA-transition), border-color var(--kiA-transition), box-shadow var(--kiA-transition);
+  border-radius: var(--atlas-radius, 14px);
 }
-
-.spotlight-card.kiA-card:hover {
-  transform: translateY(-5px);
-  border-color: color-mix(in srgb, var(--kiA-accent, #8D9BAF) 65%, transparent);
-  box-shadow: 0 22px 44px -16px rgba(0, 0, 0, 0.7),
-    0 0 24px -8px color-mix(in srgb, var(--kiA-accent, #8D9BAF) 45%, transparent);
-}
-
-.kiA-card-inner { display: flex; flex-direction: column; height: 100%; width: 100%; outline: none; }
-
-.kiA-card-inner:focus-visible { outline: 2px solid var(--kiA-accent, #8D9BAF); outline-offset: 2px; }
-
 .kiA-cover {
   position: relative;
-  width: 100%;
-  aspect-ratio: 3 / 4;
-  background: var(--kiA-surface-raised); /* honest placeholder if the page image 404s */
-  border-radius: var(--kiA-radius-md) var(--kiA-radius-md) 0 0;
-  overflow: hidden;
+}
+.kiA-bookmark {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(8, 13, 22, 0.72);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--atlas-hairline, rgba(216, 209, 194, 0.14));
+  border-radius: 9px;
+  color: var(--atlas-parchment-dim, #a79e8b);
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+.kiA-bookmark:hover {
+  color: var(--atlas-ink, #f2ecdd);
+  border-color: rgba(216, 209, 194, 0.35);
+}
+.kiA-bookmark--on {
+  color: var(--atlas-signal, #65d9d0);
+  border-color: rgba(101, 217, 208, 0.5);
+}
+.kiA-bookmark--small {
+  width: 28px;
+  height: 28px;
 }
 
-.kiA-cover-img {
+.kiA-card-body {
+  padding: 14px 18px 16px;
+}
+.kiA-card-progress {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(216, 209, 194, 0.12);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.kiA-card-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--subj), var(--atlas-signal, #65d9d0));
+  border-radius: 2px;
+}
+.kiA-card-foot {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--atlas-parchment-faint, #6e685b);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- ledger list ---------- */
+.kiA-list {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--atlas-hairline, rgba(216, 209, 194, 0.14));
+}
+.kiA-row {
+  display: grid;
+  grid-template-columns: 110px 56px 1fr auto;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 10px;
+  border-bottom: 1px solid var(--atlas-hairline-soft, rgba(216, 209, 194, 0.08));
+  border-left: 2px solid transparent;
+  cursor: pointer;
+  transition: background 180ms ease, border-color 180ms ease;
+}
+.kiA-row:hover {
+  background: rgba(216, 209, 194, 0.04);
+  border-left-color: var(--subj);
+}
+.kiA-row-plateno {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--atlas-parchment-faint, #6e685b);
+  font-variant-numeric: tabular-nums;
+}
+.kiA-row-thumb {
+  width: 56px;
+  height: 70px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--atlas-midnight, #111c2b);
+  border: 1px solid var(--atlas-hairline-soft, rgba(216, 209, 194, 0.08));
+}
+.kiA-row-thumb-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
-
-.kiA-cover-accent {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: var(--kiA-accent, #8D9BAF);
+.kiA-row-main {
+  min-width: 0;
 }
-
-.kiA-bookmark {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 32px;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(8, 11, 18, 0.55);
-  backdrop-filter: blur(6px);
-  color: var(--kiA-text-secondary);
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity var(--kiA-transition), color var(--kiA-transition), background var(--kiA-transition);
-}
-
-.spotlight-card.kiA-card:hover .kiA-bookmark,
-.kiA-row:hover .kiA-bookmark,
-.kiA-bookmark--on { opacity: 1; }
-
-.kiA-bookmark--on { color: var(--kiA-accent, #8D9BAF); }
-
-.kiA-bookmark:hover { color: var(--kiA-text); }
-
-.kiA-bookmark--small { position: static; flex: none; }
-
-.kiA-row .kiA-bookmark { opacity: 0; }
-
-.kiA-card-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 6px; }
-
-/* v2.0: subject identity line on every card */
-.kiA-card-subj {
-  font-family: var(--kiA-font-mono);
-  font-size: 11px;
-  letter-spacing: 0.24em;
-  color: var(--kiA-accent, #8D9BAF);
-  margin: 0;
-}
-
-.kiA-card-title {
-  font-family: var(--kiA-font-ui);
-  font-weight: 600;
-  font-size: 15px;
-  line-height: 1.35;
-  margin: 0;
-  color: var(--kiA-text);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.kiA-card-meta {
-  font-family: var(--kiA-font-mono);
-  font-size: 11px;
-  color: var(--kiA-text-muted);
-  margin: 0;
-}
-
-.kiA-lastread { color: var(--kiA-accent, #8D9BAF); }
-
-/* v2.0: reading progress from the saved kl:pos position */
-.kiA-card-progress {
-  height: 4px;
-  background: var(--kiA-surface-raised);
-  border-radius: 999px;
-  overflow: hidden;
-  margin-top: 4px;
-}
-
-.kiA-card-progress-fill {
-  height: 100%;
-  background: var(--kiA-accent, #8D9BAF);
-  border-radius: 999px;
-  box-shadow: 0 0 8px color-mix(in srgb, var(--kiA-accent, #8D9BAF) 60%, transparent);
-}
-
-/* v2.0: last-opened status line */
-.kiA-card-foot {
-  font-family: var(--kiA-font-mono);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  color: var(--kiA-text-muted);
-  margin: 2px 0 0;
-}
-
-/* ---------- FIS editorial treatment (Obsidian Atlas v3.0) ----------
- * 250–290px bronze-to-black collection banner: amber atmospheric light
- * (restrained Aurora variation), fine noise, abstract philosophical
- * artwork right (geometry/sculpture — no stock), thin amber border. */
-.kiA-head--fis {
-  position: relative;
-  min-height: 272px;
-  display: flex;
-  align-items: center;
-  border: 1px solid rgba(229, 163, 76, 0.35);
-  border-radius: var(--kiA-radius-lg);
-  overflow: hidden;
-  margin-bottom: 36px;
-  background: linear-gradient(158deg, #241A0C 0%, #120D07 42%, #07090E 100%);
-  box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.8),
-    0 0 60px -30px rgba(229, 163, 76, 0.35);
-}
-
-.kiA-fis-aurora {
-  position: absolute;
-  inset: -18% -6%;
-  pointer-events: none;
-  -webkit-mask-image: radial-gradient(90% 90% at 68% 30%, black 25%, transparent 80%);
-  mask-image: radial-gradient(90% 90% at 68% 30%, black 25%, transparent 80%);
-}
-
-.kiA-fis-aurora .aurora-container { width: 100%; height: 100%; }
-
-/* fine noise texture over the banner */
-.kiA-fis-noise {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.06;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 140px 140px;
-  mix-blend-mode: overlay;
-}
-
-/* abstract philosophical artwork — classical geometry, right side */
-.kiA-fis-art {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 42%;
-  min-width: 300px;
-  pointer-events: none;
-  -webkit-mask-image: linear-gradient(to left, black 55%, transparent 100%);
-  mask-image: linear-gradient(to left, black 55%, transparent 100%);
-  opacity: 0.9;
-}
-
-.kiA-fis-art svg { width: 100%; height: 100%; display: block; }
-
-/* amber atmospheric tint + readability scrim */
-.kiA-fis-tint {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(70% 90% at 78% 30%, rgba(229, 163, 76, 0.14), transparent 65%),
-    linear-gradient(to bottom,
-      rgba(7, 10, 16, 0.55) 0%,
-      rgba(7, 10, 16, 0.22) 40%,
-      rgba(7, 10, 16, 0.74) 100%);
-}
-
-.kiA-fis-head-inner {
-  position: relative;
-  z-index: 1;
-  padding: 44px 48px;
-  max-width: 720px;
-}
-
-.kiA-eyebrow--amber {
-  color: var(--kiA-fis);
-}
-
-.kiA-title--fis {
-  font-size: clamp(52px, 4.8vw, 60px);
-  text-shadow: 0 0 44px rgba(229, 163, 76, 0.25);
-}
-
-.kiA-fis-stats {
-  display: flex;
-  gap: 40px;
-  margin-top: 26px;
-}
-
-.kiA-fis-stat {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.kiA-fis-stat-num {
-  font-family: var(--kiA-font-mono);
-  font-size: 26px;
-  font-weight: 500;
-  color: var(--kiA-fis);
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-}
-
-.kiA-fis-stat-label {
-  font-family: var(--kiA-font-mono);
-  font-size: 11px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--kiA-text-secondary);
-}
-
-/* FIS grid: 3 cols at 1440px, gap 20–24px, equal cover heights */
-.kiA-page--fis .kiA-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  justify-content: stretch;
-  gap: 22px;
-}
-
-@media (max-width: 1439px) {
-  .kiA-page--fis .kiA-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 20px;
-  }
-}
-
-@media (max-width: 1099px) {
-  .kiA-page--fis .kiA-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-.kiA-page--fis .kiA-card-body { padding: 20px 22px 22px; gap: 8px; }
-
-.kiA-page--fis .kiA-card-title { font-size: 17px; line-height: 1.4; }
-
-.kiA-page--fis .kiA-card-meta { font-size: 12px; }
-
-/* ---------- list mode ---------- */
-.kiA-list { display: flex; flex-direction: column; gap: 8px; }
-
-.kiA-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  height: 64px;
-  padding: 0 16px;
-  border-radius: var(--kiA-radius-md);
-  border: 1px solid var(--kiA-border-subtle);
-  background: var(--kiA-surface);
-  cursor: pointer;
-  transition: background var(--kiA-transition), border-color var(--kiA-transition), transform var(--kiA-transition);
-}
-
-.kiA-row:hover {
-  background: var(--kiA-surface-hover);
-  border-color: color-mix(in srgb, var(--kiA-accent, #8D9BAF) 35%, transparent);
-}
-
-.kiA-row:focus-visible { outline: 2px solid var(--kiA-accent, #8D9BAF); outline-offset: 2px; }
-
-.kiA-row-thumb {
-  width: 44px;
-  height: 60px;
-  flex: none;
-  border-radius: 4px;
-  overflow: hidden;
-  background: var(--kiA-surface-raised);
-}
-
-.kiA-row-thumb .kiA-cover-img { width: 100%; height: 100%; object-fit: cover; }
-
-.kiA-row-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-
 .kiA-row-title {
-  font-family: var(--kiA-font-ui);
+  margin: 0 0 5px;
+  font-family: var(--atlas-display, 'Cormorant Garamond', serif);
+  font-size: 19px;
   font-weight: 600;
-  font-size: 14px;
-  margin: 0;
+  line-height: 1.3;
+  color: var(--atlas-parchment, #d8d1c2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .kiA-row-meta {
-  font-family: var(--kiA-font-mono);
-  font-size: 11px;
-  color: var(--kiA-text-muted);
   margin: 0;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--atlas-parchment-faint, #6e685b);
+  font-variant-numeric: tabular-nums;
+}
+.kiA-lastread {
+  color: var(--atlas-signal, #65d9d0);
 }
 
-/* ---------- empty state ---------- */
+/* ---------- empty ---------- */
 .kiA-empty {
-  padding: 96px 24px;
-  text-align: center;
-}
-
-.kiA-empty p {
-  font-family: var(--kiA-font-display);
-  font-style: italic;
-  font-size: 20px;
-  color: var(--kiA-text-secondary);
   margin: 0;
+  padding: 40px 26px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--atlas-parchment-dim, #a79e8b);
+  border: 1px dashed var(--atlas-hairline, rgba(216, 209, 194, 0.14));
+  border-radius: var(--atlas-radius, 14px);
 }
-
-/* ==================================================================
-   Generative document cover — Obsidian Atlas v3.0, ChatGPT Round A 2026-11-04.
-   Signature template for all 100 docs: thin subject-color top-edge accent,
-   doc type, doc identifier, page count, UNIQUE abstract discipline artwork
-   (deterministic per-document variation: seeded rotation/mirror, discipline
-   glyph, accent wash). The full title + metadata live UNDER the cover in
-   the card body — never on the artwork. Ratio 3/4 (0.75).
-   ================================================================== */
-
-/* GlareHover (restrained sheen) fills the cover frame */
-.kiA-cover .glare-hover.kiA-cover-glare {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.kiA-doccover {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  aspect-ratio: 3 / 4;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 15px 16px 14px;
-  box-sizing: border-box;
-  background:
-    radial-gradient(120% 90% at var(--dc-gx, 50%) var(--dc-gy, 40%),
-      color-mix(in srgb, var(--kiA-accent, #8D9BAF) var(--dc-wash, 12%), transparent),
-      transparent 70%),
-    linear-gradient(160deg,
-      color-mix(in srgb, var(--kiA-accent, #8D9BAF) 13%, #0B0F16) 0%,
-      #070A10 68%);
-}
-
-/* thin subject-color top-edge accent */
-.kiA-doccover-edge {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: var(--kiA-accent, #8D9BAF);
-  box-shadow: 0 0 14px color-mix(in srgb, var(--kiA-accent, #8D9BAF) 80%, transparent);
-  z-index: 2;
-}
-
-.kiA-doccover-art {
-  position: absolute;
-  inset: 0;
-  opacity: 0.5;
-  pointer-events: none;
-}
-
-.kiA-doccover-art svg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-/* seeded discipline glyph — the per-document signature mark */
-.kiA-doccover-glyph {
-  position: absolute;
-  left: var(--dc-gx, 50%);
-  top: var(--dc-gy, 40%);
-  transform: translate(-50%, -50%);
-  font-family: var(--kiA-font-display, "Instrument Serif", Georgia, serif);
-  font-style: italic;
-  font-size: 88px;
-  line-height: 1;
-  color: var(--kiA-accent, #8D9BAF);
-  opacity: 0.16;
-  text-shadow: 0 0 34px color-mix(in srgb, var(--kiA-accent, #8D9BAF) 55%, transparent);
-  pointer-events: none;
-}
-
-.dc-art-stroke { stroke: var(--kiA-accent, #8D9BAF); }
-.dc-art-faint { stroke: var(--kiA-accent, #8D9BAF); opacity: 0.32; }
-.dc-art-bar { fill: var(--kiA-accent, #8D9BAF); }
-.dc-art-dot { fill: var(--kiA-accent, #8D9BAF); }
-.dc-art-serif {
-  font-family: var(--kiA-font-display, "Instrument Serif", Georgia, serif);
-  font-style: italic;
-  fill: var(--kiA-accent, #8D9BAF);
-}
-
-/* readability scrim over the artwork */
-.kiA-doccover-scrim {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(to bottom,
-    rgba(7, 9, 14, 0.34) 0%,
-    transparent 30%,
-    transparent 58%,
-    rgba(7, 9, 14, 0.88) 100%);
-}
-
-.kiA-doccover-top {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.kiA-doccover-type {
-  font-family: var(--kiA-font-mono);
-  font-size: 9px;
-  letter-spacing: 0.20em;
-  color: var(--kiA-text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.kiA-doccover-id {
-  font-family: var(--kiA-font-mono);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  font-weight: 600;
-  color: var(--kiA-accent, #8D9BAF);
-  flex: none;
-}
-
-.kiA-doccover-foot {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.kiA-doccover-pages {
-  font-family: var(--kiA-font-mono);
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  color: var(--kiA-text-muted);
-}
-
-.kiA-doccover-code {
-  font-family: var(--kiA-font-mono);
-  font-size: 11px;
-  letter-spacing: 0.22em;
-  font-weight: 600;
-  color: var(--kiA-accent, #8D9BAF);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .kiA-cover .glare-hover__glare,
-  .kiA-cover .glare-hover__rim {
-    display: none;
-  }
+.kiA-empty p {
+  margin: 0;
 }

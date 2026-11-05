@@ -1,10 +1,10 @@
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
-import MagicBento from '../bits/MagicBento';
-import ShinyText from '../bits/ShinyText';
+import SpotlightCard from '../bits/SpotlightCard';
 import CountUp from '../bits/CountUp';
-import SplitText from '../bits/SplitText';
-import AnimatedContent from '../bits/AnimatedContent';
-import Particles from '../bits/Particles';
+import SpecularButton from '../bits/SpecularButton';
+import Aurora from '../bits/Aurora';
+import MagnetLines from '../bits/MagnetLines';
+import SplitText from '../components/SplitText';
 import {
   SUBJECTS,
   getSubjectCounts,
@@ -25,16 +25,14 @@ interface OverviewProps {
   onGoSearch: () => void;
 }
 
+const ROMAN = ['I', 'II', 'III', 'IV'];
+
 /* ------------------------------------------------------------------ */
-/* Original SVG artwork (designed for this page, not copied).
- * Colors track the v3.0 identity palette via v2SubjectColor.            */
+/* Atlas map plate: graticule frame, compass rose, four discipline      */
+/* nodes in subject colors. Particles drift behind (clipped canvas).   */
 /* ------------------------------------------------------------------ */
 
-/** Constellation: four haloed subject nodes, connecting lines, and small
- * moving particles travelling along the connections. React Bits Particles
- * sits behind as the atmospheric background; this SVG is the 4-node data
- * overlay. Hover a node → highlight + doc count; click → subject library. */
-function KnowledgeMap({
+function AtlasMap({
   counts,
   onGoSubject,
   reducedMotion,
@@ -49,187 +47,116 @@ function KnowledgeMap({
     name: s.name,
     color: v2SubjectColor(s.id),
     count: counts[s.id] ?? 0,
-    // 440 x 340 frame
-    cx: [110, 330, 120, 320][i],
-    cy: [80, 92, 250, 242][i],
+    cx: [108, 332, 118, 322][i],
+    cy: [84, 96, 252, 244][i],
   }));
-  const links: Array<[number, number]> = [
-    [0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]
-  ];
+  const links: Array<[number, number]> = [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]];
+  const total = nodes.reduce((a, n) => a + n.count, 0);
   return (
-    <div className="kiA-constellation">
+    <div className="kiA-mapframe">
+      {/* Magnet Lines — refined magnetic field around the four-discipline
+          viz (spec: very thin lines, restrained interaction, cyan
+          highlights, low contrast, no rainbow). */}
       {!reducedMotion && (
-        <Particles
-          className="kiA-constellation-particles"
-          particleCount={90}
-          particleSpread={9}
-          speed={0.06}
-          particleColors={[...nodes.map(n => n.color), '#DCE8F4']}
-          moveParticlesOnHover={false}
-          particleHoverFactor={0}
-          particleBaseSize={70}
-          sizeRandomness={0.9}
-          cameraDistance={22}
-          disableRotation={false}
-          glow={0.6}
-          twinkle={0.45}
-          connections={false}
-          clickBurst={false}
-          intro={false}
-          opacity={0.55}
-          paused={reducedMotion}
-        />
+        <div className="kiA-map-magnet" aria-hidden="true">
+          <MagnetLines
+            spacing={26}
+            lineColor="rgba(166, 178, 194, 0.28)"
+            accentColor="#59E4D2"
+            lineWidth={1}
+            lineHeight={15}
+            mode="attract"
+            shape="line"
+            radius={90}
+            fade={0.55}
+            edgeFade={0.35}
+            stretch={1}
+            reach={0.6}
+            scatter={0.2}
+            inertia={0.85}
+            clickPulse={false}
+            intro={false}
+            idle={false}
+          />
+        </div>
       )}
-      <svg className="kiA-kmap" viewBox="0 0 440 340" role="img" aria-label="Map of the four disciplines">
+      <div className="kiA-map-head">
+        <span>DISCIPLINE MAP</span>
+        <span><strong>04 ACTIVE</strong> · {total} DOCUMENTS</span>
+      </div>
+      <svg className="kiA-atlasmap" viewBox="0 0 440 340" role="img" aria-label="Atlas of the four disciplines">
         <defs>
-          <pattern id="kiA-cgrid" width="22" height="22" patternUnits="userSpaceOnUse">
-            <path d="M 22 0 H 0 V 22" fill="none" className="kiA-cgrid-line" strokeWidth="1" />
+          <pattern id="kiA-grat" width="24" height="24" patternUnits="userSpaceOnUse">
+            <path d="M 24 0 H 0 V 24" fill="none" stroke="rgba(216,209,194,0.10)" strokeWidth="1" />
           </pattern>
           {nodes.map(n => (
-            <radialGradient key={`halo-${n.id}`} id={`kiA-halo-${n.id}`}>
-              <stop offset="0%" stopColor={n.color} stopOpacity="0.55" />
-              <stop offset="55%" stopColor={n.color} stopOpacity="0.16" />
+            <radialGradient key={`halo-${n.id}`} id={`kiA-ahalo-${n.id}`}>
+              <stop offset="0%" stopColor={n.color} stopOpacity="0.5" />
+              <stop offset="55%" stopColor={n.color} stopOpacity="0.14" />
               <stop offset="100%" stopColor={n.color} stopOpacity="0" />
             </radialGradient>
           ))}
         </defs>
-        <rect x={8} y={8} width={424} height={324} fill="url(#kiA-cgrid)" />
+        <rect x={10} y={10} width={420} height={320} fill="url(#kiA-grat)" />
+        <rect x={10} y={10} width={420} height={320} fill="none" stroke="rgba(216,209,194,0.35)" strokeWidth="1.2" />
+        {/* compass rose */}
+        <g className="kiA-compass" transform="translate(392,52)" aria-hidden="true">
+          <circle r={20} fill="none" stroke="rgba(216,209,194,0.4)" strokeWidth="1" />
+          <circle r={14} fill="none" stroke="rgba(216,209,194,0.22)" strokeWidth="1" />
+          <path d="M 0 -19 L 4 0 L 0 19 L -4 0 Z" fill="rgba(216,209,194,0.75)" />
+          <path d="M -19 0 L 0 -4 L 19 0 L 0 4 Z" fill="rgba(216,209,194,0.4)" />
+          <text y={-26} textAnchor="middle" className="kiA-compass-n">N</text>
+        </g>
         {links.map(([a, b], i) => (
-          <g key={i}>
-            <line
-              x1={nodes[a].cx} y1={nodes[a].cy}
-              x2={nodes[b].cx} y2={nodes[b].cy}
-              className="kiA-kmap-link"
-            />
-            {!reducedMotion && (
-              <circle r={2.4} fill={nodes[a].color} className="kiA-kmap-mote" style={{ color: nodes[a].color }} opacity={0.9}>
-                <animateMotion
-                  dur={`${3.6 + (i % 3) * 1.4}s`}
-                  begin={`${(i * 0.7) % 3}s`}
-                  repeatCount="indefinite"
-                  path={`M ${nodes[a].cx} ${nodes[a].cy} L ${nodes[b].cx} ${nodes[b].cy}`}
-                />
-              </circle>
-            )}
-          </g>
+          <line
+            key={i}
+            x1={nodes[a].cx} y1={nodes[a].cy}
+            x2={nodes[b].cx} y2={nodes[b].cy}
+            stroke="rgba(216,209,194,0.20)"
+            strokeWidth="1"
+            strokeDasharray="3 5"
+          />
         ))}
         {nodes.map(n => (
           <g
             key={n.id}
-            className="kiA-cnode"
+            className="kiA-anode"
             role="button"
             tabIndex={0}
             aria-label={`${n.name} — ${n.count} documents`}
             onClick={() => onGoSubject(n.id)}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onGoSubject(n.id); } }}
           >
-            <circle cx={n.cx} cy={n.cy} r={34} fill={`url(#kiA-halo-${n.id})`} className="kiA-cnode-halo" />
-            {!reducedMotion && (
-              <circle cx={n.cx} cy={n.cy} r={13} className="kiA-kmap-ring" style={{ color: n.color }} />
-            )}
-            <circle cx={n.cx} cy={n.cy} r={9} fill={n.color} className="kiA-kmap-node" />
-            <circle cx={n.cx} cy={n.cy} r={3.4} fill="#07090E" />
-            <text x={n.cx} y={n.cy + 32} textAnchor="middle" className="kiA-kmap-label">
+            <circle cx={n.cx} cy={n.cy} r={36} fill={`url(#kiA-ahalo-${n.id})`} />
+            <circle cx={n.cx} cy={n.cy} r={12} fill="none" stroke={n.color} strokeWidth="1.4" />
+            <circle cx={n.cx} cy={n.cy} r={12} fill="none" stroke={n.color} strokeWidth="1" opacity={0.35}
+              transform={`rotate(0 ${n.cx} ${n.cy})`} className={reducedMotion ? undefined : 'kiA-anode-spin'}
+              style={{ transformOrigin: `${n.cx}px ${n.cy}px` }} />
+            <circle cx={n.cx} cy={n.cy} r={5} fill={n.color} />
+            <text x={n.cx} y={n.cy + 34} textAnchor="middle" className="kiA-anode-label">
               {n.code}
             </text>
-            <g className="kiA-ctip" aria-hidden="true">
-              <rect x={n.cx - 72} y={n.cy - 64} width={144} height={40} rx={8} className="kiA-ctip-box" />
-              <text x={n.cx} y={n.cy - 47} textAnchor="middle" className="kiA-ctip-title">{n.name}</text>
-              <text x={n.cx} y={n.cy - 32} textAnchor="middle" className="kiA-ctip-count" style={{ fill: n.color }}>
-                {n.count} DOCUMENTS
-              </text>
-            </g>
+            <text x={n.cx} y={n.cy + 48} textAnchor="middle" className="kiA-anode-count" style={{ fill: n.color }}>
+              {n.count} DOCS
+            </text>
           </g>
         ))}
-        <text x={16} y={330} className="kiA-kmap-caption">04 DISCIPLINES</text>
-        <text x={424} y={330} textAnchor="end" className="kiA-kmap-caption">
-          {nodes.reduce((a, n) => a + n.count, 0)} DOCUMENTS
+        <text x={22} y={324} className="kiA-map-caption">04 DISCIPLINES</text>
+        <text x={418} y={324} textAnchor="end" className="kiA-map-caption">
+          {total} DOCUMENTS
         </text>
       </svg>
     </div>
   );
 }
 
-/** EM2 artwork: parabola over a faint coordinate grid. */
-function ArtEm2({ color }: { color: string }): ReactNode {
-  const grid: ReactNode[] = [];
-  for (let i = 1; i < 7; i++) {
-    grid.push(<line key={`v${i}`} x1={i * 30} y1={0} x2={i * 30} y2={120} className="kiA-art-faint" />);
-    grid.push(<line key={`h${i}`} x1={0} y1={i * 20} x2={210} y2={i * 20} className="kiA-art-faint" />);
-  }
-  return (
-    <svg viewBox="0 0 210 120" className="kiA-art" aria-hidden="true">
-      {grid}
-      <path d="M 10 108 Q 70 108 105 40 T 200 20" fill="none" stroke={color} strokeWidth="2.5" />
-      <path d="M 10 100 Q 80 100 120 60 T 200 44" fill="none" stroke={color} strokeWidth="1.5" className="kiA-art-dim" />
-      <circle cx={105} cy={40} r={3.5} fill={color} />
-      <circle cx={120} cy={60} r={2.5} fill={color} className="kiA-art-dim" />
-    </svg>
-  );
-}
-
-/** Signals artwork: sine wave over FFT bars. */
-function ArtSignals({ color }: { color: string }): ReactNode {
-  const bars = [14, 34, 52, 70, 88, 64, 44, 28, 58, 78, 50, 30];
-  return (
-    <svg viewBox="0 0 210 120" className="kiA-art" aria-hidden="true">
-      {bars.map((h, i) => (
-        <rect key={i} x={8 + i * 16.5} y={110 - h} width={10} height={h} rx={2}
-          fill={color} className="kiA-art-dim" opacity={0.25 + (h / 90) * 0.5} />
-      ))}
-      <path d="M 8 60 C 40 10, 70 10, 100 60 S 160 110, 202 60" fill="none" stroke={color} strokeWidth="2.5" />
-    </svg>
-  );
-}
-
-/** FIS artwork: serif philosophical typography. */
-function ArtFis({ color }: { color: string }): ReactNode {
-  return (
-    <svg viewBox="0 0 210 120" className="kiA-art" aria-hidden="true">
-      <text x={16} y={96} className="kiA-art-serif" fill={color} fontSize={92}>?</text>
-      <text x={86} y={44} className="kiA-art-serif" fill={color} fontSize={26} opacity={0.9}>λόγος</text>
-      <line x1={88} y1={60} x2={196} y2={60} stroke={color} strokeWidth={1} className="kiA-art-dim" />
-      <text x={88} y={86} className="kiA-art-serif" fill={color} fontSize={17} opacity={0.55}>cogito</text>
-      <text x={88} y={106} className="kiA-art-serif" fill={color} fontSize={17} opacity={0.35}>ergo sum</text>
-    </svg>
-  );
-}
-
-/** Digital artwork: circuit traces with nodes. */
-function ArtDigital({ color }: { color: string }): ReactNode {
-  return (
-    <svg viewBox="0 0 210 120" className="kiA-art" aria-hidden="true">
-      <path d="M 14 100 L 60 100 L 78 82 L 130 82 L 148 64 L 196 64" fill="none" stroke={color} strokeWidth={2} />
-      <path d="M 14 34 L 46 34 L 64 52 L 120 52" fill="none" stroke={color} strokeWidth={1.5} className="kiA-art-dim" />
-      <path d="M 150 104 L 150 84 L 178 84" fill="none" stroke={color} strokeWidth={1.5} className="kiA-art-dim" />
-      {[
-        [14, 100], [78, 82], [130, 82], [196, 64],
-        [14, 34], [64, 52], [120, 52], [150, 104], [178, 84]
-      ].map(([x, y], i) => (
-        <g key={i}>
-          <circle cx={x} cy={y} r={5} fill="none" stroke={color} strokeWidth={2} />
-          <circle cx={x} cy={y} r={1.8} fill={color} />
-        </g>
-      ))}
-    </svg>
-  );
-}
-
-const ART: Record<string, (p: { color: string }) => ReactNode> = {
-  em2: ArtEm2,
-  signals: ArtSignals,
-  fis: ArtFis,
-  digital: ArtDigital
-};
-
 /* ------------------------------------------------------------------ */
-/* Overview page — Obsidian Atlas (ChatGPT Round A 2026-11-04 ~14:20)   */
+/* Overview page — THE GRAND ARCHIVE (ATLAS edition, 2026-11-05)       */
 /* ------------------------------------------------------------------ */
 
-/** Archive stat — CountUp from real data, once per load; "—" while loading. */
 function Stat({ value, label, loaded }: { value: number; label: string; loaded: boolean }) {
   return (
-    <div className="kiA-stat">
+    <div className="kiA-stat" role="listitem">
       <span className="kiA-stat-num">
         {loaded
           ? <CountUp to={value} duration={0.9} trigger="load" separator="," className="kiA-stat-count" />
@@ -240,7 +167,6 @@ function Stat({ value, label, loaded }: { value: number; label: string; loaded: 
   );
 }
 
-/** "opened 4 Nov" style date for the activity card. */
 function fmtDate(ts: number | null): string {
   if (!ts) return '—';
   return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
@@ -254,6 +180,11 @@ export default function Overview({ files, onOpenReader, onGoSubject, onGoSearch 
   const counts = useMemo(() => getSubjectCounts(files), [files]);
   const totalDocs = useMemo(() => Object.values(counts).reduce((a, b) => a + b, 0), [counts]);
   const totalPages = useMemo(() => files.reduce((s, f) => s + (f.pages || 0), 0), [files]);
+  const subjectPages = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const f of files) m[f.subj] = (m[f.subj] ?? 0) + (f.pages || 0);
+    return m;
+  }, [files]);
   const loaded = files.length > 0;
 
   const filesByKey = useMemo(() => {
@@ -262,13 +193,11 @@ export default function Overview({ files, onOpenReader, onGoSubject, onGoSearch 
     return m;
   }, [files]);
 
-  // Real localStorage state: recent list (most-recent first), open timestamps, saved positions.
   const recentKeys = useMemo(() => readJson<string[]>('kl:recent', []), []);
   const recentTs = useMemo(() => readJson<Record<string, number>>('kl:recentTs', {}), []);
   const bookmarkKeys = useMemo(() => readJson<string[]>('kl:bookmarks', []), []);
   const bookmarkCount = bookmarkKeys.length;
 
-  // Recent notes — real kl:notes:* entries, latest first.
   const recentNotes = useMemo(() => {
     const out: Array<{ file: LibFile; page: number; ts: number }> = [];
     try {
@@ -319,35 +248,6 @@ export default function Overview({ files, onOpenReader, onGoSubject, onGoSearch 
     return out;
   }, [bookmarkKeys, filesByKey]);
 
-  const bentoItems = useMemo(
-    () =>
-      SUBJECTS.map(s => {
-        const Art = ART[s.id] ?? ArtEm2;
-        const color = v2SubjectColor(s.id);
-        return {
-          id: s.id,
-          onClick: () => onGoSubject(s.id),
-          content: (
-            <div className="kiA-subj-card" style={{ '--subj': color } as CSSProperties}>
-              <div className="kiA-subj-top">
-                <span className="kiA-subj-num">{s.num}</span>
-                <span className="kiA-subj-count">
-                  {loaded ? <CountUp to={counts[s.id] ?? 0} duration={0.9} trigger="view" /> : '—'}
-                  <span className="kiA-subj-count-suffix"> docs</span>
-                </span>
-              </div>
-              <div className="kiA-subj-art"><Art color={color} /></div>
-              <p className="kiA-subj-code">{s.code}</p>
-              <h3 className="kiA-subj-title">{s.name}</h3>
-              <p className="kiA-subj-desc">{s.tagline}</p>
-              <span className="kiA-subj-cta" aria-hidden="true">Open discipline →</span>
-            </div>
-          )
-        };
-      }),
-    [counts, loaded, onGoSubject]
-  );
-
   const qaSections = [
     {
       id: 'recent',
@@ -377,211 +277,233 @@ export default function Overview({ files, onOpenReader, onGoSubject, onGoSearch 
 
   return (
     <div className="kiA">
-      {/* 1 — Hero: Aurora (global backdrop, masked top) + Split Text headline */}
-      <AnimatedContent
-        className="kiA-hero-anim"
-        trigger="mount"
-        distance={18}
-        duration={0.7}
-        once
-      >
-        <header className="kiA-hero kiA-controlroom">
-          <div className="kiA-hero-inner">
-            <div className="kiA-hero-copy">
-              <p className="kiA-eyebrow">
-                <ShinyText
-                  text="K/IND LIBRARY"
-                  color="#6B7585"
-                  shineColor="#EDEAE0"
-                  speed={7}
-                  delay={2.5}
-                  trigger="loop"
-                  glow={0}
-                  disabled={reduceMotion}
-                />
-              </p>
-              {!reduceMotion ? (
-                <SplitText
-                  text="Your knowledge, without boundaries."
-                  className="kiA-headline"
-                  splitType="words"
-                  effect="fade"
-                  delay={140}
-                  duration={0.9}
-                  trigger="load"
-                  tag="h1"
-                />
-              ) : (
-                <h1 className="kiA-headline">Your knowledge, without boundaries.</h1>
-              )}
-              <p className="kiA-hero-sub">Four disciplines. One connected archive.</p>
-              <div className="kiA-stats" role="list" aria-label="Archive statistics">
-                <div role="listitem"><Stat value={totalDocs} label="DOCS" loaded={loaded} /></div>
-                <div role="listitem"><Stat value={totalPages} label="PAGES" loaded={loaded} /></div>
-                <div role="listitem"><Stat value={SUBJECTS.length} label="SUBJECTS" loaded={loaded} /></div>
-                <div role="listitem"><Stat value={bookmarkCount} label="SAVED" loaded={loaded} /></div>
-              </div>
-              <button type="button" className="kiA-specular" onClick={onGoSearch}>
-                <span>Search the archive</span>
-                <span className="kiA-specular-arrow" aria-hidden="true">→</span>
-              </button>
-              <hr className="kiA-hero-divider" />
-              <div className="kiA-continue">
-                <p className="kiA-eyebrow">Study activity</p>
-                {continueFile ? (
-                  <StudyActivityCard
-                    file={continueFile.file}
-                    page={continuePos}
-                    openedLabel={relTime(recentTs[continueFile.key] ?? null)}
-                    openedDate={fmtDate(recentTs[continueFile.key] ?? null)}
-                    onOpen={() => onOpenReader(continueFile.key, [continueFile.key])}
-                  />
-                ) : (
-                  <div className="kiA-qa-empty-compact">
-                    <p className="kiA-qa-empty-compact-title">No study history yet.</p>
-                    <p className="kiA-qa-empty-compact-sub">
-                      Open any document and it will appear here with your progress.
-                    </p>
-                    <button
-                      type="button"
-                      className="kiA-specular kiA-specular--ghost kiA-specular--sm"
-                      onClick={() => onGoSubject('all')}
-                    >
-                      <span>Explore the archive</span>
-                      <span className="kiA-specular-arrow" aria-hidden="true">→</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="kiA-hero-art">
-              <div className="kiA-netframe">
-                <KnowledgeMap counts={counts} onGoSubject={onGoSubject} reducedMotion={reduceMotion} />
-                <div className="kiA-net-glow" />
-              </div>
-            </div>
+      {/* 1 — Hero: "Knowledge, connected." (OBSIDIAN ATLAS, 2026-11-05) */}
+      <header className="kiA-hero">
+        {/* Aurora — restrained flowing light inside the hero only:
+            cyan + muted blue + deep indigo, speed 0.2, opacity 0.22, 2 layers */}
+        {!reduceMotion && (
+          <div className="kiA-hero-aurora" aria-hidden="true">
+            <Aurora
+              colorStops={['#59E4D2', '#4A7FBF', '#1B2B4A']}
+              amplitude={1}
+              blend={0.5}
+              speed={0.2}
+              height={0.5}
+              layers={2}
+              opacity={0.18}
+              mouseInteraction={false}
+              intro={false}
+            />
           </div>
-        </header>
-      </AnimatedContent>
+        )}
+        <div className="kiA-hero-copy">
+          <p className="kiA-eyebrow">K/IND / THE KNOWLEDGE INSTRUMENT</p>
+          <p className="kiA-eyebrow">REGISTRY NO. 001 · YOUR PERSONAL STUDY ARCHIVE</p>
+          <h1 className="kiA-display kiA-hero-title">
+            <SplitText
+              lines={[
+                { text: 'Knowledge,' },
+                { text: 'connected.', italic: true },
+              ]}
+            />
+          </h1>
+          <p className="kiA-hero-sub">
+            Four disciplines. One connected archive. Every page within reach.
+          </p>
+          <div className="kiA-hero-cta">
+            <SpecularButton
+              size="lg"
+              className="kiA-cta"
+              onClick={() => onGoSubject('all')}
+              baseColor="#1a2b45"
+              lineColor="#59e4d2"
+              textColor="#f1eee6"
+              glow={0.8}
+            >
+              Explore the archive&nbsp;&nbsp;→
+            </SpecularButton>
+            <button type="button" className="kiA-cta-ghost" onClick={onGoSearch}>
+              Search the archive
+            </button>
+          </div>
+        </div>
+        <div className="kiA-hero-map">
+          <AtlasMap counts={counts} onGoSubject={onGoSubject} reducedMotion={reduceMotion} />
+        </div>
+      </header>
 
-      {/* 2 — Four disciplines: large interactive tiles */}
-      <AnimatedContent
-        className="kiA-section-anim"
-        trigger="scroll"
-        distance={28}
-        duration={0.7}
-        once
-      >
-        <section className="kiA-section">
-          <p className="kiA-eyebrow">Your four disciplines</p>
-          <h2 className="kiA-section-title">Browse the collection</h2>
-          <MagicBento
-            items={bentoItems}
-            columns={2}
-            rowHeight={340}
-            gap={18}
-            glowColor="35,125,160"
-            spotlightRadius={260}
-            enableBorderGlow={true}
-            enableSpotlight={true}
-            enableStars={false}
-            enableTilt={false}
-            enableMagnetism={false}
-            intro={false}
-            className="kiA-bento"
-          />
-        </section>
-      </AnimatedContent>
+      {/* Statistics strip — real backend counts, 38px serif numerals */}
+      <div className="kiA-stats" role="list" aria-label="Archive statistics">
+        <Stat value={totalDocs} label="DOCUMENTS" loaded={loaded} />
+        <Stat value={totalPages} label="PAGES" loaded={loaded} />
+        <Stat value={SUBJECTS.length} label="DISCIPLINES" loaded={loaded} />
+        <Stat value={bookmarkCount} label="SAVED" loaded={loaded} />
+      </div>
 
-      {/* 3 — Quick access: real data only, sections with none are hidden */}
-      {qaSections.length > 0 && (
-        <AnimatedContent
-          className="kiA-section-anim"
-          trigger="scroll"
-          distance={28}
-          duration={0.7}
-          once
-        >
-          <section className="kiA-section">
-            <p className="kiA-eyebrow">Quick access</p>
-            <h2 className="kiA-section-title">Pick up where you left off</h2>
-            <div className="kiA-qa">
-              {qaSections.map(sec => (
-                <div key={sec.id} className="kiA-surface kiA-qa-col">
-                  <p className="kiA-qa-label">{sec.label}</p>
-                  <ul className="kiA-qa-list">
-                    {sec.items.map(it => {
-                      const c = v2SubjectColor(it.subj);
-                      return (
-                        <li key={it.key}>
-                          <button
-                            type="button"
-                            className="kiA-qa-row"
-                            onClick={() => onOpenReader(it.key, [it.key])}
-                          >
-                            <span className="kiA-dot" style={{ background: c }} aria-hidden="true" />
-                            <span className="kiA-qa-row-text">
-                              <span className="kiA-qa-row-title">{it.title}</span>
-                              <span className="kiA-qa-row-meta">{it.meta}</span>
-                            </span>
-                            <span className="kiA-qa-row-arrow" aria-hidden="true">→</span>
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              ))}
+      {/* Resume reading — intentional empty state, never a dashed box */}
+      <section className="kiA-section">
+        <p className="kiA-eyebrow">Continue where you left off</p>
+        <h2 className="kiA-display kiA-section-title">Resume your reading.</h2>
+        <div className="kiA-continue">
+          {continueFile ? (
+            <StudyActivityCard
+              file={continueFile.file}
+              page={continuePos}
+              openedDate={fmtDate(recentTs[continueFile.key] ?? null)}
+              onOpen={() => onOpenReader(continueFile.key, [continueFile.key])}
+            />
+          ) : (
+            <div className="kiA-resume-empty">
+              <span className="kiA-resume-empty-art" aria-hidden="true">
+                <svg width="76" height="76" viewBox="0 0 76 76" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M38 14 C 30 8, 16 8, 8 12 L 8 58 C 16 54, 30 54, 38 60 C 46 54, 60 54, 68 58 L 68 12 C 60 8, 46 8, 38 14 Z" />
+                  <path d="M38 14 L 38 60" />
+                  <path d="M16 20 C 22 18, 28 18, 33 20 M16 30 C 22 28, 28 28, 33 30 M16 40 C 22 38, 28 38, 33 40" opacity="0.7" />
+                  <path d="M43 20 C 48 18, 54 18, 60 20 M43 30 C 48 28, 54 28, 60 30 M43 40 C 48 38, 54 38, 60 40" opacity="0.7" />
+                </svg>
+              </span>
+              <span>
+                <p className="kiA-resume-empty-title">Your next discovery starts here.</p>
+                <p className="kiA-resume-empty-sub">
+                  Open any document and it will appear here with your progress.
+                </p>
+                <button
+                  type="button"
+                  className="kiA-textbtn"
+                  onClick={() => onGoSubject('all')}
+                >
+                  Explore the archive →
+                </button>
+              </span>
             </div>
-          </section>
-        </AnimatedContent>
+          )}
+        </div>
+      </section>
+
+      {/* 2 — The four discipline plates */}
+      <section className="kiA-section">
+        <p className="kiA-eyebrow">Your four disciplines</p>
+        <h2 className="kiA-display kiA-section-title">Choose your discipline.</h2>
+        <div className="kiA-plates">
+          {SUBJECTS.map((s, i) => {
+            const color = v2SubjectColor(s.id);
+            return (
+              <SpotlightCard
+                key={s.id}
+                className="kiA-platecard"
+                spotlightColor={color}
+                intensity={0.2}
+                softness={0.7}
+                spotlightSize={240}
+                borderGlow={0.45}
+                proximity={130}
+                flare={false}
+                theme="dark"
+                style={{ '--subj': color } as CSSProperties}
+              >
+                <button
+                  type="button"
+                  className="kiA-platecard-btn"
+                  onClick={() => onGoSubject(s.id)}
+                  aria-label={`Open ${s.name} — ${counts[s.id] ?? 0} documents`}
+                >
+                  <div className="kiA-platecard-top">
+                    <span className="kiA-platecard-plate">PLATE {ROMAN[i]}</span>
+                    <span className="kiA-platecard-num">{s.num}</span>
+                  </div>
+                  <h3 className="kiA-platecard-name">{s.name}</h3>
+                  <p className="kiA-platecard-tag">{s.tagline}</p>
+                  <div className="kiA-platecard-stats">
+                    <span className="kiA-platecard-stat">
+                      <span className="kiA-platecard-stat-num">
+                        {loaded ? <CountUp to={counts[s.id] ?? 0} duration={0.9} trigger="view" /> : '—'}
+                      </span>
+                      <span className="kiA-platecard-stat-label">DOCUMENTS</span>
+                    </span>
+                    <span className="kiA-platecard-stat">
+                      <span className="kiA-platecard-stat-num">
+                        {loaded ? <CountUp to={subjectPages[s.id] ?? 0} duration={0.9} trigger="view" separator="," /> : '—'}
+                      </span>
+                      <span className="kiA-platecard-stat-label">PAGES</span>
+                    </span>
+                  </div>
+                  <span className="kiA-platecard-cta">OPEN DISCIPLINE →</span>
+                </button>
+              </SpotlightCard>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* 3 — Quick access ledger */}
+      {qaSections.length > 0 && (
+        <section className="kiA-section">
+          <p className="kiA-eyebrow">Quick access</p>
+          <h2 className="kiA-display kiA-section-title">Pick up where you left off.</h2>
+          <div className="kiA-qa">
+            {qaSections.map(sec => (
+              <div key={sec.id} className="kiA-plate kiA-qa-col">
+                <p className="kiA-qa-label">{sec.label}</p>
+                <ul className="kiA-qa-list">
+                  {sec.items.map(it => {
+                    const c = v2SubjectColor(it.subj);
+                    return (
+                      <li key={it.key}>
+                        <button
+                          type="button"
+                          className="kiA-qa-row"
+                          onClick={() => onOpenReader(it.key, [it.key])}
+                        >
+                          <span className="kiA-dot" style={{ background: c }} aria-hidden="true" />
+                          <span className="kiA-qa-row-text">
+                            <span className="kiA-qa-row-title">{it.title}</span>
+                            <span className="kiA-qa-row-meta">{it.meta}</span>
+                          </span>
+                          <span className="kiA-qa-row-arrow" aria-hidden="true">→</span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
-      {/* 4 — Recently added: horizontal strip */}
-      <AnimatedContent
-        className="kiA-section-anim"
-        trigger="scroll"
-        distance={28}
-        duration={0.7}
-        once
-      >
-        <section className="kiA-section">
-          <p className="kiA-eyebrow">Recently added</p>
-          <h2 className="kiA-section-title">Your recent shelf</h2>
-          {recentEntries.length > 0 ? (
-            <div className="kiA-strip" role="list">
-              {recentEntries.map(({ file, key }) => (
-                <RecentCard
-                  key={key}
-                  file={file}
-                  openedLabel={relTime(recentTs[key] ?? null)}
-                  onOpen={() => onOpenReader(key, [key])}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="kiA-empty">Your recently opened documents will appear here.</p>
-          )}
-        </section>
-      </AnimatedContent>
+      {/* 4 — Recent shelf */}
+      <section className="kiA-section">
+        <p className="kiA-eyebrow">Recently added</p>
+        <h2 className="kiA-display kiA-section-title">Your recent shelf.</h2>
+        {recentEntries.length > 0 ? (
+          <div className="kiA-strip" role="list">
+            {recentEntries.map(({ file, key }) => (
+              <RecentCard
+                key={key}
+                file={file}
+                openedLabel={relTime(recentTs[key] ?? null)}
+                onOpen={() => onOpenReader(key, [key])}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="kiA-empty">Your recently opened documents will appear here.</p>
+        )}
+      </section>
     </div>
   );
 }
 
 /* ------------------------------------------------------------------ */
 
-/** Study activity card: last opened doc + subject + last page + progress +
- * last-accessed date + Resume. Real kl:* history only. */
 function StudyActivityCard({
   file,
   page,
-  openedLabel,
   openedDate,
   onOpen
 }: {
   file: LibFile;
   page: number;
-  openedLabel: string;
   openedDate: string;
   onOpen: () => void;
 }) {
@@ -589,22 +511,29 @@ function StudyActivityCard({
   const subjColor = v2SubjectColor(file.subj);
   const subj = SUBJECTS.find(s => s.id === file.subj);
   return (
-    <div className="kiA-surface kiA-activity" style={{ '--subj': subjColor } as CSSProperties}>
+    <div className="kiA-plate kiA-activity" style={{ '--subj': subjColor } as CSSProperties}>
       <p className="kiA-activity-kicker">
         <span className="kiA-dot" style={{ background: subjColor }} />
         {subj?.code ?? file.subj.toUpperCase()} · LAST OPENED {openedDate.toUpperCase()}
       </p>
       <h3 className="kiA-activity-title">{file.title}</h3>
       <p className="kiA-activity-meta">
-        Page {page} of {file.pages} · {pct}% read · opened {openedLabel}
+        Page {page} of {file.pages} · {pct}% read
       </p>
       <div className="kiA-progress" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
         <div className="kiA-progress-fill" style={{ width: `${pct}%` }} />
       </div>
-      <button type="button" className="kiA-specular kiA-activity-btn" onClick={onOpen}>
-        <span>Resume</span>
-        <span className="kiA-specular-arrow" aria-hidden="true">→</span>
-      </button>
+      <SpecularButton
+        size="md"
+        className="kiA-activity-btn"
+        onClick={onOpen}
+        baseColor="#1a2b45"
+        lineColor="#65d9d0"
+        textColor="#f2ecdd"
+        glow={0.7}
+      >
+        Resume&nbsp;&nbsp;→
+      </SpecularButton>
     </div>
   );
 }
@@ -615,7 +544,6 @@ function RecentCard({
   onOpen
 }: {
   file: LibFile;
-  page?: number;
   openedLabel: string;
   onOpen: () => void;
 }) {

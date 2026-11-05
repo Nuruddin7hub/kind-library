@@ -1,0 +1,143 @@
+/* ==================================================================
+ * K/IND LIBRARY — THE ATLAS / INSTITUTIONAL EDITION (ChatGPT Round A,
+ * early loop 2026-11-05). Aesthetic direction C — Hybrid Atlas.
+ *
+ * The full desktop redesign from zero: a 19th-century institutional atlas
+ * merged with a modern instrument control room. Cartographic graticule,
+ * plate registry, parchment serif display type — on obsidian.
+ *
+ * SCOPE: every rule lives under `.kiA-desktop` (the desktop-only branch
+ * rendered by App.tsx). Mobile renders .mobile-shell and never matches
+ * these selectors — it stays byte-identical.
+ *
+ * Design tokens (exact spec):
+ *   Obsidian #080D16 · Midnight #111C2B · Parchment #D8D1C2
+ *   Signal #65D9D0
+ *   EM2 #7CA9FF · Signals #B69BFF · FIS #E6AD60 · Digital #62C9A7
+ * Typography: Cormorant Garamond (display serif, 48–76px headlines),
+ *             Manrope (UI/body).
+ * Architecture: 248px sidebar · 64px topbar · 48px page padding ·
+ *             1600px max-width · 14px radius.
+ * ================================================================== */
+
+.kiA-desktop {
+  /* ---- palette ---- */
+  --atlas-obsidian: #080D16;
+  --atlas-midnight: #111C2B;
+  --atlas-midnight-2: #16233a;
+  --atlas-parchment: #D8D1C2;
+  --atlas-ink: #F2ECDD;
+  --atlas-parchment-dim: #A79E8B;
+  --atlas-parchment-faint: #6E685B;
+  --atlas-signal: #65D9D0;
+  --atlas-subj-em2: #7CA9FF;
+  --atlas-subj-signals: #B69BFF;
+  --atlas-subj-fis: #E6AD60;
+  --atlas-subj-digital: #62C9A7;
+
+  /* ---- type ---- */
+  --atlas-display: 'Cormorant Garamond', 'Georgia', 'Times New Roman', serif;
+  --atlas-ui: 'Manrope', 'Instrument Sans', system-ui, -apple-system, sans-serif;
+
+  /* ---- architecture ---- */
+  /* App.tsx offsets the desktop column by --sidebar-width; pin it to the
+   * spec 248px here so the fixed register plate and content align. */
+  --sidebar-width: 248px;
+  --atlas-sidebar: 248px;
+  --atlas-topbar: 64px;
+  --atlas-pad: 48px;
+  --atlas-max: 1600px;
+  --atlas-radius: 14px;
+  --atlas-hairline: rgba(216, 209, 194, 0.14);
+  --atlas-hairline-soft: rgba(216, 209, 194, 0.08);
+
+  background: var(--atlas-obsidian);
+  color: var(--atlas-parchment);
+  font-family: var(--atlas-ui);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* page column: 248px sidebar offset + 1600px cap + 48px gutters */
+.kiA-desktop .kiA-main {
+  margin-left: 0;
+  max-width: var(--atlas-max);
+  padding: 0 var(--atlas-pad) 96px;
+}
+
+/* ---- shared atlas furniture ---- */
+
+/* small-caps eyebrow, tracked */
+.kiA-desktop .kiA-eyebrow {
+  font-family: var(--atlas-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--atlas-parchment-faint);
+  margin: 0 0 18px;
+}
+
+/* serif display headline */
+.kiA-desktop .kiA-display {
+  font-family: var(--atlas-display);
+  color: var(--atlas-ink);
+  font-weight: 500;
+  letter-spacing: 0.005em;
+  line-height: 1.04;
+  margin: 0;
+}
+.kiA-desktop .kiA-display em {
+  font-style: italic;
+  color: var(--atlas-signal);
+}
+
+/* hairline rule with a centre lozenge */
+.kiA-desktop .kiA-rule {
+  border: 0;
+  height: 1px;
+  margin: 34px 0;
+  background: linear-gradient(90deg, transparent, var(--atlas-hairline), transparent);
+  position: relative;
+}
+.kiA-desktop .kiA-rule::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -3px;
+  width: 7px;
+  height: 7px;
+  transform: translateX(-50%) rotate(45deg);
+  background: var(--atlas-obsidian);
+  border: 1px solid var(--atlas-hairline);
+}
+
+/* midnight plate surface */
+.kiA-desktop .kiA-plate {
+  background: linear-gradient(180deg, var(--atlas-midnight-2), var(--atlas-midnight));
+  border: 1px solid var(--atlas-hairline-soft);
+  border-radius: var(--atlas-radius);
+}
+
+/* subject dot */
+.kiA-desktop .kiA-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+}
+
+/* focus visibility everywhere on desktop */
+.kiA-desktop :focus-visible {
+  outline: 2px solid var(--atlas-signal);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kiA-desktop *, .kiA-desktop *::before, .kiA-desktop *::after {
+    animation-duration: 0.001s !important;
+    transition-duration: 0.001s !important;
+  }
+}
