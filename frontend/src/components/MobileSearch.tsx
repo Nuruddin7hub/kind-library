@@ -15,7 +15,6 @@ import DocCover from './DocCover';
 import BottomSheet from './BottomSheet';
 import SpecularButton from '../bits/SpecularButton';
 import GlareHover from '../bits/GlareHover';
-import ShinyText from '../bits/ShinyText';
 import AnimatedContent from '../bits/AnimatedContent';
 import './DocCover.css';
 import './MobileSearch.css';
@@ -80,7 +79,6 @@ interface CardProps {
   index: number;                  // position in the results — cover number
   query: string;
   bookmarked: boolean;
-  reducedMotion: boolean;
   onToggleBookmark: (key: string) => void;
   onOpenHit: (hit: SearchHit, page?: number) => void;
 }
@@ -107,19 +105,16 @@ function highlightTitle(title: string, query: string): ReactNode[] {
   return highlightText(title, query, 'ms-hl-t');
 }
 
-/** Honest match-kind label — never a fabricated relevance percentage. */
-function matchLabel(hit: SearchHit, query: string): string {
+/** Honest match-kind label — never a fabricated relevance percentage.
+ *  Round C re-score: TITLE MATCH / CONTENT MATCH / SUBJECT MATCH. */
+function matchLabel(hit: SearchHit): 'TITLE MATCH' | 'CONTENT MATCH' | 'SUBJECT MATCH' {
   const kinds = matchKindsOf(hit);
-  if (kinds.includes('title')) {
-    return hit.title.trim().toLowerCase() === query.trim().toLowerCase()
-      ? 'Exact phrase'
-      : 'Title match';
-  }
-  if (kinds.includes('text')) return 'Text match';
-  return 'Subject match';
+  if (kinds.includes('title')) return 'TITLE MATCH';
+  if (kinds.includes('text')) return 'CONTENT MATCH';
+  return 'SUBJECT MATCH';
 }
 
-function SearchCard({ hit, index, query, bookmarked, reducedMotion, onToggleBookmark, onOpenHit }: CardProps) {
+function SearchCard({ hit, index, query, bookmarked, onToggleBookmark, onOpenHit }: CardProps) {
   const kinds = matchKindsOf(hit);
   const isText = kinds.includes('text');
   const subj = subjectOf(hit.subj);
@@ -127,17 +122,24 @@ function SearchCard({ hit, index, query, bookmarked, reducedMotion, onToggleBook
   const code = subj ? subj.code : hit.subj.toUpperCase();
   const openPage = hitOpenPage(hit);
   const thumb = hit.file ? pageImageUrl(hit.subj, hit.file, openPage, hit.pages) : null;
-  const passages = useMemo(() => (hit.passages ?? []).slice(0, 2), [hit.passages]);
-  const matchCount = typeof hit.match_count === 'number'
-    ? hit.match_count
-    : passages.reduce((s, p) => s + (p.match_count || 0), 0);
-  const pageCount = Math.max(1, new Set((hit.passages ?? []).map(p => p.page_number)).size);
+  // REAL excerpt from the PDF text index — first passage snippet, else the
+  // backend excerpt. Never invented from the title; empty when the hit is
+  // title-only (the line then simply doesn't render).
+  const excerpt = (hit.passages?.[0]?.snippet || hit.excerpt || '').trim();
+  const matchCount = typeof hit.match_count === 'number' ? hit.match_count : 0;
+  // Round B P1: the REAL best-match page from the backend (hit.page is the
+  // highest-hit page, 0 when there is no content match — never fabricated).
+  // Shown only for content matches; title-only matches show no page.
+  const matchPage = isText && typeof hit.page === 'number' && hit.page > 0 ? hit.page : 0;
+  const matchInfo = matchPage > 0
+    ? `Content match on page ${matchPage}${matchCount > 0 ? `, ${matchCount} match${matchCount === 1 ? '' : 'es'}` : ''}`
+    : matchLabel(hit).toLowerCase();
 
-  // Whole-card opens the doc (P1-4): the card is a div with role=button, so
-  // inner real buttons (OPEN, bookmark, page links) stay valid HTML.
+  // Whole-row opens the doc at the best page (P1-4): the card is a div with
+  // role=button, so the inner bookmark button stays valid HTML.
   const open = () => onOpenHit(hit);
   const onCardKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.target !== e.currentTarget) return; // let inner buttons handle their own keys
+    if (e.target !== e.currentTarget) return; // let the bookmark button handle its own keys
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       open();
@@ -151,7 +153,7 @@ function SearchCard({ hit, index, query, bookmarked, reducedMotion, onToggleBook
       tabIndex={0}
       onClick={open}
       onKeyDown={onCardKeyDown}
-      aria-label={`Open ${hit.title}`}
+      aria-label={`Open ${hit.title} — ${matchInfo}`}
     >
       <GlareHover
         mode="click"
@@ -160,11 +162,11 @@ function SearchCard({ hit, index, query, bookmarked, reducedMotion, onToggleBook
         transitionDuration={500}
         className="ms-thumb-glare"
         style={{
-          ['--gh-width' as any]: '48px',
-          ['--gh-height' as any]: '64px',
+          ['--gh-width' as any]: '40px',
+          ['--gh-height' as any]: '53px',
           ['--gh-br' as any]: '6px',
-          flex: '0 0 48px',
-          alignSelf: 'flex-start',
+          flex: '0 0 40px',
+          alignSelf: 'center',
         }}
       >
         <DocCover
@@ -178,6 +180,7 @@ function SearchCard({ hit, index, query, bookmarked, reducedMotion, onToggleBook
         />
       </GlareHover>
 
+      {/* Round C re-score: grid 40px 1fr 40px — cover / title+micro+match+excerpt / bookmark */}
       <div className="ms-card-main">
         {/* query fragment highlighted in the title (muted teal, original type) */}
         <h3 className="ms-title">{highlightTitle(hit.title, query)}</h3>
@@ -185,71 +188,42 @@ function SearchCard({ hit, index, query, bookmarked, reducedMotion, onToggleBook
         <p className="ms-micro" style={{ color }}>
           {sectionLabel(hit.section).toUpperCase()} · {code} · {hit.pages} PAGES
         </p>
-        {/* honest match-kind label — never a fabricated relevance percentage.
-            ShinyText sparingly on the tiny label only; title stays readable. */}
         <p className="ms-kindline">
-          {reducedMotion ? (
-            <span style={{ color }}>{matchLabel(hit, query)}</span>
-          ) : (
-            <ShinyText
-              text={matchLabel(hit, query)}
-              color={color}
-              shineColor="rgba(255,255,255,0.9)"
-              speed={3.5}
-              shineWidth={28}
-              trigger="loop"
-              className="ms-kindline-shine"
-            />
+          <span className="ms-kindtag" style={{ color }}>{matchLabel(hit)}</span>
+          {/* Round B P1: real matching page (backend hit.page) for content
+              matches — e.g. CONTENT MATCH · PAGE 08. Title-only matches
+              show no page. */}
+          {matchPage > 0 && (
+            <span className="ms-kindline-count"> · PAGE {String(matchPage).padStart(2, '0')}</span>
           )}
           {isText && matchCount > 0 && (
-            <span className="ms-kindline-count"> · {matchCount} MATCH{matchCount === 1 ? '' : 'ES'} · {pageCount} PAGE{pageCount === 1 ? '' : 'S'}</span>
+            <span className="ms-kindline-count"> · {matchCount} MATCH{matchCount === 1 ? '' : 'ES'}</span>
           )}
         </p>
+        {/* one-line REAL excerpt from the text index (12px, 2-line clamp);
+            matched word highlighted; never rendered when there is none.
+            The sr-only prefix makes the highlighted match discoverable to
+            screen readers (a bare <mark> is not announced as a match). */}
+        {excerpt !== '' && (
+          <p className="ms-excerpt1">
+            <span className="ms-sr-only">Matching excerpt: </span>
+            {highlightText(excerpt, query)}
+          </p>
+        )}
       </div>
 
-      <div className="ms-card-actions">
-        <button
-          type="button"
-          className={`ms-bookmark${bookmarked ? ' on' : ''}`}
-          aria-label={bookmarked ? `Remove bookmark for ${hit.title}` : `Bookmark ${hit.title}`}
-          aria-pressed={bookmarked}
-          onClick={(e) => { e.stopPropagation(); onToggleBookmark(hit.key); }}
-        >
-          {bookmarked ? '★' : '☆'}
-        </button>
-        {/* OPEN: quieter than before, still a clear 44px target */}
-        <button
-          type="button"
-          className="ms-open"
-          onClick={(e) => { e.stopPropagation(); open(); }}
-          aria-label={`Open ${hit.title}`}
-        >
-          OPEN
-        </button>
-      </div>
-
-      {isText && (
-        <div className="ms-excerpts">
-          {passages.map((p, i) => (
-            <div className="ms-excerpt" key={`${p.page_number}-${i}`}>
-              <p className="ms-excerpt-text">{highlightText(p.snippet, query)}</p>
-              <button
-                type="button"
-                className="ms-page-go"
-                onClick={(e) => { e.stopPropagation(); onOpenHit(hit, p.page_number); }}
-                aria-label={`Open ${hit.title} at page ${p.page_number}`}
-              >
-                PAGE {pad2(p.page_number)} →
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+      <button
+        type="button"
+        className={`ms-bookmark${bookmarked ? ' on' : ''}`}
+        aria-label={bookmarked ? `Remove bookmark for ${hit.title}` : `Bookmark ${hit.title}`}
+        aria-pressed={bookmarked}
+        onClick={(e) => { e.stopPropagation(); onToggleBookmark(hit.key); }}
+      >
+        {bookmarked ? '★' : '☆'}
+      </button>
     </div>
   );
 }
-
-const pad2 = (n: number) => String(n).padStart(2, '0');
 
 export default function MobileSearch(props: MobileSearchProps) {
   const {
@@ -270,6 +244,29 @@ export default function MobileSearch(props: MobileSearchProps) {
   // reduced-motion: static fallbacks for the specular Apply button
   const [reducedMotion] = useState(() =>
     typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  // query+filters+sort+scroll preserved on return (Round C re-score):
+  // query persists in the parent (App), scope/sort in kl:msearch:*; the
+  // scroll offset of the shared #kl-mobile-scroll container is saved when
+  // a hit is opened and restored when this view mounts again.
+  const SCROLL_KEY = 'kl:msearch:scroll';
+  const scrollerOf = () =>
+    typeof document !== 'undefined' ? document.getElementById('kl-mobile-scroll') : null;
+  useEffect(() => {
+    const el = scrollerOf();
+    if (!el) return;
+    try {
+      const v = parseInt(sessionStorage.getItem(SCROLL_KEY) || '0', 10);
+      if (Number.isFinite(v) && v > 0) el.scrollTop = v;
+    } catch { /* ignore */ }
+  }, []);
+  const openHitAndSave = (hit: SearchHit, page?: number) => {
+    const el = scrollerOf();
+    if (el) {
+      try { sessionStorage.setItem(SCROLL_KEY, String(el.scrollTop)); } catch { /* ignore */ }
+    }
+    onOpenHit(hit, page);
+  };
 
   // secondary-filter sheet state — committed on Apply
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -519,8 +516,12 @@ export default function MobileSearch(props: MobileSearchProps) {
             )}
           </div>
         ) : !searching && filtered.length === 0 ? (
+          /* rich empty state (Round C re-score): NO MATCHES FOUND +
+             all-subjects suggestion + recent searches + popular subjects —
+             all from real stored data, never invented */
           <div className="ms-empty">
-            <p className="ms-empty-title">No matches for “{query.trim()}”.</p>
+            <p className="ms-empty-title">NO MATCHES FOUND</p>
+            <p className="ms-empty-hint">Nothing in the archive matches “{query.trim()}”.</p>
             <div className="ms-chips">
               {queryWords.length > 1 && (
                 <button
@@ -545,11 +546,45 @@ export default function MobileSearch(props: MobileSearchProps) {
                   type="button"
                   className="ms-chip"
                   onClick={() => onSubjectChange('all')}
-                  aria-label={`Clear ${subjectOf(searchSubject)?.name ?? searchSubject} subject filter`}
+                  aria-label="Search all subjects instead"
                 >
-                  {subjectOf(searchSubject)?.code ?? searchSubject} ×
+                  Try all subjects
                 </button>
               )}
+            </div>
+            {searches.length > 0 && (
+              <div className="ms-empty-group">
+                <p className="ms-empty-label">RECENT SEARCHES</p>
+                <div className="ms-chips">
+                  {searches.map(s => (
+                    <button
+                      type="button"
+                      key={s}
+                      className="ms-chip"
+                      onClick={() => onQueryChange(s)}
+                      aria-label={`Search again for ${s}`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="ms-empty-group">
+              <p className="ms-empty-label">POPULAR SUBJECTS</p>
+              <div className="ms-chips">
+                {popularSubjects.map(({ s, n }) => (
+                  <button
+                    type="button"
+                    key={s.id}
+                    className="ms-chip"
+                    onClick={() => onSubjectChange(s.id)}
+                    aria-label={`Filter search to ${s.name}`}
+                  >
+                    {s.code} · {n}
+                  </button>
+                ))}
+              </div>
             </div>
             <button type="button" className="ms-clear-btn" onClick={onClearAll}>
               Clear search
@@ -572,9 +607,8 @@ export default function MobileSearch(props: MobileSearchProps) {
                 index={i}
                 query={query}
                 bookmarked={bookmarks.includes(hit.key)}
-                reducedMotion={reducedMotion}
                 onToggleBookmark={onToggleBookmark}
-                onOpenHit={onOpenHit}
+                onOpenHit={openHitAndSave}
               />
             ))}
           </div>
@@ -598,9 +632,8 @@ export default function MobileSearch(props: MobileSearchProps) {
                 index={i}
                 query={query}
                 bookmarked={bookmarks.includes(hit.key)}
-                reducedMotion={reducedMotion}
                 onToggleBookmark={onToggleBookmark}
-                onOpenHit={onOpenHit}
+                onOpenHit={openHitAndSave}
               />
             ))}
           </AnimatedContent>

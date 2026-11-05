@@ -140,7 +140,15 @@
  * 14–15px titles · 10–11px meta · 12–14px radius · full-card tap with a
  * bookmark action SEPARATED from the open action. */
 .ki-list { padding: 6px 18px 0; }
-.ki-row { position: relative; overflow: hidden; border-radius: 12px; }
+.ki-row { position: relative; overflow: hidden; border-radius: 14px; }
+/* Round C re-score P0: the GlareHover vendored root is `display: inline-grid`
+ * + `place-items: center` (GlareHover.css). On the row it MUST be a plain
+ * block that fills the row — inline-grid shrink-wrapped .ki-row-inner to
+ * its max-content and centered it, which produced the visible third-card
+ * horizontal offset (diagnosed 2026-11-04: inner 295px vs 352px, centered).
+ * This (0,3,0) selector beats .glare-hover's (0,1,0) regardless of bundle
+ * order. No compensating margins — the source itself is removed. */
+.ki-row .glare-hover.ki-row-glare { display: block; width: 100%; }
 .ki-row-actions {
   position: absolute; top: 0; right: 0; bottom: 0; width: 76px;
   display: flex; align-items: center; justify-content: center;
@@ -153,13 +161,18 @@
 }
 .ki-row-bm:active { transform: scale(0.92); }
 .ki-row-bm.on { color: #ffbf78; border-color: rgba(255, 191, 120, 0.45); }
+/* Round C re-score P0 — exact .document-row spec:
+ * grid 48px minmax(0,1fr) 44px · min-height 88px · 12px padding · 12px gap ·
+ * 14px radius · bookmark 44px justify-self end · cyan active state.
+ * width:100% is belt-and-braces with the glare fix above. */
 .ki-row-inner {
   position: relative; display: grid;
-  grid-template-columns: 52px minmax(0, 1fr) 44px; /* cover / text / bookmark */
+  grid-template-columns: 48px minmax(0, 1fr) 44px; /* cover / text / bookmark */
   align-items: center; gap: 12px; /* spec: 12px padding, 12px gap */
   min-height: 88px; /* spec: 84–100px rows */
+  width: 100%;
   padding: 12px;
-  border-radius: 12px; /* spec: 12–14px */
+  border-radius: 14px; /* spec: 14px */
   border: 1px solid rgba(255, 255, 255, 0.07);
   background: rgba(16, 24, 39, 0.72);
   transition: transform 220ms var(--ease-premium), background 160ms ease, border-color 160ms ease;
@@ -178,12 +191,15 @@
 }
 .ki-row-bmbtn:active { transform: scale(0.9); }
 .ki-row-bmbtn.on { color: #ffbf78; border-color: rgba(255, 191, 120, 0.45); }
-/* pressed state (Round C): cover nudges 2px + brightens, card lifts —
+/* pressed state (Round C re-score): cyan active tint on the row —
  * the GlareHover wrapper sits between .ki-row and .ki-row-inner now.
- * The wrapper must be display:block: as inline-grid it would shrink-wrap
- * .ki-row-inner instead of filling the row. */
-.ki-row-glare { display: block; border-radius: 12px; }
-.ki-row-glare:active .ki-row-inner { background: rgba(22, 32, 50, 0.9); border-color: rgba(255, 255, 255, 0.14); }
+ * The wrapper must be display:block (see the fix above): as inline-grid
+ * it would shrink-wrap .ki-row-inner instead of filling the row. */
+.ki-row-glare { display: block; border-radius: 14px; }
+.ki-row-glare:active .ki-row-inner {
+  background: rgba(18, 34, 44, 0.92);
+  border-color: rgba(50, 211, 189, 0.45); /* spec: cyan active state */
+}
 .ki-row-glare:active .ki-row-cover { transform: translateX(2px); filter: brightness(1.14); }
 .ki-row-cover { transition: transform 160ms ease, filter 160ms ease; }
 .ki-row-body { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
@@ -204,10 +220,11 @@
   text-transform: uppercase; color: var(--muted);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-/* 52×64 cover (Round B 2026-11-04, 1420 loop) — never blank (DocCover fallback renders on failure) */
-.ki-row-cover { width: 52px; height: 64px; flex-shrink: 0; }
+/* 48×64 cover (Round C re-score: matches the 48px grid column) —
+ * never blank (DocCover fallback renders on failure) */
+.ki-row-cover { width: 48px; height: 64px; flex-shrink: 0; }
 .ki-row-coverimg {
-  width: 52px; height: 64px; border-radius: 8px; object-fit: cover;
+  width: 48px; height: 64px; border-radius: 8px; object-fit: cover;
   border: 1px solid var(--line); background: #0C1220; display: block;
 }
 .ki-row-hint {
@@ -237,16 +254,17 @@
 }
 .ki-row-menu-btn:active { background: #1B293D; }
 
-/* ---------- spec-exact list entrance (ChatGPT Round B 2026-11-04, 1420 loop)
- * "Animated List HIGH PRIORITY": 40ms stagger (35–50ms), 200ms duration
- * (180–250ms), translateY(10px) → 0 (8–12px), fade — entrance only.
+/* ---------- spec-exact list entrance (ChatGPT Round B 2026-11-04, 1420 loop;
+ * Round C re-score 2026-11-04: 8px travel, 220ms (0.2–0.25s), 40ms stagger
+ * (0.035–0.05s), once, uniform, vertical only — no horizontal animation)
+ * "Animated List HIGH PRIORITY": entrance only, never replays.
  * Per-item transitionDelay + --ki-rise/--ki-dur are set inline by
  * RowStagger; .is-in flips once via IntersectionObserver and never
  * unflips (no replay on scroll-back). */
 .ki-entrance {
   display: flex;
   flex-direction: column;
-  gap: 9px; /* spec: 9px gaps between cards */
+  gap: 10px; /* spec: 10px gaps between cards */
 }
 .ki-entrance-item {
   opacity: 0;

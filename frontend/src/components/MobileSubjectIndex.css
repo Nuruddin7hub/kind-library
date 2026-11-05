@@ -10,6 +10,31 @@
   /* nav clearance: shared .mobile-page rule (index.css) — counted once there */
 }
 
+/* ---------- header: Dark Veil identity band (digital teal / fis bronze) ---------- */
+.msi-head {
+  position: relative;
+  margin: 0 -18px;
+  padding: 18px 18px 22px;
+  overflow: hidden;
+}
+.msi-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(180deg, #000 62%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 62%, transparent 100%);
+}
+.msi-veil > div {
+  width: 100%;
+  height: 100%;
+}
+.msi-head .msi-badge,
+.msi-head .msi-headline,
+.msi-head .msi-lede {
+  position: relative;
+  z-index: 1;
+}
+
 /* ---------- header: discipline badge / editorial headline / lede ---------- */
 .msi-back {
   display: inline-flex; align-items: center;
@@ -38,16 +63,20 @@
   opacity: 0.8;
 }
 
+/* 32–36px serif title (Round B 2026-11-04) */
 .msi-headline {
   font-family: var(--font-display);
   font-weight: 400;
   color: var(--ke-text);
-  font-size: clamp(34px, 9.6vw, 38px);
+  font-size: clamp(32px, 9vw, 36px);
   line-height: 1.05;
   letter-spacing: -0.01em;
   margin: 12px 0 0;
+  max-width: 16ch;
 }
 .msi-headline .rb-scroll-reveal-text { margin: 0; }
+/* BlurText renders <p>; keep the headline block tight */
+p.msi-headline { margin: 12px 0 0; }
 
 .msi-lede {
   margin: 10px 0 0;
@@ -66,10 +95,110 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   overflow: hidden;
 }
+/* Digital circuit art (Round B 2026-11-04, 1420 loop): taller 200px frame,
+ * Circuit Lab accents (#42D9B5 signal / #1C938A trace / #0A2425 base),
+ * glass frame: teal edge + inner highlight + depth shadow */
+.msi[data-subject="digital"] .msi-art {
+  height: 200px;
+  background:
+    linear-gradient(180deg, rgba(66, 217, 181, 0.06), transparent 40%),
+    #0A2425;
+  border: 1px solid rgba(66, 217, 181, 0.35);
+  box-shadow:
+    0 18px 44px -20px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(66, 217, 181, 0.22),
+    inset 0 0 60px rgba(66, 217, 181, 0.05);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
 .msi-art svg {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+/* ---------- FIS editorial feature: "THE BIG QUESTION" ----------
+ * Static, single feature: bronze edge highlight, restrained radial glow,
+ * oversized serif ? at ~42% width on the right. 190–220px tall (1420 loop). */
+.msi-bigq {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  min-height: 200px; /* spec: 190–220px */
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(185, 138, 78, 0.5); /* bronze edge highlight */
+  background:
+    radial-gradient(90% 130% at 88% 50%, rgba(185, 138, 78, 0.15), transparent 62%),
+    #100d09;
+  overflow: hidden;
+  box-shadow:
+    0 18px 44px -20px rgba(0, 0, 0, 0.85),
+    inset 0 1px 0 rgba(185, 138, 78, 0.28);
+}
+.msi-bigq-left {
+  flex: 1 1 58%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+}
+.msi-bigq-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--subject-accent);
+}
+.msi-bigq-rule {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(185, 138, 78, 0.45), transparent 85%);
+}
+.msi-bigq-q-big {
+  margin: 0;
+  font-family: var(--font-display, 'Instrument Serif', Georgia, serif);
+  font-size: 24px;
+  line-height: 1.2;
+  color: #F4EDE0;
+}
+.msi-bigq-desc {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: rgba(240, 238, 233, 0.72);
+  max-width: 26ch;
+}
+.msi-bigq-btn {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(185, 138, 78, 0.55);
+  background: rgba(185, 138, 78, 0.14);
+  color: #E6B36C;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+  transition: background 150ms ease, transform 150ms var(--ease-premium);
+}
+.msi-bigq-btn:active {
+  transform: scale(0.97);
+  background: rgba(185, 138, 78, 0.24);
+}
+/* bronze serif mark, right ~42%, restrained amber light */
+.msi-bigq-mark {
+  flex: 0 0 42%;
+  align-self: center;
+  text-align: right;
+  font-family: var(--font-display, 'Instrument Serif', Georgia, serif);
+  font-size: 140px;
+  line-height: 1;
+  opacity: 0.92;
+  text-shadow: 0 0 44px rgba(185, 138, 78, 0.35);
 }
 
 /* ---------- meta: one mono line, no big stat blocks ---------- */
@@ -82,7 +211,7 @@
   text-transform: uppercase;
 }
 
-/* ---------- BROWSE BY TYPE category chips (all 44px+ targets) ---------- */
+/* ---------- BROWSE BY TYPE category chips (40px, subject-tinted active) ---------- */
 .msi-cats { margin-top: 18px; }
 .msi-cats-label {
   margin: 0 0 10px;
@@ -106,7 +235,7 @@
 .msi-chips::-webkit-scrollbar { display: none; }
 .msi-chip {
   flex-shrink: 0;
-  min-height: 44px;
+  min-height: 40px; /* spec: 40px type filters */
   padding: 0 16px;
   display: inline-flex;
   align-items: center;
@@ -124,34 +253,110 @@
   color: var(--subject-accent);
   border-color: color-mix(in srgb, var(--subject-accent) 55%, transparent);
 }
+/* FIS browse-by-type active = AMBER (not turquoise) — via --subject-accent */
+/* Round C re-score: amber fill so the selected chip stands clearly apart */
+.msi[data-subject="fis"] .msi-chip.on {
+  background: rgba(230, 179, 108, 0.16);
+  border-color: rgba(230, 179, 108, 0.65);
+  color: #E6B36C;
+}
 
-/* ---------- featured resource card (whole card tappable) ---------- */
+/* ---------- premium featured card (full-card tap + SpotlightCard) ---------- */
+/* Restrained GlareHover wrapper (click mode) around the featured card —
+ * the click target stays the button itself, so HTML stays valid. */
+.msi-feat-glare {
+  display: block;
+  margin: 22px 0 0;
+  border-radius: 18px;
+}
+.msi-feat-glare .msi-feat { margin: 0; }
 .msi-feat {
+  display: block;
+  width: 100%;
+  margin: 22px 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+/* shared chrome for both the spotlight + static variants */
+.msi-feat-spot,
+.msi-feat-spot.spotlight-card {
+  position: relative;
   display: flex;
   gap: 16px;
   align-items: center;
   width: 100%;
-  min-height: 44px;
+  min-height: 172px;
+  padding: 16px;
   text-align: left;
-  margin-top: 22px;
-  padding: 14px;
   border-radius: 16px;
-  background:
-    radial-gradient(130% 120% at 0% 0%, color-mix(in srgb, var(--subject-accent) 16%, transparent), transparent 58%),
-    #0D1521;
+  background-color: #0D1521;
+  background-image:
+    radial-gradient(130% 120% at 0% 0%, color-mix(in srgb, var(--subject-accent) 16%, transparent), transparent 58%);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: transform 150ms var(--ease-premium);
+  box-shadow: 0 18px 44px -18px rgba(0, 0, 0, 0.75);
+  overflow: hidden;
 }
-.msi-feat:active { transform: scale(0.985); }
+/* subject top accent */
+.msi-feat-spot::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--subject-accent), transparent 72%);
+  z-index: 2;
+  pointer-events: none;
+}
+/* Digital premium: teal light from the right */
+.msi[data-subject="digital"] .msi-feat-spot {
+  margin-bottom: 20px; /* Round C re-score: featured card breathing room */
+
+  background-image:
+    radial-gradient(72% 130% at 100% 50%, rgba(50, 211, 189, 0.15), transparent 62%),
+    radial-gradient(130% 120% at 0% 0%, rgba(50, 211, 189, 0.16), transparent 58%),
+    linear-gradient(#0d1521, #0d1521);
+  border-color: rgba(50, 211, 189, 0.24);
+}
+/* FIS premium: bronze edge + amber CTA */
+.msi[data-subject="fis"] .msi-feat-spot {
+  border-color: rgba(217, 163, 91, 0.32);
+  background-image:
+    radial-gradient(130% 120% at 0% 0%, rgba(217, 163, 91, 0.13), transparent 58%),
+    linear-gradient(#100d09, #100d09);
+}
+.msi[data-subject="fis"] .msi-feat-cta { color: #E6B36C; }
+.msi-feat:active .msi-feat-spot { transform: scale(0.985); }
+.msi-feat-spot { transition: transform 150ms var(--ease-premium); }
 .msi-feat-thumb {
-  width: 96px;
-  height: 128px;
+  width: 104px; /* larger thumb */
+  height: 140px;
   object-fit: cover;
   border-radius: 10px;
   flex-shrink: 0;
   border: 1px solid var(--line);
   background: #131c2c;
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
+}
+/* Digital featured: cover image is object-fit CONTAIN on a dark backing
+ * with a thin teal frame (generative tile underneath stays as loading/fallback) */
+.msi[data-subject="digital"] .msi-feat-thumb {
+  border: 1px solid rgba(56, 213, 193, 0.5);
+  background: #0A0F1C;
+}
+.msi[data-subject="digital"] .msi-feat-thumb .doc-cover-img {
+  object-fit: contain;
+  background: #0A0F1C;
+}
+/* FIS featured: warm dark backing behind the cover */
+.msi[data-subject="fis"] .msi-feat-thumb {
+  background: #241A10;
 }
 .msi-feat-body {
   flex: 1;
@@ -170,7 +375,7 @@
 }
 .msi-feat-title {
   font-family: var(--font-doc);
-  font-size: 17px;
+  font-size: 18px; /* prominent title */
   font-weight: 700;
   line-height: 1.3;
   color: var(--ke-text);
@@ -199,7 +404,7 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin: 26px 0 2px;
+  margin: 30px 0 2px; /* clears the featured card so rows read distinct */
 }
 .msi-eyebrow {
   font-family: var(--font-mono);
@@ -219,8 +424,8 @@
   color: rgba(160, 169, 186, 0.55);
 }
 
-/* ---------- Round C P2: FIS hero questions (tappable → real search) ----------
- * Amber kept restrained: only the arrow carries the subject accent. */
+/* ---------- FIS hero questions: 58–62px rows, bronze border, warm surface ----------
+ * Tappable → real search (never invented destinations). */
 .msi-questions {
   display: flex;
   flex-direction: column;
@@ -232,17 +437,21 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  min-height: 48px;
+  min-height: 60px; /* spec: 58–62px rows */
   padding: 10px 14px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(230, 179, 108, 0.35); /* bronze border */
+  background: rgba(230, 179, 108, 0.06); /* warm surface */
   text-align: left;
   cursor: pointer;
   font: inherit;
   color: inherit;
+  transition: transform 150ms var(--ease-premium), background 150ms ease;
 }
-.msi-question:active { transform: scale(0.98); }
+.msi-question:active {
+  transform: scale(0.98);
+  background: rgba(230, 179, 108, 0.13); /* pressed state */
+}
 .msi-question-q {
   font-family: var(--font-display, 'Instrument Serif', Georgia, serif);
   font-size: 16px;
@@ -251,8 +460,18 @@
 }
 .msi-question-go {
   flex: 0 0 auto;
-  font-size: 16px;
-  color: var(--subject-accent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--subject-accent); /* amber affordance — each row is a destination */
+}
+
+/* ---------- Round C re-score: Digital — title is the strongest text in
+ * the featured card (dominant over eyebrow and meta) ---------- */
+.msi[data-subject="digital"] .msi-feat-title {
+  font-size: 20px;
+  font-weight: 700;
 }
 
 /* ---------- Round C P2: Digital — stronger START HERE hierarchy ---------- */
@@ -265,12 +484,56 @@
   font-size: 10px;
   letter-spacing: 0.18em;
 }
+/* Quieter RESUME / MOST RECENT pill: smaller, dimmer, letter-spaced, no loud fill */
+.msi[data-subject="digital"] .msi-feat-eyebrow.quiet {
+  background: transparent;
+  border: 1px solid rgba(56, 213, 193, 0.4);
+  color: var(--subject-accent);
+  padding: 3px 10px;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+}
 
-/* ---------- Round C P2: Digital — circuit-trace archive section heading --- */
+/* ---------- FIS: film grain on the dark amber header surface ONLY ----------
+ * Absolutely positioned behind the text (badge/headline/lede carry z-index 1);
+ * never on covers or text. Overrides Noise's default fixed positioning. */
+.msi[data-subject="fis"] .msi-noise {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+/* ---------- FIS: meta as a connecting strip between the filter chips and
+ * the archive — fine bronze rules top/bottom ---------- */
+.msi[data-subject="fis"] .msi-meta {
+  border-top: 1px solid rgba(185, 138, 78, 0.3);
+  border-bottom: 1px solid rgba(185, 138, 78, 0.3);
+  padding: 10px 0;
+}
+
+/* ---------- FIS archive divider: editorial serif-italic label ---------- */
+.msi[data-subject="fis"] .msi-listhead {
+  border-top: 1px solid rgba(185, 138, 78, 0.35);
+  padding-top: 16px;
+  margin-top: 30px;
+}
+.msi[data-subject="fis"] .msi-listhead .msi-eyebrow:first-child {
+  font-family: var(--font-display, 'Instrument Serif', Georgia, serif);
+  font-style: italic;
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  color: #EAD9B8;
+  text-transform: none;
+}
+
+/* ---------- Round C re-score: Digital — compact archive divider with the
+ * fine teal 1px rule (labels: 'THE CIRCUIT ARCHIVE' left, real document
+ * count right) ---------- */
 .msi[data-subject="digital"] .msi-listhead {
   position: relative;
   padding-top: 16px;
-  margin-top: 30px;
+  margin-top: 34px;
 }
 .msi[data-subject="digital"] .msi-listhead::before {
   content: '';
@@ -294,4 +557,277 @@
   height: 7px;
   border-radius: 50%;
   border: 1.5px solid var(--subject-accent);
+}
+
+/* ============================================================
+   Round B 2026-11-04 (1420 loop) additions
+   ============================================================ */
+
+/* ---------- Digital featured card: subject code line ---------- */
+.msi-feat-subj {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--subject-accent);
+  text-transform: uppercase;
+}
+
+/* ---------- FIS question cards: editorial entries ----------
+ * Numbered Q cards with real descriptions from the PDF contents. */
+.msi-qcards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 16px 0 4px;
+}
+.msi-qcard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  min-height: 88px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(230, 179, 108, 0.32);
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(230, 179, 108, 0.1), transparent 60%),
+    rgba(20, 16, 11, 0.85);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 150ms var(--ease-premium), border-color 160ms ease, background 160ms ease;
+}
+.msi-qcard:active {
+  transform: scale(0.98);
+  border-color: rgba(230, 179, 108, 0.6);
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(230, 179, 108, 0.18), transparent 60%),
+    rgba(24, 19, 13, 0.95);
+}
+.msi-qcard-num {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--subject-accent);
+}
+.msi-qcard-q {
+  font-family: var(--font-display, 'Instrument Serif', Georgia, serif);
+  font-size: 19px;
+  font-style: italic;
+  line-height: 1.25;
+  color: #F4EDE0;
+}
+/* Round B P1: intentional 2-line clamp on every FIS question description
+ * (line-height 1.5); the full description is the card's own text, revealed
+ * when the card is opened (tap runs the search for that question). */
+.msi-qcard-desc {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: rgba(240, 238, 233, 0.68);
+  max-width: 32ch;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.msi-qcard-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 4px;
+}
+.msi-qcard-meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: rgba(240, 238, 233, 0.45);
+}
+.msi-qcard-go {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--subject-accent);
+}
+
+/* Round C re-score: question-card editorial hierarchy — card 1 featured
+ * (larger, CHAPTER marker + amber rule), cards 2/3 compact. */
+.msi-qcard-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.msi-qcard-ch {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: rgba(230, 179, 108, 0.85);
+  border-bottom: 1px solid rgba(230, 179, 108, 0.55); /* fine amber rule */
+  padding-bottom: 3px;
+}
+.msi-qcard.featured .msi-qcard-q {
+  font-size: 23px;
+  line-height: 1.22;
+}
+.msi-qcard.featured {
+  min-height: 104px;
+  padding: 18px;
+  border-color: rgba(230, 179, 108, 0.5);
+  background:
+    radial-gradient(130% 150% at 100% 0%, rgba(230, 179, 108, 0.16), transparent 60%),
+    rgba(24, 19, 13, 0.92);
+}
+.msi-qcard:not(.featured) .msi-qcard-q { font-size: 16px; }
+.msi-qcard:not(.featured) { min-height: 76px; padding: 12px 14px; }
+
+/* Round C re-score: Big Question exact composition — FIELD NOTE eyebrow */
+.msi-bigq-field {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  color: rgba(230, 179, 108, 0.75);
+  margin-top: 10px;
+  display: block;
+}
+
+/* Round C re-score: .fis-shell — warmer page background, grid barely visible.
+ * The shell class sits on the .msi root for subject=fis only. */
+.msi.fis-shell {
+  background:
+    radial-gradient(110% 60% at 50% 0%, rgba(201, 133, 56, 0.1) 0%, transparent 55%),
+    linear-gradient(rgba(230, 179, 108, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(230, 179, 108, 0.035) 1px, transparent 1px),
+    #0D0A07;
+  background-size: auto, 28px 28px, 28px 28px, auto;
+}
+
+/* ---------- collection navigator: explore other collections ---------- */
+.msi-nav {
+  margin-top: 30px;
+}
+.msi-nav-label {
+  margin: 0 0 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--ke-text);
+  text-transform: uppercase;
+}
+.msi-nav-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.msi-nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-height: 76px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 2px solid var(--sc);
+  background: rgba(13, 21, 33, 0.72);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 150ms var(--ease-premium), border-color 160ms ease;
+}
+.msi-nav-btn:active { transform: scale(0.96); }
+.msi-nav-code {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+.msi-nav-name {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #F2F4F8;
+}
+
+/* ---------- FIS entry transition (1420 loop): 500–700ms ----------
+ * blur-resolve on the headline, staggered cards, the ? fades LAST.
+ * Plays once per entry (root is keyed by subject) — never replays while
+ * the page is open. */
+.msi[data-subject="fis"] .msi-headline {
+  animation: msi-fis-blur-resolve 650ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.msi[data-subject="fis"] .msi-bigq {
+  animation: msi-fis-rise 600ms cubic-bezier(0.22, 1, 0.36, 1) 120ms both;
+}
+.msi[data-subject="fis"] .msi-qcard {
+  animation: msi-fis-rise 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.msi[data-subject="fis"] .msi-qcard:nth-child(1) { animation-delay: 220ms; }
+.msi[data-subject="fis"] .msi-qcard:nth-child(2) { animation-delay: 300ms; }
+.msi[data-subject="fis"] .msi-qcard:nth-child(3) { animation-delay: 380ms; }
+.msi[data-subject="fis"] .msi-bigq-mark {
+  animation: msi-fis-qfade 500ms ease-out 480ms both; /* ? fades in last */
+}
+@keyframes msi-fis-blur-resolve {
+  from { opacity: 0; filter: blur(10px); transform: translateY(8px); }
+  to { opacity: 1; filter: blur(0); transform: none; }
+}
+@keyframes msi-fis-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes msi-fis-qfade {
+  from { opacity: 0; }
+  to { opacity: 0.92; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .msi[data-subject="fis"] .msi-headline,
+  .msi[data-subject="fis"] .msi-bigq,
+  .msi[data-subject="fis"] .msi-qcard,
+  .msi[data-subject="fis"] .msi-bigq-mark {
+    animation: none;
+  }
+}
+
+/* ---------- Digital live-instrument circuit (Round C re-score) ----------
+ * .logic-pulse: signal pulses travel the A/B input lines and the Y output
+ * fires on a delay — only after BOTH inputs arrive (both high).
+ * stroke-dasharray + stroke-dashoffset keyframes; pathLength=100 on the
+ * SVG paths normalises the dash units. No SMIL. */
+.logic-pulse {
+  fill: none;
+  stroke: #42D9B5;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-dasharray: 16 84;
+  filter: drop-shadow(0 0 5px rgba(66, 217, 181, 0.9));
+  animation: logic-pulse-move 3.6s linear infinite;
+}
+.logic-pulse-a { animation-delay: 0s; }
+.logic-pulse-b { animation-delay: 0.45s; }
+.logic-pulse-y {
+  animation-delay: 1.6s; /* output fires only after both inputs are high */
+  stroke-dasharray: 22 78;
+  stroke-width: 4;
+}
+@keyframes logic-pulse-move {
+  from { stroke-dashoffset: 100; }
+  to { stroke-dashoffset: -100; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .logic-pulse { animation: none; }
 }

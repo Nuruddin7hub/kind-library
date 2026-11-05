@@ -155,6 +155,23 @@
   color: var(--text);
   background: var(--surface-raised);
 }
+/* Round B P1: the selected filter is communicated beyond color alone —
+ * a check mark prefixes the active pill (aria-selected already covers
+ * screen readers). */
+.ms-pill.active::before {
+  content: '✓ ';
+}
+.ms-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
 /* ---------- results header: compact single line (1420 loop) ----------
  * "03 RESULTS — SORT: BEST MATCH — FILTER" */
@@ -231,14 +248,16 @@
   display: flex;
   flex-direction: column;
 }
+/* Round C re-score: result layout grid 40px 1fr 40px —
+ * cover / title+micro+match+excerpt / bookmark. Whole row opens. */
 .ms-card {
   position: relative;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
   gap: 12px;
-  min-height: 104px; /* spec: rows 104–116px base */
-  padding: 13px 0;
+  align-items: center;
+  min-height: 96px;
+  padding: 12px 0;
   border-bottom: 1px solid rgba(150, 170, 195, 0.13); /* spec divider */
   background: transparent;
   cursor: pointer;
@@ -247,11 +266,10 @@
   outline: 2px solid var(--digital);
   outline-offset: -2px;
 }
-/* 48×64 thumbs (1420 loop: standardize with the mobile list spec) */
+/* 40×53 thumbs (Round C re-score: matches the 40px grid column) */
 .ms-thumb {
-  flex: 0 0 48px;
-  width: 48px;
-  height: 64px;
+  width: 40px;
+  height: 53px;
   object-fit: cover;
   border-radius: 6px;
   border: 1px solid var(--border-subtle);
@@ -259,8 +277,10 @@
   display: block;
 }
 .ms-card-main {
-  flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 /* 10px subject/type+match (1420 loop: standardize with the list spec) */
 .ms-micro {
@@ -303,37 +323,44 @@
   color: var(--digital);
 }
 
-/* honest match-kind label — Title match / Exact phrase / Text match */
+/* honest match-kind label — TITLE MATCH / CONTENT MATCH / SUBJECT MATCH */
 .ms-kindline {
-  margin: 6px 0 0;
+  margin: 2px 0 0;
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
   font-size: 9px;
   font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
-
-/* right action column: bookmark + OPEN (both real 44px touch targets) */
-.ms-card-actions {
-  flex: 0 0 52px;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: center;
-  gap: 6px;
-  align-self: stretch;
-  padding: 2px 0;
+.ms-kindtag {
+  font-weight: 700;
 }
+/* one-line REAL excerpt from the text index: 12px, 2-line clamp,
+ * matched word highlighted (mark.ms-hl) */
+.ms-excerpt1 {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* bookmark: own 44px target in the 40px column, never nested in the open action */
 .ms-bookmark {
   width: 44px;
   height: 44px;
-  margin-left: auto;
+  justify-self: center;
   border: none;
   background: transparent;
   color: var(--text-muted);
   font-size: 20px;
   line-height: 1;
   cursor: pointer;
+  flex-shrink: 0;
 }
 .ms-bookmark.on { color: var(--digital); }
 
