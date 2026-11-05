@@ -50,6 +50,23 @@ export function matchScore(f: SearchHit, rawQuery: string): number {
   return 72;
 }
 
+/** Honest match-type label for a search hit (2026-11-05 honesty fix).
+ *  The backend does NOT compute similarity scores, so the UI must never
+ *  show fabricated "96%" style percentages. These labels describe the
+ *  real match type the backend reported. */
+export function matchKindLabel(f: SearchHit, rawQuery: string): string {
+  const q = rawQuery.trim().toLowerCase();
+  const kinds = matchKindsOf(f);
+  if (kinds.includes('title')) {
+    return f.title.toLowerCase() === q ? 'EXACT TITLE MATCH' : 'TITLE MATCH';
+  }
+  if (kinds.includes('text')) {
+    const n = typeof f.match_count === 'number' ? f.match_count : 1;
+    return `TEXT MATCH · ${n} HIT${n === 1 ? '' : 'S'}`;
+  }
+  return 'SUBJECT MATCH';
+}
+
 /** Human-readable match reason for a hit. */
 export function matchReason(f: SearchHit, rawQuery: string): string {
   const q = rawQuery.trim().toLowerCase();
@@ -92,15 +109,16 @@ export function subjectOf(id: string): Subject | undefined {
   return SUBJECTS.find(s => s.id === id);
 }
 
-/** Obsidian Atlas v3.0 identity palette (ChatGPT Round A, 2026-11-04 ~14:20).
+/** OBSIDIAN ATLAS palette (ChatGPT Round A desktop redesign, 2026-11-05).
  *  DESKTOP ONLY — mobile views keep the legacy SUBJECTS colors above
  *  byte-identical, so desktop components must use v2SubjectColor() while
- *  every mobile component keeps reading SUBJECTS[].color. */
+ *  every mobile component keeps reading SUBJECTS[].color.
+ *  Spec tokens: EM2 #59E4D2 · Signals #80A8FF · FIS #E6AD65 · Digital #69D7A8. */
 export const V2_SUBJECT_COLORS: Record<string, string> = {
-  em2: '#5B9FFF',
-  signals: '#B18AFF',
-  fis: '#E5A34C',
-  digital: '#42D9B5',
+  em2: '#59E4D2',
+  signals: '#80A8FF',
+  fis: '#E6AD65',
+  digital: '#69D7A8',
 };
 
 /** Desktop (v2.0) subject color — the exact spec identity tokens. */

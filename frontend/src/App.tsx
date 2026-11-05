@@ -9,7 +9,7 @@ import MobileLibrary, { MobileSaved } from './components/MobileLibrary';
 import MobileSearch from './components/MobileSearch';
 import MobileDock from './components/MobileDock';
 import MobileSubjectIndex from './components/MobileSubjectIndex';
-import { setReaderStartPage } from './readerStart';
+import { setReaderStartPage, setReaderMatch } from './readerStart';
 // ChatGPT Round A desktop rebuild (2026-11-03): new navigation shell + pages
 import DesktopSidebar, { type SidebarView } from './components/navigation/DesktopSidebar';
 import Topbar from './components/navigation/Topbar';
@@ -27,6 +27,11 @@ import {
 } from './shared';
 import type { LibFile, SearchHit } from './shared';
 import './index.css';
+// OBSIDIAN ATLAS (ChatGPT Round A desktop redesign, 2026-11-05) — LAST
+// import so its scoped .kiA-desktop / .reader-shell.kiA-v2 rules win
+// over the morning build's page CSS. Desktop-only selectors; mobile
+// (.mobile-shell) never matches.
+import './styles/obsidian-atlas.css';
 
 // (LibFile / SearchHit live in ./shared — imported above.)
 
@@ -312,6 +317,13 @@ export default function App() {
   // Subject counts — single source of truth via shared.getSubjectCounts.
   const subjectCounts = useMemo(() => getSubjectCounts(files), [files]);
 
+  // Round C re-score: real per-subject page totals for the hero constellation preview.
+  const subjectPages = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const f of files) m[f.subj] = (m[f.subj] ?? 0) + (f.pages || 0);
+    return m;
+  }, [files]);
+
   // Continue studying — last opened doc + saved page (kl:pos)
   const recentFiles = useMemo(() => {
     const byKey = new Map(files.map(f => [f.key, f]));
@@ -379,7 +391,15 @@ export default function App() {
   const openSearchHit = (hit: SearchHit, page?: number) => {
     // always open AT the best matching page (round C P0: "Open at page N");
     // MobileSearch may override with a specific passage page.
-    setReaderStartPage(hit.key, page ?? hitOpenPage(hit));
+    const openPage = page ?? hitOpenPage(hit);
+    setReaderStartPage(hit.key, openPage);
+    // Honest match banner (Round C P1): the REAL backend snippet for the
+    // page being opened. No phrase-level highlight exists — pages are
+    // server-rendered images with no text layer and the backend returns
+    // no coordinates — so the banner shows the snippet, never a fake mark.
+    const passage = hit.passages?.find(pg => pg.page_number === openPage)
+      ?? hit.passages?.[0];
+    if (passage?.snippet) setReaderMatch(hit.key, openPage, passage.snippet);
     openReader(hit.key, searchResults.map(r => r.key));
   };
 
@@ -468,6 +488,7 @@ export default function App() {
                 totalDocs={files.length}
                 totalPages={files.reduce((s, f) => s + (f.pages || 0), 0)}
                 subjectCounts={subjectCounts}
+                subjectPages={subjectPages}
                 resume={resumeFile ? { file: resumeFile, page: Math.min(resumePage, resumeFile.pages) } : null}
                 recent={recentFiles.map(f => ({ file: f, ts: recentTs[f.key] ?? null }))}
                 reducedMotion={reducedMotion}
@@ -501,7 +522,11 @@ export default function App() {
               />
             )}
             {mobileTab === 'library' && indexSubject !== 'all' && (
-              <div className="mobile-page" style={{ paddingLeft: 18, paddingRight: 18 }}>
+              <div className="mobile-page" style={{ paddingLeft: 18, paddingRight: 18,
+                /* Round B P0: scrollable bottom padding so the featured
+                 * (START HERE) card clears the fixed dock when scrolled to */
+                paddingBottom: 'calc(100px + env(safe-area-inset-bottom))' }}
+                data-subject={indexSubject}>
                 <MobileSubjectIndex
                   subject={indexSubject}
                   subjectCode={SUBJECT_CODES[indexSubject] || indexSubject.toUpperCase()}
@@ -577,7 +602,7 @@ export default function App() {
             onGoSubject={gotoLibrarySubject}
             activeSubject={view === 'library' && indexSubject !== 'all' ? indexSubject : null}
           />
-          <Topbar onSearch={goSearch} />
+          <Topbar onSearch={goSearch} crumb={view === 'library' ? 'LIBRARY' : view === 'search' ? 'SEARCH' : 'OVERVIEW'} />
           <main className="kiA-main">
             {view === 'overview' && (
               <Overview
