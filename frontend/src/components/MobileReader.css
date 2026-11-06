@@ -250,7 +250,10 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+  /* Round C 2026-11-06 P1: rail 68px tall — 3px padding + 62px rail
+   * (58px thumbs + the rail's own 2px padding) + 3px padding (was
+   * 8px + ~73px thumbs + 8px ≈ 89px). */
+  padding: 3px 12px calc(3px + env(safe-area-inset-bottom, 0px));
   background: #0A0E15;
   border-top: 1px solid rgba(255, 255, 255, 0.07);
   z-index: 5;
@@ -280,32 +283,59 @@
 .mr-thumbstrip-rail::-webkit-scrollbar { display: none; }
 .mr-ts-thumb {
   flex: 0 0 auto;
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 3px;
+  gap: 0;
+  /* Round C 2026-11-06 P1: thumbnail exactly 48×58px (was ~50×73px) —
+   * the image fills the button and the page number overlays its foot
+   * on a dark chip (readable on white pages). Border-box so 48×58 is
+   * the outer size including the 1px border. Never smaller. */
+  width: 48px;
+  height: 58px;
+  min-width: 48px; /* 44px minimum tap target, exceeded */
+  min-height: 58px;
+  box-sizing: border-box;
+  padding: 0;
+  overflow: hidden;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: #0D1320;
   cursor: pointer;
-  min-width: 44px; /* Round B P2: 44x56px minimum tap target */
-  min-height: 56px;
   transition: border-color 150ms ease, box-shadow 150ms ease, opacity 150ms ease;
 }
 .mr-ts-thumb img {
-  width: 40px;
-  height: 53px;
+  width: 48px;
+  height: 58px;
   object-fit: contain; /* never stretched/cropped */
   border-radius: 4px;
   background: #111827;
   display: block;
 }
 .mr-ts-thumb.on {
-  border-color: #59E4D2; /* Round B P2: cyan active outline */
-  box-shadow: 0 0 0 1px #59E4D2, 0 0 14px rgba(89, 228, 210, 0.25);
+  /* Round B 1420 P0: spec active indicator — 1.5px #59DED3 + soft glow
+   * (was 1px #59E4D2 + an extra 1px ring + 0.25 glow). */
+  border-width: 1.5px;
+  border-color: #59DED3;
+  box-shadow: 0 0 14px rgba(89, 222, 211, 0.15);
+  opacity: 1;
 }
+/* Round B 2026-11-06 (deferred 2026-11-05 P0): inactive thumbnails recede
+ * so the current page dominates the strip. Active keeps its cyan border. */
+.mr-ts-thumb:not(.on) { opacity: 0.58; }
 .mr-ts-num {
+  /* Round C 2026-11-06 P1: overlaid on the foot of the 48×58 thumbnail
+   * (was stacked below the image) — dark chip so the number reads on
+   * white page previews. */
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: 3px;
+  text-align: center;
+  padding: 1px 0;
+  border-radius: 4px;
+  background: rgba(7, 13, 22, 0.78);
   font-family: var(--font-mono);
   font-size: 8px;
   font-weight: 600;
@@ -634,12 +664,22 @@
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
+  /* Round C 2026-11-06 P1: the page is TOP-aligned, 28px below the
+   * controls (was vertically centred with margin:auto) — the PDF moves
+   * upward 24–32px. FIT PAGE still works: the box is sized to the
+   * content box (fitH accounts for the 28 + 20px padding in tsx), and
+   * the stage scrolls when the viewport is short. Do NOT enlarge. */
+  align-items: flex-start;
+  justify-content: center;
   overflow: auto;
-  /* spec: page starts 16–24px below the controls */
-  padding: 20px 12px;
+  /* spec: page starts 28px below the controls */
+  padding: 28px 12px 20px;
+  /* Round B 2026-11-06 (deferred 2026-11-05 P0): subtle radial
+   * reading-room viewport — the page sits in a composed room, not on
+   * bare dark space. No Aurora/Particles in the viewport. */
   background:
-    radial-gradient(120% 90% at 50% 30%, rgba(50, 211, 189, 0.06) 0%, transparent 55%),
-    #0B0F17; /* deep charcoal/navy — Round C re-score: subtle radial viewport, no Aurora/Particles */
+    radial-gradient(circle at 50% 38%, rgba(55, 91, 135, 0.10), transparent 48%),
+    #070D16;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
 }
@@ -650,17 +690,19 @@
 
 .mr-pagebox {
   position: relative;
-  /* Round B P0 (Fix R1): margin auto centres the page vertically +
-   * horizontally in the stage when it fits (FIT PAGE, landscape pages);
-   * auto margins collapse to 0 when the page overflows (zoom / FIT WIDTH),
-   * so the top stays reachable by scrolling. Never stretched — the box is
-   * sized from the image's real aspect ratio. */
-  margin: auto;
+  /* Round C 2026-11-06 P1: top-aligned now — horizontal auto margins
+   * only (was margin:auto, which centred the page vertically in the
+   * stage). Vertical auto margins would re-centre it; 0 keeps the page
+   * 28px below the controls. Auto margins still collapse to 0 when the
+   * page overflows (zoom / FIT WIDTH), so the top stays reachable. */
+  margin: 0 auto;
   flex: 0 0 auto;
   background: #0A0E15;
-  border: 1px solid rgba(160, 175, 195, 0.28); /* grey border */
-  /* soft, broad shadow — never darken the PDF itself */
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.62), 0 4px 16px rgba(0, 0, 0, 0.4);
+  /* Round B 2026-11-06 (deferred 2026-11-05 P0): stronger PDF elevation —
+   * deep soft shadow + a 1px light ring as the edge (replaces the grey
+   * border). Never darken the PDF itself. */
+  border: none;
+  box-shadow: 0 20px 70px rgba(0, 0, 0, 0.48), 0 0 0 1px rgba(255, 255, 255, 0.08);
   border-radius: 2px;
   touch-action: pan-x pan-y;
 }
@@ -782,7 +824,9 @@
 }
 
 .mr-readbar-opts {
-  gap: 8px;
+  /* Round B 2026-11-06 P1: compress the SECONDARY toolbar only — tighter
+   * gap; controls drop to 36px below. Primary nav/zoom row untouched. */
+  gap: 6px;
   padding-top: 2px;
 }
 
@@ -811,12 +855,13 @@
   color: #32D3BD; /* teal zoom % */
 }
 
-/* FIT WIDTH / FIT PAGE segmented */
+/* FIT WIDTH / FIT PAGE segmented — Round B 2026-11-06 P1: compressed to
+ * the 36px secondary-toolbar height (was 40px). */
 .mr-fitseg {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  height: 40px;
-  padding: 2px;
+  height: 36px;
+  padding: 0;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -824,7 +869,7 @@
 
 .mr-fitbtn {
   min-height: 36px;
-  padding: 0 14px;
+  padding: 0 12px;
   border-radius: 999px;
   font-family: var(--font-mono);
   font-size: 9px;
@@ -840,10 +885,10 @@
   font-weight: 700;
 }
 
-/* CONTINUOUS toggle */
+/* CONTINUOUS toggle — Round B 2026-11-06 P1: 36px, 12px inline padding. */
 .mr-contbtn {
-  min-height: 40px;
-  padding: 0 16px;
+  min-height: 36px;
+  padding: 0 12px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   font-family: var(--font-mono);

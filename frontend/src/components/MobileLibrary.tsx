@@ -100,7 +100,7 @@ export default function MobileLibrary(props: MobileLibraryProps) {
     filter, onFilterChange, section, onSectionChange,
     sort, onSortChange, bookmarksOnly, onBookmarksOnlyChange,
     recentKeys, bookmarks, onToggleBookmark, onOpenReader,
-    onClearFilters, activeFilterCount, reducedMotion,
+    onClearFilters, reducedMotion,
   } = props;
 
   const [filterOpen, setFilterOpen] = useState(false);
@@ -122,7 +122,9 @@ export default function MobileLibrary(props: MobileLibraryProps) {
   // Temp filter-sheet state — committed to parent setters on Apply.
   // (Round B 2026-11-04, 1420 loop: Subject / Type / Saved only / Sort /
   // Clear / Apply — ONE sheet, no separate sort control.)
-  const [tempSubject, setTempSubject] = useState('all');
+  // Round B 2026-11-06 (deferred 2026-11-05 P1): the sheet is the ADVANCED
+  // filter drawer — Document type, Show only, Sort. Subject lives ONLY on
+  // the pills; the sheet no longer duplicates it (no tempSubject).
   const [tempSection, setTempSection] = useState('all');
   const [tempBookmarked, setTempBookmarked] = useState(false);
   const [tempRecent, setTempRecent] = useState(false);
@@ -152,7 +154,6 @@ export default function MobileLibrary(props: MobileLibraryProps) {
   );
 
   const openFilterSheet = () => {
-    setTempSubject(indexSubject);
     setTempSection(section);
     setTempBookmarked(bookmarksOnly);
     setTempRecent(recentOnly);
@@ -161,7 +162,6 @@ export default function MobileLibrary(props: MobileLibraryProps) {
   };
 
   const resetTemp = () => {
-    setTempSubject('all');
     setTempSection('all');
     setTempBookmarked(false);
     setTempRecent(false);
@@ -169,7 +169,6 @@ export default function MobileLibrary(props: MobileLibraryProps) {
   };
 
   const applyFilters = () => {
-    onSubjectChange(tempSubject);
     onSectionChange(tempSection);
     onBookmarksOnlyChange(tempBookmarked);
     setRecentOnly(tempRecent);
@@ -184,6 +183,14 @@ export default function MobileLibrary(props: MobileLibraryProps) {
 
   const hasActiveChips = filter !== '' || section !== 'all' || bookmarksOnly || recentOnly;
   const totalCount = files.length;
+  // Round B 2026-11-06: the FILTERS badge counts ADVANCED filters only
+  // (doc type, saved-only, recently-opened, non-default sort) — subject
+  // pills and the text field are separate mechanisms and don't count.
+  const advancedFilterCount =
+    (section !== 'all' ? 1 : 0) +
+    (bookmarksOnly ? 1 : 0) +
+    (recentOnly ? 1 : 0) +
+    (sort !== 'recent' ? 1 : 0);
 
   const filterFooter = (
     <div className="ml-sheet-footer">
@@ -299,11 +306,11 @@ export default function MobileLibrary(props: MobileLibraryProps) {
             </span>
             <button
               type="button"
-              className={`ml-tools-btn${activeFilterCount > 0 ? ' has-badge' : ''}`}
+              className={`ml-tools-btn${advancedFilterCount > 0 ? ' has-badge' : ''}`}
               onClick={openFilterSheet}
             >
               FILTERS
-              {activeFilterCount > 0 && <span className="ml-badge">{activeFilterCount}</span>}
+              {advancedFilterCount > 0 && <span className="ml-badge">{advancedFilterCount}</span>}
             </button>
           </div>
 
@@ -406,32 +413,8 @@ export default function MobileLibrary(props: MobileLibraryProps) {
         height="70vh"
         footer={filterFooter}
       >
-        <div className="ml-sheet-group">
-          <div className="ml-sheet-label">Subject</div>
-          <div className="ml-chip-row">
-            <button
-              type="button"
-              className={`ml-opt${tempSubject === 'all' ? ' active' : ''}`}
-              aria-pressed={tempSubject === 'all'}
-              onClick={() => setTempSubject('all')}
-            >
-              All · {totalCount}
-            </button>
-            {SUBJECTS.map(s => (
-              <button
-                key={s.id}
-                type="button"
-                className={`ml-opt${tempSubject === s.id ? ' active' : ''}`}
-                aria-pressed={tempSubject === s.id}
-                style={tempSubject === s.id ? { borderColor: s.color, color: s.color } : undefined}
-                onClick={() => setTempSubject(s.id)}
-              >
-                {s.code} · {subjectCounts[s.id] ?? 0}
-              </button>
-            ))}
-          </div>
-        </div>
-
+        {/* Advanced filters only — subject lives on the pills above and is
+            deliberately NOT duplicated here (Round B 2026-11-06). */}
         <div className="ml-sheet-group">
           <div className="ml-sheet-label">Doc type</div>
           <div className="ml-chip-row">
