@@ -198,6 +198,96 @@ def api_search():
     return jsonify({"results": results[:16]})
 
 
+# ---- real document excerpts + table of contents (ChatGPT Round C,
+# 2026-11-06: P2 Contents tab, P3 editorial cards). Both derive ONLY
+# from the existing text_index (real PDF text) — nothing fabricated.
+# Excerpt = first meaningful prose chunk from the first 4 pages.
+# TOC = heading-like first lines per page (Chapter/numbered/CAPS). ----
+
+def _clean_text(t):
+    return re.sub(r"\s+", " ", t or "").strip()
+
+def _is_spaced_gibberish(text):
+    # Infographic OCR artefacts ("R E P O R T  O N ..."): most tokens
+    # are single letters. Real prose never looks like that.
+    toks = text.split()
+    if len(toks) < 8:
+        return True
+    single = sum(1 for w in toks if len(w) == 1)
+    return single / len(toks) > 0.35
+
+def doc_excerpt(doc, max_chars=240):
+    for ptext in (doc.get("text") or [])[:6]:
+        t = _clean_text(ptext)
+        if len(t) < 80 or _is_spaced_gibberish(t):
+            continue
+        # Slide text-layer artefact: a caps "LEARNING OUTCOMES" sidebar
+        # interleaves its individual words into the prose ("...ecology.
+        # LEARNING To explain beliefs... God OUTCOME in the context...").
+        # Drop the bare caps tokens (prose "learning" is lowercase and
+        # untouched) — the remaining words are the real sentences.
+        t = re.sub(r"\bLEARNING\b", "", t)
+        t = re.sub(r"\bOUTCOMES?\b", "", t)
+        t = _clean_text(t)
+        if len(t) < 80:
+            continue
+        if len(t) > max_chars:
+            cut = t[:max_chars].rsplit(" ", 1)[0]
+            t = (cut if len(cut) > 120 else t[:max_chars]) + "…"
+        return t
+    return ""
+
+@app.route("/api/excerpt")
+def api_excerpt():
+    from flask import request
+    key = request.args.get("key") or ""
+    for d in load_text_index():
+        if d.get("key") == key:
+            return jsonify({"key": key, "excerpt": doc_excerpt(d)})
+    return jsonify({"key": key, "excerpt": ""})
+
+@app.route("/api/excerpts")
+def api_excerpts():
+    from flask import request
+    keys = [k for k in (request.args.get("keys") or "").split(",") if k]
+    docs = {d.get("key"): d for d in load_text_index()}
+    return jsonify({"excerpts": {k: doc_excerpt(docs[k]) for k in keys if k in docs}})
+
+@app.route("/api/toc")
+def api_toc():
+    from flask import request
+    key = request.args.get("key") or ""
+    doc = next((d for d in load_text_index() if d.get("key") == key), None)
+    if not doc:
+        return jsonify({"key": key, "entries": []})
+    entries = []
+    for pi, ptext in enumerate(doc.get("text") or []):
+        lines = [ln.strip() for ln in (ptext or "").splitlines() if ln.strip()]
+        for ln in lines[:3]:
+            if len(ln) < 4 or len(ln) > 90:
+                continue
+            # NB: no spaced-gibberish check here — headings are short
+            # by nature ("CHAPTER 5" is 2 tokens); the letters-ratio
+            # check below is the heading filter.
+            letters = sum(c.isalpha() for c in ln)
+            if letters < len(ln) * 0.5:
+                continue
+            is_chapter = bool(re.match(r"(?i)^(chapter|section|part|unit|bab)\b", ln)) \
+                or bool(re.match(r"^\d+(\.\d+){0,2}\b", ln))
+            upper = sum(1 for c in ln if c.isalpha() and c.isupper())
+            is_caps = letters > 0 and upper / letters > 0.8 and len(ln.split()) <= 8
+            if is_chapter or is_caps:
+                title = re.sub(r"\s+", " ", ln).strip()
+                if entries and entries[-1]["title"].lower() == title.lower():
+                    continue
+                entries.append({"page": pi + 1, "title": title,
+                                "level": 1 if is_chapter else 2})
+                break
+        if len(entries) >= 30:
+            break
+    return jsonify({"key": key, "entries": entries})
+
+
 @app.route("/assets/<path:path>")
 def serve_assets(path):
     # hashed bundles + fonts: cache for a year (filename changes on rebuild)

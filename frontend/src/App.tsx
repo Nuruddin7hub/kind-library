@@ -32,6 +32,17 @@ import './index.css';
 // over the morning build's page CSS. Desktop-only selectors; mobile
 // (.mobile-shell) never matches.
 import './styles/obsidian-atlas.css';
+// KNOWLEDGE INSTRUMENT (ChatGPT Round A desktop FULL REDESIGN,
+// 2026-11-06) — imported after obsidian-atlas.css so its rules win.
+// Same desktop-only scope; mobile never matches.
+import './styles/knowledge-instrument.css';
+// FIELD EDITION (ChatGPT Round A desktop, afternoon loop 2026-11-06,
+// critiqueA-1420 spec: P0 foundation + P1 Overview) — imported LAST
+// so its rules win. Every rule lives under `.desktop-app`.
+import './styles/field-edition.css';
+// React Bits Noise — global film grain, opacity 0.055 (critique §1).
+// Desktop only; the component is position:fixed + pointer-events:none.
+import Noise from './bits/Noise';
 
 // (LibFile / SearchHit live in ./shared — imported above.)
 
@@ -593,8 +604,13 @@ export default function App() {
           </>
         )
       ) : (
-        <div className="kiA-desktop kiA-v2" style={{ marginLeft: 'var(--sidebar-width, 248px)' }}>
+        <div className="desktop-app kiA-desktop kiA-v2" style={{ marginLeft: 'var(--sidebar-width, 264px)' }}
+          data-view={view}
+          {...(view === 'library' && indexSubject !== 'all' ? { 'data-subject': indexSubject } : {})}
+        >
           <GlobalBackdrop />
+          {/* React Bits Noise — global grain, opacity 0.055 (critique §1) */}
+          <Noise opacity={0.055} />
           <DesktopSidebar
             files={files}
             view={sidebarView}
@@ -655,6 +671,8 @@ export default function App() {
                 onSelect={setSearchSelected}
                 onOpen={openSearchHit}
                 inputRef={searchInputRef}
+                searchError={searchError}
+                onRetry={() => setSearchRetry(n => n + 1)}
               />
             )}
           </main>
