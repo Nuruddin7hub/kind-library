@@ -15,11 +15,11 @@ interface DesktopSidebarProps {
 }
 
 const NAV_ITEMS: Array<{ label: string; view: SidebarView; numeral: string }> = [
-  { label: 'OVERVIEW', view: 'overview', numeral: 'I' },
-  { label: 'LIBRARY', view: 'library', numeral: 'II' },
-  { label: 'SEARCH', view: 'search', numeral: 'III' },
-  { label: 'RECENT', view: 'recent', numeral: 'IV' },
-  { label: 'BOOKMARKS', view: 'bookmarks', numeral: 'V' },
+  { label: 'Overview', view: 'overview', numeral: 'I' },
+  { label: 'Library', view: 'library', numeral: 'II' },
+  { label: 'Search', view: 'search', numeral: 'III' },
+  { label: 'Recent', view: 'recent', numeral: 'IV' },
+  { label: 'Bookmarks', view: 'bookmarks', numeral: 'V' },
 ];
 
 /** Desktop-only navigation — ATLAS edition "Institutional Register".
@@ -41,6 +41,7 @@ export default function DesktopSidebar({ files, view, onNavigate, onGoSubject, a
       </div>
 
       <nav className="kiA-mainnav" aria-label="Sections">
+        <div className="kiA-section-label">WORKSPACE</div>
         {NAV_ITEMS.map((n) => (
           <button
             key={n.view}
@@ -81,9 +82,10 @@ export default function DesktopSidebar({ files, view, onNavigate, onGoSubject, a
       </div>
 
       <div className="kiA-status" aria-label="Archive status">
+        <div className="kiA-section-label">ARCHIVE</div>
         <span className="kiA-status-dot" aria-hidden="true" />
-        <span className="kiA-status-text">ARCHIVE ONLINE</span>
-        <span className="kiA-status-count">{total} DOCUMENTS</span>
+        <span className="kiA-status-text">Archive online</span>
+        <span className="kiA-status-count">{total} documents</span>
       </div>
     </aside>
   );

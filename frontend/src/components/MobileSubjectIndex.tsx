@@ -7,7 +7,7 @@
 // Never invent reading progress or document types.
 // Desktop is untouched — mobile only. All classes prefixed msi-.
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import './MobileSubjectIndex.css';
 import MobileDocRow, { type RowFile } from './MobileDocRow';
 import DocCover from './DocCover';
@@ -95,6 +95,53 @@ const CURATED_FEATURED: Record<string, string> = {
   digital: 'Dig_Elec_Sep26_Course_Intro__Overview.pdf',
 };
 
+/** Round C 2026-11-06 P1 — Digital/FIS AnimatedContent entrance, the
+ * critique's exact spec (distance 18, vertical, 0.55s, power3.out,
+ * initialOpacity 0, animateOpacity, scale 0.99, blur 0, threshold 0.12,
+ * delay 0, stagger 0.06, once). container '#root' is the TRUE scroller:
+ * the app scrolls inside #root (window stays at 0; #kl-mobile-scroll
+ * never scrolls — its clientHeight IS the content height, so a trigger
+ * bound to it fires at mount, not on scroll). Digital + FIS content
+ * entering the viewport only — NOT Reader, NOT search results, NOT the
+ * bottom nav. */
+const ANIM_C = {
+  distance: 18,
+  direction: 'vertical' as const,
+  duration: 0.55,
+  ease: 'power3.out',
+  initialOpacity: 0,
+  animateOpacity: true,
+  scale: 0.99,
+  blur: 0,
+  threshold: 0.12,
+  delay: 0,
+  stagger: 0.06,
+  trigger: 'scroll' as const,
+  container: '#root',
+  once: true,
+};
+
+/** Conditional Round C entrance — children render directly when the
+ * block isn't in the entrance sequence or reduced-motion is on. When
+ * `className` is given, the entrance element itself carries it (the
+ * FIS question list: the 3 cards are its direct children, so the
+ * 0.06 stagger sequences Q01 → Q02 → Q03). */
+function MaybeAnimC({ children, active, reducedMotion, className, role, ariaLabel }: {
+  children: ReactNode; active: boolean; reducedMotion: boolean;
+  className?: string; role?: string; ariaLabel?: string;
+}) {
+  if (reducedMotion || !active) {
+    return className
+      ? <div className={className} role={role} aria-label={ariaLabel}>{children}</div>
+      : <>{children}</>;
+  }
+  return (
+    <AnimatedContent className={className} role={role} aria-label={ariaLabel} {...ANIM_C}>
+      {children}
+    </AnimatedContent>
+  );
+}
+
 /** Titles that read like internal working notes — never featured. */
 const INTERNAL_TITLE_RE = /to replace|draft|todo|fixme|untitled|placeholder/i;
 
@@ -105,11 +152,14 @@ const INTERNAL_TITLE_RE = /to replace|draft|todo|fixme|untitled|placeholder/i;
  * gate, A/B in → Y out, animated signal pulse, truth table, PCB traces,
  * teal glow — custom SVG/CSS, NO WebGL. */
 
-function DigitalArt({ animated }: { animated: boolean }) {
+function DigitalArt({ gateOn }: { gateOn: boolean }) {
   // Circuit Lab accents (Round B 2026-11-04, 1420 loop): signal #42D9B5,
   // trace #1C938A, base #0A2425. Taller frame (200px), traces extending
   // BEYOND the frame (slice clips them at the edges), two animated signal
   // pulses on independent cycles, glowing nodes, truth table.
+  // Round B 2026-11-06 P1: the gate is TAP-TO-FLOW — the signal pulses
+  // render ONLY while gateOn (toggled by tapping the artwork). Static
+  // traces + gate when off; illuminated flowing path when on.
   const signal = '#42D9B5';
   const trace = '#1C938A';
   return (
@@ -146,16 +196,18 @@ function DigitalArt({ animated }: { animated: boolean }) {
         <line x1="16" y1="58" x2="66" y2="58" stroke={signal} strokeWidth="2.5" opacity="0.95" />
         <line x1="16" y1="98" x2="66" y2="98" stroke={signal} strokeWidth="2.5" opacity="0.95" />
         <path d="M66 40 H112 A38 38 0 0 1 112 116 H66 Z"
+          className="msi-gate-body"
           fill="rgba(66,217,181,0.07)" stroke={signal} strokeWidth="3" opacity="0.98" />
         <line x1="150" y1="78" x2="196" y2="78" stroke={signal} strokeWidth="2.5" opacity="0.95" />
         <circle cx="16" cy="58" r="4" fill="none" stroke={signal} strokeWidth="1.5" opacity="0.95" />
         <circle cx="16" cy="98" r="4" fill="none" stroke={signal} strokeWidth="1.5" opacity="0.95" />
         <circle cx="196" cy="78" r="4" fill="none" stroke={signal} strokeWidth="1.5" opacity="0.95" />
-        {/* Live-instrument pulses (Round C re-score): A and B inputs travel
-            into the gate; the Y output fires on a delay — only after BOTH
-            inputs arrive (both high). .logic-pulse stroke-dasharray CSS,
-            no SMIL. pathLength=100 normalises the dash units. */}
-        {animated && (
+        {/* Tap-to-flow signal pulses (Round B 2026-11-06): A and B inputs
+            travel into the gate; the Y output fires on a delay — only
+            after BOTH inputs arrive (both high). .logic-pulse
+            stroke-dasharray CSS, no SMIL. pathLength=100 normalises the
+            dash units. Rendered ONLY while the gate is toggled on. */}
+        {gateOn && (
           <g>
             <path className="logic-pulse logic-pulse-a" pathLength={100}
               d="M16 58 H66 C90 58 96 78 112 78 H150" />
@@ -256,10 +308,30 @@ function SignalsArt({ accent }: { accent: string }) {
   );
 }
 
-function SubjectArtwork({ subject, accent, animated }: { subject: string; accent: string; animated: boolean }) {
+function SubjectArtwork({ subject, accent, gateOn, onToggleGate }: {
+  subject: string; accent: string;
+  /** Digital only: tap-to-flow gate state (Round B 2026-11-06 P1). */
+  gateOn: boolean; onToggleGate: () => void;
+}) {
+  // Digital artwork is a real button: tap the logic gate to toggle the
+  // signal flow. Other subjects keep the decorative (aria-hidden) band.
+  if (subject === 'digital') {
+    return (
+      <button
+        type="button"
+        className={`msi-art msi-art-gate${gateOn ? ' gate-on' : ''}`}
+        aria-pressed={gateOn}
+        aria-label={gateOn
+          ? 'Logic gate — signal flowing. Tap to stop the signal.'
+          : 'Logic gate — tap to run the signal through the gate.'}
+        onClick={onToggleGate}
+      >
+        <DigitalArt gateOn={gateOn} />
+      </button>
+    );
+  }
   return (
     <div className="msi-art" aria-hidden="true">
-      {subject === 'digital' && <DigitalArt animated={animated} />}
       {subject === 'fis' && <FisArt accent={accent} />}
       {subject === 'em2' && <Em2Art accent={accent} />}
       {subject === 'signals' && <SignalsArt accent={accent} />}
@@ -437,6 +509,10 @@ export default function MobileSubjectIndex({
 }: Props) {
   const theme = THEMES[subject] || THEMES.em2;
   const [activeSection, setActiveSection] = useState('all');
+  // Round B 2026-11-06 P1 (Digital): tap-to-flow gate state. The root is
+  // keyed by subject, so this resets on subject change.
+  const [gateOn, setGateOn] = useState(false);
+  const toggleGate = () => setGateOn(v => !v);
   const chipsRef = useRef<HTMLDivElement>(null);
 
   // filter resets when the subject changes
@@ -524,7 +600,10 @@ export default function MobileSubjectIndex({
       )}
 
       {/* subject header: subject-matched Aurora (digital teal / fis bronze)
-          behind the editorial block — low, slow, limited height */}
+          behind the editorial block — low, slow, limited height.
+          Round C P1: the Digital header enters with the AnimatedContent
+          spec (headline → description); other subjects render it plain. */}
+      <MaybeAnimC active={subject === 'digital'} reducedMotion={reducedMotion}>
       <div className="msi-head">
         {!reducedMotion && auroraStops && (
           <div className="msi-veil" aria-hidden="true">
@@ -571,12 +650,13 @@ export default function MobileSubjectIndex({
         )}
         <p className="msi-lede">{theme.lede}</p>
       </div>
+      </MaybeAnimC>
 
       {/* FIS question cards: editorial entries with REAL descriptions from
           the PDF contents (Round B 2026-11-04, 1420 loop). Tappable → each
           runs a real library search. */}
       {subject === 'fis' && (
-        <div className="msi-qcards" role="group" aria-label="Start with a question">
+        <MaybeAnimC active className="msi-qcards" role="group" ariaLabel="Start with a question" reducedMotion={reducedMotion}>
           {FIS_QUESTIONS.map((qc, i) => (
             <button
               type="button"
@@ -597,21 +677,25 @@ export default function MobileSubjectIndex({
               </span>
             </button>
           ))}
-        </div>
+        </MaybeAnimC>
       )}
 
       {/* FIS editorial feature (single, static) replaces the generic
-          artwork band; its entry transition is the dedicated CSS
-          (msi-fis-*, 500–700ms, no replay) — never the generic
-          AnimatedContent wrapper. Other subjects keep their signature
-          artwork (digital: upgraded circuit). */}
+          artwork band. Round C 2026-11-06 P1: the BIG QUESTION enters
+          with the AnimatedContent spec (Q01 → Q02 → Q03 → BIG QUESTION);
+          the fresher verdict reverses the old "never the generic
+          AnimatedContent wrapper" ban for this entrance only. Its own
+          dedicated CSS entry (msi-fis-*) is untouched. Other subjects
+          keep their signature artwork (digital: upgraded circuit). */}
       {subject === 'fis' && theme.questions ? (
-        <BigQuestionsCard accent={accent} questions={theme.questions} onSearchQuery={onSearchQuery} />
+        <MaybeAnimC active reducedMotion={reducedMotion}>
+          <BigQuestionsCard accent={accent} questions={theme.questions} onSearchQuery={onSearchQuery} />
+        </MaybeAnimC>
       ) : reducedMotion ? (
-        <SubjectArtwork subject={subject} accent={accent} animated={false} />
+        <SubjectArtwork subject={subject} accent={accent} gateOn={gateOn} onToggleGate={toggleGate} />
       ) : (
-        <AnimatedContent {...animProps}>
-          <SubjectArtwork subject={subject} accent={accent} animated />
+        <AnimatedContent {...(subject === 'digital' ? ANIM_C : animProps)}>
+          <SubjectArtwork subject={subject} accent={accent} gateOn={gateOn} onToggleGate={toggleGate} />
         </AnimatedContent>
       )}
 
@@ -620,6 +704,7 @@ export default function MobileSubjectIndex({
       )}
 
       {categories.length > 1 && (
+        <MaybeAnimC active={subject === 'digital'} reducedMotion={reducedMotion}>
         <div className="msi-cats">
           <p className="msi-cats-label">BROWSE BY TYPE</p>
           <div className="msi-chips" ref={chipsRef} role="group" aria-label="Filter documents by type">
@@ -644,6 +729,7 @@ export default function MobileSubjectIndex({
             ))}
           </div>
         </div>
+        </MaybeAnimC>
       )}
 
       {/* FIS: the meta strip is a connecting strip between the filter
@@ -668,7 +754,7 @@ export default function MobileSubjectIndex({
             subjectCode={subjectCode}
           />
         ) : (
-          <AnimatedContent {...animProps}>
+          <AnimatedContent {...(subject === 'digital' ? ANIM_C : animProps)}>
             <FeaturedCard
               featured={featured}
               featuredPage={featuredPage}

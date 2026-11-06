@@ -40,7 +40,7 @@ export default function Topbar({ onSearch, crumb = 'OVERVIEW' }: TopbarProps) {
       <div className="kiA-topbar-right">
         <span className="kiA-topbar-status">
           <span className="kiA-status-dot" aria-hidden="true" />
-          ARCHIVE ONLINE
+          Archive online
         </span>
         <button type="button" className="kiA-cmdk" onClick={onSearch} aria-label="Search (Command K)">
           <span className="kiA-cmdk-key">⌘K</span>

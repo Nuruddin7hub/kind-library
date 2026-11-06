@@ -57,6 +57,30 @@ interface Note {
   ts: number;
 }
 
+/** A page bookmark: this document, one page, navigable. Stored per
+ *  document in localStorage (kl:pagebm:<key>) — persists across
+ *  sessions (P2 acceptance: bookmarks persist). */
+interface PageBookmark {
+  page: number;
+  ts: number;
+}
+
+/** A highlight: a marked page + the reader's own label. Pages are
+ *  server-rendered images with no text layer, so a highlight marks
+ *  the passage's page (with page ref + navigate) rather than a
+ *  fake text selection. Stored per document (kl:highlights:<key>). */
+interface Highlight {
+  page: number;
+  label: string;
+  ts: number;
+}
+
+interface TocEntry {
+  page: number;
+  title: string;
+  level: number;
+}
+
 function loadNotes(key: string): Note[] {
   try {
     const raw = JSON.parse(localStorage.getItem(notesKey(key)) || '[]');
@@ -64,11 +88,27 @@ function loadNotes(key: string): Note[] {
   } catch { return []; }
 }
 
-/** PdfReader — desktop study workspace (ChatGPT Round C, 2026-11-02).
- *  Grid: 54px compact document header / workspace (84px page rail · document ·
- *  280px contextual study rail) / 52px bottom bar. Document canvas is the
- *  dominant surface; page width derives from the available viewport.
- *  Pages are server-rendered PDF page images — real PDF content (decision: no PDF.js). */
+function loadPageBms(key: string): PageBookmark[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(`kl:pagebm:${key}`) || '[]');
+    return Array.isArray(raw) ? raw.filter(n => typeof n?.page === 'number') : [];
+  } catch { return []; }
+}
+
+function loadHighlights(key: string): Highlight[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(`kl:highlights:${key}`) || '[]');
+    return Array.isArray(raw) ? raw.filter(n => typeof n?.page === 'number') : [];
+  } catch { return []; }
+}
+
+/** PdfReader — desktop study workspace (ChatGPT Round C P2 rebuild,
+ *  2026-11-06). Three zones: 200px thumbnail rail · centre PDF stage ·
+ *  310px study tools (BOOKMARKS / NOTES / CONTENTS / HIGHLIGHTS, each
+ *  a full working area). Document header 68px, bottom controls 52px.
+ *  Pages are server-rendered PDF page images — real PDF content
+ *  (decision: no PDF.js). Rendering, pagination and zoom logic are
+ *  untouched by the visual rebuild. */
 export default function PdfReader({
   file, sectionLabel, onClose, bookmarked, onToggleBookmark,
   onPrev, onNext, docIndex, docTotal, contents, bookmarkedDocs, onOpenDoc,
@@ -84,11 +124,29 @@ export default function PdfReader({
   const [rightOpen, setRightOpen] = useState(() => {
     try { return localStorage.getItem('kl:tools') !== '0'; } catch { return true; }
   });
-  // Round C: study rail is CONTEXTUAL — null = compact tool launcher,
-  // selecting a tool opens its panel.
-  const [tab, setTab] = useState<'bookmarks' | 'notes' | 'contents' | null>(null);
+  // P2: four full working areas — BOOKMARKS / NOTES / CONTENTS /
+  // HIGHLIGHTS. Default = bookmarks (no launcher: every tab gets
+  // its full working area immediately).
+  const [tab, setTab] = useState<'bookmarks' | 'notes' | 'contents' | 'highlights'>('bookmarks');
   const [notes, setNotes] = useState<Note[]>(() => loadNotes(file.key));
   const [noteDraft, setNoteDraft] = useState('');
+  const [editingNote, setEditingNote] = useState<number | null>(null);
+  const [editDraft, setEditDraft] = useState('');
+  // Page bookmarks + highlights for THIS document (persisted).
+  const [pageBms, setPageBms] = useState<PageBookmark[]>(() => loadPageBms(file.key));
+  const [highlights, setHighlights] = useState<Highlight[]>(() => loadHighlights(file.key));
+  const [hlDraft, setHlDraft] = useState('');
+  // Contents: real PDF TOC from /api/toc where available (heading
+  // lines from the actual PDF text); falls back to the subject's
+  // section → document list (the `contents` prop) when the doc has
+  // no extractable headings.
+  const [toc, setToc] = useState<TocEntry[]>([]);
+  const [tocLoaded, setTocLoaded] = useState(false);
+  // Find in document: real full-text matches from /api/search,
+  // filtered to this document — passages with page + snippet.
+  const [findQ, setFindQ] = useState('');
+  const [findResults, setFindResults] = useState<Array<{ page_number: number; snippet: string; match_count: number }>>([]);
+  const [findSearching, setFindSearching] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const total = file.pages || 1;
   const restored = useRef(false);
@@ -134,6 +192,13 @@ export default function PdfReader({
     setGotoVal('');
     setNotes(loadNotes(file.key));
     setNoteDraft('');
+    setEditingNote(null);
+    setPageBms(loadPageBms(file.key));
+    setHighlights(loadHighlights(file.key));
+    setHlDraft('');
+    setTab('bookmarks');
+    setFindQ('');
+    setFindResults([]);
     restored.current = false;
     alignCancelled.current = false;
   }, [file.key]);
@@ -142,6 +207,45 @@ export default function PdfReader({
   useEffect(() => {
     try { localStorage.setItem(notesKey(file.key), JSON.stringify(notes)); } catch { /* ignore */ }
   }, [file.key, notes]);
+
+  // persist page bookmarks + highlights per document
+  useEffect(() => {
+    try { localStorage.setItem(`kl:pagebm:${file.key}`, JSON.stringify(pageBms)); } catch { /* ignore */ }
+  }, [file.key, pageBms]);
+  useEffect(() => {
+    try { localStorage.setItem(`kl:highlights:${file.key}`, JSON.stringify(highlights)); } catch { /* ignore */ }
+  }, [file.key, highlights]);
+
+  // load the real PDF table of contents for this document
+  useEffect(() => {
+    setToc([]);
+    setTocLoaded(false);
+    let cancelled = false;
+    fetch(`/api/toc?key=${encodeURIComponent(file.key)}`)
+      .then(r => r.json())
+      .then(d => { if (!cancelled) { setToc(Array.isArray(d.entries) ? d.entries : []); setTocLoaded(true); } })
+      .catch(() => { if (!cancelled) setTocLoaded(true); });
+    return () => { cancelled = true; };
+  }, [file.key]);
+
+  // find in document — debounced /api/search, this document only
+  useEffect(() => {
+    const q = findQ.trim();
+    if (q.length < 2) { setFindResults([]); setFindSearching(false); return; }
+    setFindSearching(true);
+    const ctrl = new AbortController();
+    const t = setTimeout(() => {
+      fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal: ctrl.signal })
+        .then(r => r.json())
+        .then(d => {
+          const hit = (d.results || []).find((h: { key: string }) => h.key === file.key);
+          setFindResults(hit?.passages || []);
+          setFindSearching(false);
+        })
+        .catch(() => { if (!ctrl.signal.aborted) { setFindResults([]); setFindSearching(false); } });
+    }, 300);
+    return () => { clearTimeout(t); ctrl.abort(); };
+  }, [findQ, file.key]);
 
   // restore reading position once pages are in the DOM
   // (a pending exact-page open from search wins over the saved position).
@@ -257,7 +361,7 @@ export default function PdfReader({
     ro.observe(el);
     return () => ro.disconnect();
   }, [file.key]);
-  const pageW = Math.max(320, Math.min(960, stageW - 72)) * (zoom / 100);
+  const pageW = Math.max(320, Math.min(900, stageW - 72)) * (zoom / 100);
 
   const goFullscreen = useCallback(() => {
     const el = document.documentElement;
@@ -265,12 +369,40 @@ export default function PdfReader({
     else el.requestFullscreen?.().catch(() => {});
   }, []);
 
+  /** Fit page: zoom so the page fills the stage width (spec: bottom
+   *  controls include FIT PAGE). At 100% the page already fills the
+   *  stage when the stage is narrower than 900px. */
+  const fitPage = useCallback(() => {
+    const avail = stageW - 72;
+    const z = avail > 900 ? Math.min(200, Math.round((avail / 900) * 100)) : 100;
+    setZoom(z);
+  }, [stageW]);
+
   const addNote = useCallback(() => {
     const text = noteDraft.trim();
     if (!text) return;
     setNotes(prev => [...prev, { page: visiblePage, text, ts: Date.now() }]);
     setNoteDraft('');
   }, [noteDraft, visiblePage]);
+
+  const addPageBookmark = useCallback(() => {
+    setPageBms(prev => prev.some(b => b.page === visiblePage)
+      ? prev
+      : [...prev, { page: visiblePage, ts: Date.now() }].sort((a, b) => a.page - b.page));
+  }, [visiblePage]);
+
+  const addHighlight = useCallback(() => {
+    const label = hlDraft.trim() || `Page ${visiblePage}`;
+    setHighlights(prev => [...prev, { page: visiblePage, label, ts: Date.now() }]);
+    setHlDraft('');
+  }, [hlDraft, visiblePage]);
+
+  const saveNoteEdit = useCallback(() => {
+    const text = editDraft.trim();
+    if (!text || editingNote === null) { setEditingNote(null); return; }
+    setNotes(prev => prev.map(n => n.ts === editingNote ? { ...n, text } : n));
+    setEditingNote(null);
+  }, [editDraft, editingNote]);
 
   // subject accent — Obsidian Archive v2.0 identity tokens (desktop)
   const subjectAccent = v2SubjectColor(file.subj);
@@ -282,7 +414,7 @@ export default function PdfReader({
   return (
     <div className={`reader-shell kiA-v2${readingMode ? ' reading' : ''}`}
       style={{ ['--subject-accent' as any]: subjectAccent, ['--subj-color' as any]: v2SubjectColor(file.subj) }}>
-      {/* compact document header — title + meta + actions (~54px, Round C) */}
+      {/* document header — title + subject/type/pages (68px, P2) */}
       {!immersive && (
         <div className="ke-reader-header">
           <div className="ke-reader-header-group">
@@ -332,7 +464,7 @@ export default function PdfReader({
               className="reader-panel-anim"
             >
               <div className="reader-panel-head">
-                <span className="eyebrow">Pages</span>
+                <span className="eyebrow">Page index</span>
                 <button onClick={toggleLeft} className="reader-panel-toggle" aria-label="Hide pages panel">‹</button>
               </div>
               <div className="reader-thumb-grid">
@@ -342,7 +474,7 @@ export default function PdfReader({
                     aria-label={`Go to page ${p}`} aria-current={p === visiblePage ? 'page' : undefined}>
                     <img src={pageImageUrl(file.subj, file.file, p, total)} alt={`Page ${p}`}
                       loading="lazy" draggable={false} />
-                    <div className="reader-thumb-num">{p}</div>
+                    <div className="reader-thumb-num">{String(p).padStart(2, '0')}</div>
                   </button>
                 ))}
               </div>
@@ -387,62 +519,102 @@ export default function PdfReader({
                 <span className="eyebrow">Study tools</span>
                 <button onClick={toggleRight} className="reader-panel-toggle" aria-label="Hide study tools">›</button>
               </div>
+              {/* Find in document — real full-text matches (backend
+                  text index), this document only; click a match to
+                  jump to its page. */}
+              <div className="reader-find">
+                <input
+                  type="search"
+                  value={findQ}
+                  onChange={e => setFindQ(e.target.value)}
+                  placeholder="Find in document…"
+                  aria-label="Find in document"
+                />
+                {findQ.trim() && (
+                  <button type="button" className="reader-find-clear" onClick={() => setFindQ('')} aria-label="Clear find">
+                    ✕
+                  </button>
+                )}
+              </div>
               <div className="reader-tabs" role="tablist" aria-label="Study tools">
-                {(['tools', 'bookmarks', 'notes', 'contents'] as const).map(t => {
-                  const active = (tab ?? 'tools') === t;
+                {(['bookmarks', 'notes', 'contents', 'highlights'] as const).map(t => {
+                  const active = tab === t;
                   return (
                     <button key={t} role="tab" aria-selected={active}
                       className={active ? 'active' : ''}
-                      onClick={() => setTab(t === 'tools' ? null : t)}>
+                      onClick={() => setTab(t)}>
                       {t}
                     </button>
                   );
                 })}
               </div>
 
-              {tab === null && (
-                <div className="reader-launcher">
-                  <button className="reader-launch-btn kiA-tool-bookmarks" onClick={() => setTab('bookmarks')}>
-                    <span className="reader-launch-ico" style={{ color: '#F0B86B' }}>★</span>
-                    <span className="min-w-0">
-                      <span className="row-title">Bookmarks</span>
-                      <span className="row-meta block">{bookmarkedDocs.length} saved document{bookmarkedDocs.length === 1 ? '' : 's'}</span>
-                    </span>
-                    <span className="reader-launch-chev">›</span>
-                  </button>
-                  <button className="reader-launch-btn kiA-tool-notes" onClick={() => setTab('notes')}>
-                    <span className="reader-launch-ico" style={{ color: 'var(--digital)' }}>✎</span>
-                    <span className="min-w-0">
-                      <span className="row-title">Notes</span>
-                      <span className="row-meta block">{notes.length} note{notes.length === 1 ? '' : 's'} on this document</span>
-                    </span>
-                    <span className="reader-launch-chev">›</span>
-                  </button>
-                  <button className="reader-launch-btn kiA-tool-contents" onClick={() => setTab('contents')}>
-                    <span className="reader-launch-ico" style={{ color: 'var(--em2)' }}>▤</span>
-                    <span className="min-w-0">
-                      <span className="row-title">Contents</span>
-                      <span className="row-meta block">
-                        {contents.reduce((s, sec) => s + sec.docs.length, 0)} documents in {subjectLabel}
-                      </span>
-                    </span>
-                    <span className="reader-launch-chev">›</span>
-                  </button>
+              {findQ.trim().length >= 2 ? (
+                <div className="reader-tab-body">
+                  {findSearching ? (
+                    <p className="reader-hint">Searching…</p>
+                  ) : findResults.length === 0 ? (
+                    <p className="reader-hint">
+                      No matches for &ldquo;{findQ.trim()}&rdquo; in this document.
+                    </p>
+                  ) : (
+                    <>
+                      <div className="reader-sec-label">
+                        {findResults.length} page{findResults.length === 1 ? '' : 's'} · &ldquo;{findQ.trim()}&rdquo;
+                      </div>
+                      {findResults.map(pg => (
+                        <button key={pg.page_number} className="reader-tool-row" onClick={() => goToPage(pg.page_number)}>
+                          <span className="min-w-0">
+                            <span className="row-title">Page {pg.page_number} · {pg.match_count} hit{pg.match_count === 1 ? '' : 's'}</span>
+                            <span className="row-meta block">{pg.snippet}</span>
+                          </span>
+                        </button>
+                      ))}
+                    </>
+                  )}
                 </div>
-              )}
-
+              ) : (
+              <>
               {tab === 'bookmarks' && (
                 <div className="reader-tab-body">
+                  <button className="reader-tool-row" onClick={addPageBookmark}
+                    disabled={pageBms.some(b => b.page === visiblePage)}>
+                    <span className="text-[16px]" style={{ color: '#F0B86B' }}>★</span>
+                    <span className="min-w-0">
+                      <span className="row-title">
+                        {pageBms.some(b => b.page === visiblePage) ? `Page ${visiblePage} bookmarked` : `Bookmark page ${visiblePage}`}
+                      </span>
+                      <span className="row-meta block">Saved on this device · persists</span>
+                    </span>
+                  </button>
                   <button className="reader-tool-row" onClick={onToggleBookmark}
                     aria-pressed={bookmarked}>
                     <span className="text-[16px]" style={{ color: bookmarked ? '#F0B86B' : 'var(--muted)' }}>
                       {bookmarked ? '★' : '☆'}
                     </span>
                     <span className="min-w-0">
-                      <span className="row-title">{bookmarked ? 'Saved to bookmarks' : 'Bookmark this document'}</span>
+                      <span className="row-title">{bookmarked ? 'Document saved to bookmarks' : 'Bookmark this document'}</span>
                       <span className="row-meta block">Tap to {bookmarked ? 'remove' : 'save'}</span>
                     </span>
                   </button>
+                  {pageBms.length > 0 && (
+                    <>
+                      <div className="reader-sec-label">Page bookmarks · {pageBms.length}</div>
+                      {pageBms.map(b => (
+                        <div key={b.page} className="reader-tool-row reader-tool-row--split">
+                          <button className="reader-tool-row-main" onClick={() => goToPage(b.page)}>
+                            <span className="min-w-0">
+                              <span className="row-title">{file.title}</span>
+                              <span className="row-meta block">Page {b.page} of {total}</span>
+                            </span>
+                          </button>
+                          <button className="note-del" onClick={() => setPageBms(prev => prev.filter(x => x.page !== b.page))}>
+                            Delete
+                          </button>
+                        </div>
+                      ))}
+                    </>
+                  )}
                   {bookmarkedDocs.length > 0 && (
                     <>
                       <div className="reader-sec-label">Saved documents · {bookmarkedDocs.length}</div>
@@ -486,15 +658,36 @@ export default function PdfReader({
                   ) : (
                     [...notes].reverse().map((n, ri) => {
                       const i = notes.length - 1 - ri;
+                      const isEditing = editingNote === n.ts;
                       return (
                         <div key={`${n.ts}-${i}`} className="reader-note">
-                          <div className="note-page">
-                            Page {n.page} · {new Date(n.ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                          </div>
-                          <div className="note-text">{n.text}</div>
-                          <button className="note-del" onClick={() => setNotes(prev => prev.filter((_, j) => j !== i))}>
-                            Delete
+                          <button className="note-page" onClick={() => goToPage(n.page)}>
+                            Page {n.page} · {new Date(n.ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} · go to page →
                           </button>
+                          {isEditing ? (
+                            <>
+                              <textarea
+                                className="reader-note-edit"
+                                value={editDraft}
+                                onChange={e => setEditDraft(e.target.value)}
+                                aria-label="Edit note"
+                              />
+                              <span className="reader-note-actions">
+                                <button className="note-save" onClick={saveNoteEdit}>Save</button>
+                                <button className="note-del" onClick={() => setEditingNote(null)}>Cancel</button>
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <div className="note-text">{n.text}</div>
+                              <span className="reader-note-actions">
+                                <button className="note-edit" onClick={() => { setEditingNote(n.ts); setEditDraft(n.text); }}>Edit</button>
+                                <button className="note-del" onClick={() => setNotes(prev => prev.filter((_, j) => j !== i))}>
+                                  Delete
+                                </button>
+                              </span>
+                            </>
+                          )}
                         </div>
                       );
                     })
@@ -504,6 +697,30 @@ export default function PdfReader({
 
               {tab === 'contents' && (
                 <div className="reader-tab-body">
+                  {!tocLoaded ? (
+                    <p className="reader-hint">Loading contents…</p>
+                  ) : toc.length > 0 ? (
+                    <>
+                      <div className="reader-sec-label">In this document · {toc.length} headings</div>
+                      {toc.map((e, i) => (
+                        <button
+                          key={`${e.page}-${i}`}
+                          className={`reader-tool-row reader-toc-row${e.level === 2 ? ' reader-toc-row--sub' : ''}`}
+                          onClick={() => goToPage(e.page)}
+                        >
+                          <span className="min-w-0">
+                            <span className="row-title">{e.title}</span>
+                            <span className="row-meta block">Page {e.page}</span>
+                          </span>
+                        </button>
+                      ))}
+                    </>
+                  ) : (
+                    <p className="reader-hint">
+                      No headings extracted from this document — its pages carry no text index.
+                    </p>
+                  )}
+                  <div className="reader-sec-label">More in {subjectLabel}</div>
                   {contents.length === 0 ? (
                     <p className="reader-hint">No sections in this subject.</p>
                   ) : (
@@ -532,12 +749,57 @@ export default function PdfReader({
                   )}
                 </div>
               )}
+
+              {tab === 'highlights' && (
+                <div className="reader-tab-body">
+                  <div className="reader-note-form">
+                    <input
+                      className="reader-hl-input"
+                      value={hlDraft}
+                      onChange={e => setHlDraft(e.target.value)}
+                      placeholder={`Label for page ${visiblePage}…`}
+                      aria-label="Highlight label"
+                    />
+                    <button
+                      onClick={addHighlight}
+                      className="ke-cta-primary w-full justify-center mt-2"
+                      style={{ padding: '10px 16px', fontSize: 13 }}
+                    >
+                      Highlight page {visiblePage}
+                    </button>
+                  </div>
+                  {highlights.length === 0 ? (
+                    <p className="reader-hint">
+                      No highlights yet. A highlight marks a passage's page with your label — saved on this device.
+                    </p>
+                  ) : (
+                    <>
+                      <div className="reader-sec-label">Highlights · {highlights.length}</div>
+                      {[...highlights].reverse().map(h => (
+                        <div key={h.ts} className="reader-tool-row reader-tool-row--split">
+                          <button className="reader-tool-row-main" onClick={() => goToPage(h.page)}>
+                            <span className="min-w-0">
+                              <span className="row-title">{h.label}</span>
+                              <span className="row-meta block">Page {h.page} of {total} · {new Date(h.ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
+                            </span>
+                          </button>
+                          <button className="note-del" onClick={() => setHighlights(prev => prev.filter(x => x.ts !== h.ts))}>
+                            Delete
+                          </button>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+              </>
+              )}
             </AnimatedContent>
           )}
         </aside>
       </div>
 
-      {/* 52px bottom bar: page · zoom · panels · reading mode (Round C) */}
+      {/* 52px bottom bar: page · zoom · fit · fullscreen · panels · reading mode (P2) */}
       {!immersive && (
         <div className="reader-bottombar">
           <button onClick={() => goToPage(visiblePage - 1)} disabled={visiblePage <= 1}
@@ -568,6 +830,9 @@ export default function PdfReader({
           <span className="reader-zoom-label">{zoom}%</span>
           <button onClick={() => setZoom(z => Math.min(200, z + 25))}
             className="ke-reader-btn" aria-label="Zoom in">+</button>
+          <button onClick={fitPage} className="ke-reader-btn" aria-label="Fit page to stage">FIT PAGE</button>
+          <span className="opacity-30">|</span>
+          <button onClick={goFullscreen} className="ke-reader-btn" aria-label="Fullscreen">⤢ FULLSCREEN</button>
           <span className="opacity-30">|</span>
           <button onClick={toggleLeft} className={`reader-panel-toggle${leftOpen && !readingMode ? ' on' : ''}`}
             aria-pressed={leftOpen && !readingMode} aria-label="Toggle pages panel">PAGES</button>
