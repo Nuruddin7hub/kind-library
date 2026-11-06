@@ -459,7 +459,10 @@ export default function MobileReader(props: Props) {
   // single-page geometry: fit-page = contain in the stage; fit-width =
   // full available width minus 24px even if it overflows vertically
   const fitW = Math.max(0, stageSize.w - 24);
-  const fitH = Math.max(0, stageSize.h - 24);
+  // Round C 2026-11-06 P1: stage vertical padding is 28px top + 20px
+  // bottom (48px) — FIT PAGE must fit the content box exactly, so the
+  // whole page is visible with no scroll at 100%.
+  const fitH = Math.max(0, stageSize.h - 48);
   let baseW = fitW, baseH = fitW / Math.max(0.2, imgAR);
   if (fit === 'page' && baseH > fitH) { baseH = fitH; baseW = fitH * Math.max(0.2, imgAR); }
   const boxW = Math.max(40, Math.round(baseW * zoom / 100));
