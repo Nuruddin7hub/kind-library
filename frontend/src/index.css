@@ -2299,11 +2299,16 @@ button.ke-stat:hover {
  *   scrollable content container of EVERY mobile page (hero, library,
  *   search, digital, fis, saved). The reader keeps its own controls
  *   (global nav hidden) and is exempt. Safe-area counted ONCE here —
- * component padding must not add env(safe-area-inset-bottom) again. */
+ * component padding must not add env(safe-area-inset-bottom) again.
+ * Round C 2026-11-06 P0: the 68px nav height is now the named token
+ *   --mobile-nav-height; clearance is nav + 28px + safe-area (96px +
+ *   safe-area). Screens that already clear more (library .ml-list 108px,
+ *   subject-index wrapper 100px) keep the larger value. */
 :root {
   --nav-height: 66px;
   --nav-bottom: 8px;
-  --content-safe-bottom: calc(66px + 8px + 24px + env(safe-area-inset-bottom));
+  --mobile-nav-height: 68px;
+  --content-safe-bottom: calc(var(--mobile-nav-height) + 28px + env(safe-area-inset-bottom));
 }
 .mobile-page {
   padding-top: env(safe-area-inset-top);
