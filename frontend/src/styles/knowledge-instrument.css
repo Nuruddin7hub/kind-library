@@ -1,0 +1,842 @@
+/* ==================================================================
+ * K/IND LIBRARY — THE KNOWLEDGE INSTRUMENT (ChatGPT Round A desktop
+ * FULL REDESIGN, early loop 2026-11-06). Spec:
+ * ~/workspace/goals/kind-library-design-refinement/hidden_files/
+ * critiqueA-2026-11-06.md — "MoMA archive × engineering instrument ×
+ * premium editorial system". Spatial archive, NOT mobile stretched.
+ *
+ * SCOPE — NON-NEGOTIABLE: every rule here lives under `.kiA-desktop`
+ * (the desktop-only branch in App.tsx) or `.reader-shell.kiA-v2`
+ * (the desktop PdfReader, rendered outside the wrapper). Mobile renders
+ * .mobile-shell / MobileReader and never matches these selectors.
+ * Imported LAST in App.tsx so it wins over obsidian-atlas.css.
+ *
+ * Layers: L1 atmospheric background · L2 editorial grid · L3 information
+ * hierarchy · L4 archive objects · L5 interaction/motion.
+ * Tokens (spec §17): EM2 #59E1D2 · Signals #8CA8FF · FIS #E6A84F ·
+ * Digital #74D89A. Contrast scale (§19): primary rgba(246,244,238,.94) ·
+ * secondary rgba(210,221,226,.68) · tertiary rgba(171,192,202,.42) ·
+ * micro rgba(155,181,194,.32).
+ * Typography (§5): L1 clamp(64px,6vw,104px)/.88/-.055em · L2 42px/.95/
+ * -.035em · L3 20px/1.12/-.015em · L4 12px/.08em · L5 9px/.16em.
+ * ================================================================== */
+
+.kiA-desktop {
+  /* ---- KNOWLEDGE INSTRUMENT tokens (override OBSIDIAN ATLAS) ---- */
+  --kin-void: #05080d;
+  --kin-abyss: #07111b;
+  --kin-slate: #0c1826;
+  --kin-elevated: #132238;
+  --kin-ivory: rgba(246, 244, 238, 0.94);
+  --kin-silver: rgba(210, 221, 226, 0.68);
+  --kin-muted: rgba(171, 192, 202, 0.42);
+  --kin-micro: rgba(155, 181, 194, 0.32);
+  --kin-cyan: #59e1d2;
+  --kin-blue: #8ca8ff;
+  --kin-amber: #e6a84f;
+  --kin-green: #74d89a;
+  --kin-border: rgba(146, 188, 210, 0.13);
+  --kin-border-hover: rgba(146, 188, 210, 0.28);
+  --kin-sidebar: 264px;
+  --kin-header: 76px;
+  --atlas-subj-em2: #59e1d2;
+  --atlas-subj-signals: #8ca8ff;
+  --atlas-subj-fis: #e6a84f;
+  --atlas-subj-digital: #74d89a;
+  --atlas-signal: #59e1d2;
+  --sidebar-width: 264px;
+  --atlas-sidebar: 264px;
+  --atlas-topbar: 76px;
+  --atlas-pad: 56px;
+  --atlas-max: 1680px;
+  --atlas-hairline: rgba(146, 188, 210, 0.13);
+  --atlas-hairline-soft: rgba(146, 188, 210, 0.08);
+
+  /* ---- L1 atmospheric background (§1) ----
+     radial 900x600 at 72%/12% · radial 700x500 at 20%/70% · linear
+     135deg #05080d → #07111b 48% → #04070c. Grain comes from the
+     React Bits Noise component (opacity 0.055) rendered in App.tsx,
+     so the static grain.png ::after layer is switched off here. */
+  background:
+    radial-gradient(900px 600px at 72% 12%, rgba(37, 105, 124, 0.13), transparent 70%),
+    radial-gradient(700px 500px at 20% 70%, rgba(39, 53, 110, 0.10), transparent 70%),
+    linear-gradient(135deg, #05080d 0%, #07111b 48%, #04070c 100%);
+  transition: background 400ms ease;
+}
+/* L2 editorial grid — 64px technical grid, masked fade to bottom */
+.kiA-desktop::before {
+  background-image:
+    linear-gradient(rgba(140, 190, 210, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(140, 190, 210, 0.035) 1px, transparent 1px);
+  background-size: 64px 64px;
+  opacity: 1;
+  -webkit-mask-image: linear-gradient(180deg, black 0%, black 55%, transparent 92%);
+  mask-image: linear-gradient(180deg, black 0%, black 55%, transparent 92%);
+}
+.kiA-desktop::after { display: none; }
+
+/* ---- shell (§18): 264px sidebar + 1fr, main 0 56px 96px, max 1680px,
+   content grid 1380px centred ---- */
+.kiA-desktop .kiA-main {
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: 0 56px 96px;
+}
+.kiA-desktop .kiA,
+.kiA-desktop .kiA-page {
+  max-width: 1380px;
+  margin: 0 auto;
+}
+@media (min-width: 1100px) and (max-width: 1439px) {
+  /* sidebar stays 264px per spec — content breathing shrinks instead */
+  .kiA-desktop { --sidebar-width: 264px; --atlas-sidebar: 264px; }
+  .kiA-desktop .kiA-main { padding: 0 36px 72px; }
+}
+@media (min-width: 1600px) {
+  .kiA-desktop .kiA-main { padding-left: 56px; padding-right: 56px; }
+}
+
+/* ---- typography scale (§5) + contrast (§19) ---- */
+.kiA-desktop .kiA-display {
+  letter-spacing: -0.015em;
+}
+.kiA-desktop .kiA-hero-title {
+  font-size: clamp(64px, 6vw, 104px);
+  line-height: 0.88;
+  letter-spacing: -0.055em;
+  font-weight: 400;
+}
+.kiA-desktop .kiA-section-title,
+.kiA-desktop .kiA-engine-title,
+.kiA-desktop .kiA-ed-title {
+  font-size: 42px;
+  line-height: 0.95;
+  letter-spacing: -0.035em;
+}
+.kiA-desktop .kiA-hit-title,
+.kiA-desktop .kiA-ap-title {
+  font-size: 20px;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+}
+/* L4 interface text / L5 instrument metadata */
+.kiA-desktop .kiA-eyebrow {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--kin-micro);
+}
+/* P0: the second hero eyebrow is redundant metadata — keep the
+   information in the sidebar/status, show less of it here. */
+.kiA-desktop .kiA-hero-copy .kiA-eyebrow + .kiA-eyebrow { display: none; }
+.kiA-desktop .kiA-hero-sub {
+  font-size: 14px;
+  color: var(--kin-silver);
+}
+/* nav must never be unreadably dim (§19) */
+.kiA-desktop .kiA-nav-label { color: var(--kin-silver); }
+.kiA-desktop .kiA-subj-code { color: var(--kin-ivory); }
+.kiA-desktop .kiA-subj-count { color: var(--kin-silver); }
+
+/* ==================================================================
+ * SIDEBAR — 264px, three zones (§7). Selected item: bg
+ * rgba(62,220,207,.07), 2px left border in discipline color, inset glow.
+ * ================================================================== */
+.kiA-desktop .kiA-sidebar {
+  width: 264px;
+  background: rgba(6, 12, 20, 0.96);
+}
+.kiA-desktop .kiA-nav--active {
+  background: rgba(62, 220, 207, 0.07);
+  box-shadow:
+    inset 2px 0 0 var(--kin-cyan),
+    inset 0 0 24px rgba(89, 225, 210, 0.05);
+}
+.kiA-desktop .kiA-nav--active .kiA-nav-label { color: var(--kin-ivory); }
+.kiA-desktop .kiA-subj--active {
+  background: rgba(62, 220, 207, 0.05);
+  box-shadow: inset 0 0 24px color-mix(in srgb, var(--subj) 6%, transparent);
+}
+/* P0: sidebar status text duplicates the topbar status — keep dot + count */
+.kiA-desktop .kiA-status-text { display: none; }
+
+/* ==================================================================
+ * TOPBAR — instrument bar (§15). ⌘K: 42px, min-width 190px,
+ * border rgba(115,220,214,.16), bg rgba(12,24,34,.72).
+ * ================================================================== */
+.kiA-desktop .kiA-cmdk {
+  height: 42px;
+  min-width: 190px;
+  padding: 0 14px;
+  border: 1px solid rgba(115, 220, 214, 0.16);
+  background: rgba(12, 24, 34, 0.72);
+}
+.kiA-desktop .kiA-cmdk:hover {
+  border-color: rgba(115, 220, 214, 0.55);
+  box-shadow: 0 0 0 1px rgba(115, 220, 214, 0.35), 0 0 24px rgba(89, 225, 210, 0.18);
+}
+
+/* ==================================================================
+ * OVERVIEW — hero (§2/§3/§6), discipline field (§4), stats (§16)
+ * ================================================================== */
+/* hero: headline left, 420px discipline field right; Aurora chamber */
+.kiA-desktop .kiA-hero {
+  grid-template-columns: minmax(0, 1fr) clamp(320px, 30vw, 420px);
+  gap: 56px;
+  align-items: center;
+  min-height: 520px;
+}
+/* Aurora ONLY behind hero (§2): absolute top:0 right:0, 72% × 520px */
+.kiA-desktop .kiA-hero-aurora {
+  inset: auto;
+  top: 0;
+  right: 0;
+  width: 72%;
+  height: 520px;
+  -webkit-mask-image: linear-gradient(100deg, transparent 0%, black 30%, black 78%, transparent 100%);
+  mask-image: linear-gradient(100deg, transparent 0%, black 30%, black 78%, transparent 100%);
+}
+/* Masked Heading (§6) — hero phrase only; second line carries the
+   cyan/blue aurora texture, rest ivory */
+.kiA-desktop .kiA-hero-title .mkh-rise em {
+  font-style: italic;
+  background: linear-gradient(100deg, #59e1d2 0%, #8ca8ff 55%, #59e1d2 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+.kiA-desktop .kiA-hero-copy { padding: 40px 0; }
+.kiA-desktop .kiA-hero-cta { margin-top: 36px; }
+
+/* ---- discipline field (§4): the archive itself is alive ----
+   420×420 hero object; Particles live INSIDE the field only. */
+.kiA-desktop .kiA-hero-field {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  display: flex;
+}
+.kiA-desktop .kiA-field {
+  position: relative;
+  flex: 1;
+  height: 420px;
+  min-height: 420px;
+  border: 1px solid var(--kin-border);
+  border-radius: 20px;
+  overflow: hidden;
+  background:
+    radial-gradient(320px 320px at 50% 50%, rgba(23, 36, 58, 0.55), rgba(5, 8, 13, 0.9) 78%);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
+}
+.kiA-desktop .kiA-field-particles {
+  position: absolute;
+  inset: 0;
+  opacity: 0.9;
+}
+.kiA-desktop .kiA-field-particles .particles-container,
+.kiA-desktop .kiA-field-particles canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.kiA-desktop .kiA-field-head {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 22px 0;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--kin-micro);
+  pointer-events: none;
+}
+.kiA-desktop .kiA-field-head strong {
+  color: var(--kin-ivory);
+  font-weight: 700;
+}
+.kiA-desktop .kiA-field-node {
+  position: absolute;
+  z-index: 2;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 12px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: transform 220ms var(--kin-ease);
+}
+.kiA-desktop .kiA-field-node:hover,
+.kiA-desktop .kiA-field-node:focus-visible {
+  transform: translate(-50%, -50%) scale(1.08);
+}
+.kiA-desktop .kiA-field-glyph {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 44px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--node);
+  text-shadow: 0 0 24px color-mix(in srgb, var(--node) 55%, transparent);
+  transition: text-shadow 220ms var(--kin-ease);
+}
+.kiA-desktop .kiA-field-node:hover .kiA-field-glyph,
+.kiA-desktop .kiA-field-node:focus-visible .kiA-field-glyph {
+  text-shadow:
+    0 0 12px color-mix(in srgb, var(--node) 85%, transparent),
+    0 0 48px color-mix(in srgb, var(--node) 60%, transparent);
+}
+.kiA-desktop .kiA-field-code {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--kin-ivory);
+}
+.kiA-desktop .kiA-field-count {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--kin-micro);
+}
+.kiA-desktop .kiA-field-detail {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  padding: 0 22px 18px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--kin-silver);
+  pointer-events: none;
+}
+.kiA-desktop .kiA-field-detail strong { color: var(--node, var(--kin-ivory)); }
+
+/* ---- stats as data objects (§16): 42px numerals, 9px labels,
+   underline rule under each; strip borders removed (P0) ---- */
+.kiA-desktop .kiA-stats {
+  margin: 40px 0 0;
+  padding: 0 0 8px;
+  border-top: 0;
+  border-bottom: 0;
+  gap: 32px;
+}
+.kiA-desktop .kiA-stat {
+  gap: 10px;
+  padding: 0 0 14px;
+  border-left: 0;
+  border-bottom: 1px solid var(--kin-border);
+}
+.kiA-desktop .kiA-stat:first-child { padding-left: 0; }
+.kiA-desktop .kiA-stat-num {
+  font-size: 42px;
+  letter-spacing: -0.04em;
+}
+.kiA-desktop .kiA-stat-label {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--kin-micro);
+}
+
+/* ---- sections: negative space as separator (P0) ---- */
+.kiA-desktop .kiA-section { margin-top: 88px; }
+.kiA-desktop .kiA-section-title { margin-bottom: 32px; }
+
+/* ---- resume card: catalogue-plate material (§10) ---- */
+.kiA-desktop .kiA-activity {
+  background: linear-gradient(145deg, rgba(17, 34, 50, 0.96), rgba(7, 16, 26, 0.92));
+  border: 1px solid rgba(146, 188, 210, 0.13);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25), inset 0 1px rgba(255, 255, 255, 0.025);
+}
+.kiA-desktop .kiA-activity-title { font-size: 26px; }
+.kiA-desktop .kiA-resume-empty {
+  background: linear-gradient(145deg, rgba(17, 34, 50, 0.96), rgba(7, 16, 26, 0.92));
+  border: 1px solid rgba(146, 188, 210, 0.13);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25), inset 0 1px rgba(255, 255, 255, 0.025);
+}
+
+/* ---- discipline plates (§10): catalogue plates + discipline glow.
+   P0: drop the redundant "PLATE I" label and the "OPEN DISCIPLINE →"
+   CTA — the whole card is the button. ---- */
+.kiA-desktop .kiA-platecard-btn {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(145deg, rgba(17, 34, 50, 0.96), rgba(7, 16, 26, 0.92));
+  border: 1px solid rgba(146, 188, 210, 0.13);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25), inset 0 1px rgba(255, 255, 255, 0.025);
+}
+.kiA-desktop .kiA-platecard-btn::after {
+  content: "";
+  position: absolute;
+  right: -40px;
+  bottom: -40px;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: var(--subj, #59e1d2);
+  opacity: 0.07;
+  filter: blur(70px);
+  pointer-events: none;
+}
+.kiA-desktop .kiA-platecard-plate { display: none; }
+.kiA-desktop .kiA-platecard-cta { display: none; }
+.kiA-desktop .kiA-platecard-name { font-size: 28px; }
+.kiA-desktop .kiA-platecard-stat-num { font-size: 25px; }
+/* P1: hovering a discipline node in the field lights its plate */
+.kiA-desktop .kiA-platecard--lit .kiA-platecard-btn {
+  border-color: color-mix(in srgb, var(--subj) 65%, transparent);
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.25),
+    0 0 32px color-mix(in srgb, var(--subj) 22%, transparent),
+    inset 0 1px rgba(255, 255, 255, 0.025);
+  transform: translateY(-3px);
+}
+
+/* ---- quick access / recent shelf: negative space, not boxes (P0) ---- */
+.kiA-desktop .kiA-qa-col {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0;
+}
+.kiA-desktop .kiA-qa-label {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--kin-micro);
+}
+.kiA-desktop .kiA-qa { gap: 48px; }
+.kiA-desktop .kiA-strip-title { font-size: 20px; }
+
+/* ==================================================================
+ * SEARCH — knowledge retrieval instrument (§8, §20)
+ * Result cards: grid 88px 1fr auto, min-height 156px, padding 24px.
+ * ================================================================== */
+.kiA-desktop .kiA-searchwrap { position: relative; }
+/* P1 search choreography: field focus darkens the atmosphere */
+.kiA-desktop:has(.kiA-input:focus) {
+  background:
+    radial-gradient(900px 600px at 72% 12%, rgba(37, 105, 124, 0.07), transparent 70%),
+    radial-gradient(700px 500px at 20% 70%, rgba(39, 53, 110, 0.05), transparent 70%),
+    linear-gradient(135deg, #04060a 0%, #050d14 48%, #030509 100%);
+}
+.kiA-desktop .kiA-input {
+  border-color: rgba(89, 225, 210, 0.35);
+}
+/* discipline counts row — keep the chips, tighten the type */
+.kiA-desktop .kiA-chip-count { color: var(--kin-micro); }
+
+/* results — Glare Hover wrapper + wide instrument cards */
+.kiA-desktop .kiA-hits .animated-list__track { gap: 20px; }
+.kiA-desktop .kiA-hit-glare {
+  display: block;
+  width: 100%;
+  border-radius: 18px;
+}
+.kiA-desktop .kiA-hit {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) auto;
+  grid-template-areas: "thumb main side";
+  gap: 20px;
+  align-items: stretch;
+  min-height: 156px;
+  padding: 24px;
+  background: linear-gradient(145deg, rgba(17, 34, 50, 0.96), rgba(7, 16, 26, 0.92));
+  border: 1px solid rgba(146, 188, 210, 0.13);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25), inset 0 1px rgba(255, 255, 255, 0.025);
+}
+.kiA-desktop .kiA-hit:hover {
+  border-color: color-mix(in srgb, var(--hit-subject) 55%, transparent);
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.25),
+    0 0 32px color-mix(in srgb, var(--hit-subject) 18%, transparent),
+    inset 0 1px rgba(255, 255, 255, 0.025);
+}
+.kiA-desktop .kiA-hit-thumb {
+  grid-area: thumb;
+  width: 88px;
+  height: 116px;
+  align-self: start;
+}
+.kiA-desktop .kiA-hit-main {
+  grid-area: main;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.kiA-desktop .kiA-hit-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.kiA-desktop .kiA-hit-side {
+  grid-area: side;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding-left: 8px;
+  border-left: 1px solid rgba(146, 188, 210, 0.08);
+  min-width: 118px;
+}
+.kiA-desktop .kiA-hit-num {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-size: 30px;
+  line-height: 1;
+  color: var(--hit-subject);
+}
+.kiA-desktop .kiA-hit-open {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--hit-subject);
+  white-space: nowrap;
+}
+.kiA-desktop .kiA-hit-matches {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--kin-micro);
+  white-space: nowrap;
+}
+/* P1: matching term gets a cyan underline; nonmatching metadata subdued */
+.kiA-desktop .kiA-hit-preview mark,
+.kiA-desktop .kiA-hit-title mark {
+  background: transparent;
+  color: var(--kin-ivory);
+  border-bottom: 2px solid var(--hit-subject);
+  border-radius: 0;
+  padding: 0;
+}
+.kiA-desktop .kiA-hit:hover .kiA-hit-meta { color: var(--kin-silver); }
+.kiA-desktop .kiA-hit-foot { display: none; }
+.kiA-desktop .kiA-hit-body { display: contents; }
+.kiA-desktop .kiA-evidence { color: var(--kin-micro); }
+
+/* ==================================================================
+ * LIBRARY — editorial catalogue (§9/§11/§20)
+ * ================================================================== */
+.kiA-desktop .kiA-head { position: relative; }
+.kiA-desktop .kiA-head--surfaced {
+  padding: 32px 36px 36px;
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 36px;
+}
+.kiA-desktop .kiA-head--surfaced > * { position: relative; z-index: 1; }
+/* subject surfaces (§20) — identity lives in the header surface */
+.kiA-desktop .kiA-ed-surface {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.kiA-desktop .kiA-ed-surface .grid-scan,
+.kiA-desktop .kiA-ed-surface .line-waves {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.kiA-desktop .kiA-ed-surface--digital { opacity: 0.55; }
+.kiA-desktop .kiA-ed-surface--digital::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 55%, rgba(5, 8, 13, 0.9));
+}
+.kiA-desktop .kiA-ed-surface--signals { opacity: 0.16; }
+.kiA-desktop .kiA-ed-surface--em2 {
+  /* subtle triangular grid + geometry, almost no motion */
+  background-image:
+    repeating-linear-gradient(60deg, rgba(89, 225, 210, 0.05) 0 1px, transparent 1px 56px),
+    repeating-linear-gradient(-60deg, rgba(89, 225, 210, 0.05) 0 1px, transparent 1px 56px),
+    repeating-linear-gradient(0deg, rgba(89, 225, 210, 0.03) 0 1px, transparent 1px 56px);
+  opacity: 1;
+}
+.kiA-desktop .kiA-ed-surface--em2::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(600px 260px at 78% 20%, rgba(89, 225, 210, 0.08), transparent 70%);
+}
+.kiA-desktop .kiA-ed-equation {
+  position: absolute;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  color: rgba(89, 225, 210, 0.16);
+  line-height: 1;
+  user-select: none;
+}
+.kiA-desktop .kiA-ed-surface--fis {
+  /* paper grain + warm amber, almost no tech animation */
+  background:
+    radial-gradient(700px 320px at 76% 18%, rgba(230, 168, 79, 0.14), transparent 68%),
+    radial-gradient(500px 300px at 12% 88%, rgba(230, 168, 79, 0.07), transparent 70%),
+    linear-gradient(180deg, rgba(230, 168, 79, 0.03), transparent 60%);
+}
+.kiA-desktop .kiA-ed-surface--fis::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.5;
+  background-image: url("/textures/grain.png");
+  background-size: 240px 240px;
+}
+/* edition stats — data objects with underline rules */
+.kiA-desktop .kiA-ed-stat-num { font-size: 36px; letter-spacing: -0.02em; }
+.kiA-desktop .kiA-ed-stat-label {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--kin-micro);
+}
+.kiA-desktop .kiA-ed-stat {
+  padding: 0 28px 10px;
+  border-bottom: 1px solid var(--kin-border);
+}
+.kiA-desktop .kiA-ed-stat:first-child { padding-left: 0; }
+
+/* ---- editorial selectors (§20): DISCIPLINE: / TYPE: lines, thin
+   cyan indicator under the active option — no chunky pills ---- */
+.kiA-desktop .kiA-controls { margin-bottom: 34px; }
+.kiA-desktop .kiA-tabs { display: none; }
+.kiA-desktop .kiA-selectors {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.kiA-desktop .kiA-selector {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+}
+.kiA-desktop .kiA-selector-label {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: var(--kin-micro);
+  margin-right: 4px;
+}
+.kiA-desktop .kiA-sel-opt {
+  position: relative;
+  padding: 6px 2px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--kin-muted);
+  transition: color 200ms var(--kin-ease);
+}
+.kiA-desktop .kiA-sel-opt:hover { color: var(--kin-ivory); }
+.kiA-desktop .kiA-sel-opt::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  bottom: 0;
+  height: 2px;
+  background: var(--sel-accent, var(--kin-cyan));
+  opacity: 0;
+  transition: opacity 200ms var(--kin-ease);
+}
+.kiA-desktop .kiA-sel-opt--active { color: var(--kin-ivory); }
+.kiA-desktop .kiA-sel-opt--active::after { opacity: 1; }
+.kiA-desktop .kiA-sel-count {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--kin-micro);
+  margin-left: 6px;
+  font-variant-numeric: tabular-nums;
+}
+/* type chips in the controls row become editorial options too */
+.kiA-desktop .kiA-type-chips { display: flex; gap: 4px 20px; flex-wrap: wrap; align-items: baseline; }
+.kiA-desktop .kiA-type-chips .kiA-chip {
+  min-height: 0;
+  padding: 6px 2px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  position: relative;
+  font-size: 12px;
+  color: var(--kin-muted);
+}
+.kiA-desktop .kiA-type-chips .kiA-chip::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  bottom: 0;
+  height: 2px;
+  background: var(--kin-cyan);
+  opacity: 0;
+}
+.kiA-desktop .kiA-type-chips .kiA-chip:hover { color: var(--kin-ivory); border-color: transparent; }
+.kiA-desktop .kiA-type-chips .kiA-chip--active {
+  color: var(--kin-ivory);
+  background: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+.kiA-desktop .kiA-type-chips .kiA-chip--active::after { opacity: 1; }
+
+/* ---- asymmetric grid (§9): first document card larger ---- */
+.kiA-desktop .kiA-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px 24px;
+}
+@media (min-width: 1600px) {
+  .kiA-desktop .kiA-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.kiA-desktop .kiA-grid > .spotlight-card:first-child {
+  grid-column: span 2;
+}
+/* Featured card fills its row height: flex chain (inner → cover →
+   plate) so the plate stretches instead of collapsing to content
+   height — percentage heights alone do not resolve against an
+   auto-height cover. */
+.kiA-desktop .kiA-grid > .spotlight-card:first-child .kiA-card-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.kiA-desktop .kiA-grid > .spotlight-card:first-child .kiA-cover {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 0;
+}
+.kiA-desktop .kiA-grid > .spotlight-card:first-child .kiA-ap {
+  flex: 1 1 auto;
+  aspect-ratio: auto;
+  min-height: 100%;
+}
+.kiA-desktop .kiA-grid > .spotlight-card:first-child .kiA-ap-title {
+  font-size: 24px;
+  max-width: 32ch;
+}
+/* Featured plate is landscape (~2:1) — a bottom-anchored glyph would
+   strand it in empty space, so the glyph centres in the plate. */
+.kiA-desktop .kiA-grid > .spotlight-card:first-child .kiA-ap-ornwrap {
+  align-items: center;
+  padding-bottom: 0;
+}
+
+/* ---- catalogue-plate card material (§10) ---- */
+.kiA-desktop .kiA-card-inner {
+  position: relative;
+  background: linear-gradient(145deg, rgba(17, 34, 50, 0.96), rgba(7, 16, 26, 0.92));
+  border: 1px solid rgba(146, 188, 210, 0.13);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25), inset 0 1px rgba(255, 255, 255, 0.025);
+}
+.kiA-desktop .kiA-card-inner::after {
+  content: "";
+  position: absolute;
+  right: -60px;
+  bottom: -60px;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: var(--subj, #59e1d2);
+  opacity: 0.07;
+  filter: blur(70px);
+  pointer-events: none;
+}
+.kiA-desktop .kiA-card-inner:hover {
+  border-color: color-mix(in srgb, var(--subj) 55%, transparent);
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.25),
+    0 0 32px color-mix(in srgb, var(--subj) 16%, transparent),
+    inset 0 1px rgba(255, 255, 255, 0.025);
+}
+/* subject glyphs (§11): large shorthand, Φ 94px, opacity .9, lower third */
+.kiA-desktop .kiA-ap-ornwrap {
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 10px;
+}
+.kiA-desktop .kiA-ap-glyph {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 500;
+  font-size: 94px;
+  line-height: 0.9;
+  opacity: 0.9;
+  text-shadow: 0 0 32px color-mix(in srgb, currentColor 35%, transparent);
+}
+.kiA-desktop .kiA-ap-glyph--em2 { font-size: 96px; }
+.kiA-desktop .kiA-ap-glyph--signals { font-size: 88px; letter-spacing: -0.05em; }
+.kiA-desktop .kiA-ap-glyph--digital { font-size: 82px; }
+.kiA-desktop .kiA-ap-orn { display: none; }
+/* list rows: keep the data division, lose the extra chrome */
+.kiA-desktop .kiA-row { border-bottom: 1px solid var(--kin-border); }
+.kiA-desktop .kiA-row-title { font-size: 20px; }
+
+/* ==================================================================
+ * READER — the quiet page (§12)
+ * Stage: radial chamber + vertical beam on #05090f. Page shadow:
+ * 0 60px 120px rgba(0,0,0,.55) + 0 12px 30px rgba(0,0,0,.35),
+ * transform transition 300ms. Tools stay a collapsible contextual
+ * rail (existing toggle + launcher); the inspector narrows 300→264px.
+ * ================================================================== */
+.reader-shell.kiA-v2.kiA-v2 .reader-workspace {
+  grid-template-columns: 220px minmax(0, 1fr) 264px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-workspace.no-left { grid-template-columns: 0 minmax(0, 1fr) 264px; }
+.reader-shell.kiA-v2.kiA-v2 .reader-workspace.no-right { grid-template-columns: 220px minmax(0, 1fr) 0; }
+.reader-shell.kiA-v2.kiA-v2 .reader-workspace.no-left.no-right { grid-template-columns: 0 minmax(0, 1fr) 0; }
+.reader-shell.kiA-v2.kiA-v2 .reader-document {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(45, 73, 88, 0.18), transparent 48%),
+    linear-gradient(90deg, transparent 0%, rgba(120, 180, 200, 0.028) 50%, transparent 100%),
+    linear-gradient(180deg, #05090f 0%, #04070c 100%);
+  padding: 40px 32px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-doc-page .ke-reader-page {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 60px 120px rgba(0, 0, 0, 0.55),
+    0 12px 30px rgba(0, 0, 0, 0.35);
+  transition: transform 300ms ease, box-shadow 300ms ease;
+}
+.reader-shell.kiA-v2.kiA-v2 .ke-reader-header {
+  background: rgba(6, 12, 20, 0.96);
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-panel-left,
+.reader-shell.kiA-v2.kiA-v2 .reader-panel-right {
+  background: rgba(6, 12, 20, 0.96);
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-doc-num { color: var(--kin-micro, rgba(155, 181, 194, 0.32)); }
+
+/* ==================================================================
+ * MOTION (§13) — ambient only where the spec names it; entrances
+ * 24px / 0.7s / power3.out. Reduced motion: WebGL layers off.
+ * ================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .kiA-desktop .kiA-hero-aurora,
+  .kiA-desktop .kiA-field-particles,
+  .kiA-desktop .kiA-ed-surface {
+    display: none !important;
+  }
+}

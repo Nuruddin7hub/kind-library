@@ -1,0 +1,1228 @@
+/* ==================================================================
+ * K/IND LIBRARY — FIELD EDITION (ChatGPT Round A desktop, afternoon
+ * loop 2026-11-06). Spec:
+ * ~/workspace/goals/kind-library-design-refinement/hidden_files/
+ * critiqueA-1420-2026-11-06.md — "THE ARCHIVE IS AN INSTRUMENT".
+ * P0 foundation + P1 Overview ONLY. P2 Reader / P3 Library / P4
+ * Search are NOT built here.
+ *
+ * SCOPE — NON-NEGOTIABLE: every rule lives under `.desktop-app`
+ * (the desktop-only branch in App.tsx). Mobile renders
+ * .mobile-shell and never matches these selectors. Imported LAST
+ * in App.tsx so it wins over knowledge-instrument.css.
+ *
+ * Palette (spec): Void #050911 · Deep #091321 · Raised #101E30 ·
+ * Elevated #16263A · Hairline #26384A · Ivory #F1F0E9 · Muted
+ * #8997A8 · Cyan #59DED3 · Signals #8BAAFF · FIS #E6AA53 ·
+ * Digital #76D6A0. EM2 takes the cyan interaction token.
+ * ================================================================== */
+
+.desktop-app {
+  /* ---- FIELD EDITION tokens ---- */
+  --de-void: #050911;
+  --de-deep: #091321;
+  --de-raised: #101e30;
+  --de-elevated: #16263a;
+  --de-hairline: #26384a;
+  --de-ivory: #f1f0e9;
+  --de-muted: #8997a8;
+  --de-cyan: #59ded3;
+  --de-blue: #8baaff;
+  --de-amber: #e6aa53;
+  --de-green: #76d6a0;
+  --de-sidebar: clamp(220px, 16vw, 236px);
+  --de-topbar: 68px;
+  --de-pad-x: 48px;
+  --de-pad-y: 40px;
+  --de-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* ---- re-point the morning tokens at the afternoon palette so
+     every desktop surface (sidebar, topbar, cards, reader chrome)
+     speaks the same midnight-blue language ---- */
+  --kin-void: #050911;
+  --kin-abyss: #091321;
+  --kin-slate: #101e30;
+  --kin-elevated: #16263a;
+  --kin-ivory: #f1f0e9;
+  --kin-silver: #a9b8c6;
+  --kin-muted: #8997a8;
+  --kin-micro: #8997a8;
+  --kin-cyan: #59ded3;
+  --kin-blue: #8baaff;
+  --kin-amber: #e6aa53;
+  --kin-green: #76d6a0;
+  --kin-border: #26384a;
+  --kin-border-hover: #3a526b;
+  --atlas-subj-em2: #59ded3;
+  --atlas-subj-signals: #8baaff;
+  --atlas-subj-fis: #e6aa53;
+  --atlas-subj-digital: #76d6a0;
+  --atlas-signal: #59ded3;
+  --atlas-ink: #f1f0e9;
+  --atlas-display: 'Instrument Serif', Georgia, serif;
+
+  --sidebar-width: clamp(220px, 16vw, 236px);
+  --atlas-sidebar: clamp(220px, 16vw, 236px);
+  --atlas-topbar: 68px;
+  --atlas-pad: clamp(28px, 3vw, 48px);
+  --atlas-max: 1440px;
+  --atlas-hairline: #26384a;
+  --atlas-hairline-soft: rgba(38, 56, 74, 0.6);
+
+  /* ---- background layer 1+2 (FINAL, critiqueC P0/P1.1): four
+     layers, same base everywhere, localized illumination varies
+     per page via [data-view] / [data-subject] below ----
+     Base midnight navy gradient 100%. */
+  background:
+    radial-gradient(ellipse 75% 12% at 50% 0%, rgba(32, 113, 127, 0.17), transparent 40%),
+    radial-gradient(ellipse 12% 80% at 88% 100%, rgba(45, 75, 128, 0.13), transparent 43%),
+    linear-gradient(135deg, #050911 0%, #091321 48%, #07101b 100%);
+}
+
+/* ---- per-page subject-colour lighting (critiqueC background):
+   same base, localized illumination only. Overview cyan+blue
+   (the base above); Search cyan; Reader subdued blue (see
+   .reader-shell rules further down); FIS amber; Digital emerald. ---- */
+.desktop-app[data-view="search"] {
+  background:
+    radial-gradient(ellipse 75% 12% at 50% 0%, rgba(32, 113, 127, 0.22), transparent 40%),
+    radial-gradient(ellipse 12% 80% at 88% 100%, rgba(45, 75, 128, 0.13), transparent 43%),
+    linear-gradient(135deg, #050911 0%, #091321 48%, #07101b 100%);
+}
+.desktop-app[data-subject="fis"] {
+  background:
+    radial-gradient(ellipse 75% 12% at 50% 0%, rgba(215, 157, 75, 0.14), transparent 40%),
+    radial-gradient(ellipse 12% 80% at 88% 100%, rgba(45, 75, 128, 0.10), transparent 43%),
+    linear-gradient(135deg, #050911 0%, #091321 48%, #07101b 100%);
+}
+.desktop-app[data-subject="digital"] {
+  background:
+    radial-gradient(ellipse 75% 12% at 50% 0%, rgba(118, 214, 160, 0.13), transparent 40%),
+    radial-gradient(ellipse 12% 80% at 88% 100%, rgba(45, 75, 128, 0.10), transparent 43%),
+    linear-gradient(135deg, #050911 0%, #091321 48%, #07101b 100%);
+}
+.desktop-app[data-subject="signals"] {
+  background:
+    radial-gradient(ellipse 75% 12% at 50% 0%, rgba(139, 170, 255, 0.15), transparent 40%),
+    radial-gradient(ellipse 12% 80% at 88% 100%, rgba(45, 75, 128, 0.13), transparent 43%),
+    linear-gradient(135deg, #050911 0%, #091321 48%, #07101b 100%);
+}
+
+/* ---- background layer 3: 52px technical grid, FINAL spec ----
+   rgba(137,177,205,.075), mask fades black 0% → .7 at 55% →
+   transparent 100%. Layer 4 (grain) is the React Bits Noise
+   component in App.tsx (0.055, its own separate layer — no
+   downloaded texture, no missing-file dependency). The morning
+   GlobalBackdrop (96px graticule + meridian + ticks) would
+   double the grid, so it stays switched off on desktop. */
+.desktop-app .kiA-backdrop { display: none; }
+.desktop-app.kiA-desktop::before {
+  background-image:
+    linear-gradient(rgba(137, 177, 205, 0.075) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(137, 177, 205, 0.075) 1px, transparent 1px);
+  background-size: 52px 52px;
+  opacity: 1;
+  -webkit-mask-image: linear-gradient(180deg, black 0%, rgba(0, 0, 0, 0.7) 55%, transparent 100%);
+  mask-image: linear-gradient(180deg, black 0%, rgba(0, 0, 0, 0.7) 55%, transparent 100%);
+}
+
+/* ---- layout shell (FINAL proportions, critiqueC P0/P1.1):
+   sidebar clamp(220px,16vw,236px), topbar 64–68px, workspace
+   padding 40px clamp(28px,3vw,48px), content max-width 1440px,
+   section gap 36–44px ---- */
+.desktop-app .kiA-sidebar { width: var(--sidebar-width); }
+.desktop-app .kiA-topbar { height: 68px; }
+.desktop-app .kiA-main {
+  max-width: 1440px;
+  padding: 0 clamp(28px, 3vw, 48px) 40px;
+}
+.desktop-app .kiA { padding-top: 40px; }
+/* deliberate vertical rhythm: 40px between sections (spec 36–44px) */
+.desktop-app .kiA-section { margin-top: 40px; }
+
+/* ---- desktop tiers: the clamp() tokens above already handle
+   narrower desktops (compact sidebar + less horizontal padding);
+   nothing further to force — desktop must not behave like mobile. ---- */
+
+/* ---- mobile isolation: the desktop shell never shows below
+   the mobile breakpoint. (The mobile root is NOT hidden at
+   min-width 768px: App.tsx picks the branch in JS at 820px, so
+   a 768px CSS hide would blank 768–820px tablets where the
+   mobile branch is the live one.) ---- */
+@media (max-width: 767px) {
+  .desktop-app { display: none !important; }
+}
+
+/* ==================================================================
+ * TYPOGRAPHY SYSTEM (spec) — Instrument Serif display, Inter UI,
+ * IBM Plex Mono metadata. 13–14px minimum for secondary desktop
+ * text; metadata 10–11px.
+ * ================================================================== */
+.desktop-app .kiA-display,
+.desktop-app .page-title,
+.desktop-app .section-title {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-weight: 400;
+  color: var(--de-ivory);
+}
+.desktop-app .page-title {
+  font-size: clamp(48px, 5vw, 76px);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+}
+.desktop-app .section-title {
+  font-size: 32px;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+}
+.desktop-app .kiA-section-title,
+.desktop-app .kiA-engine-title,
+.desktop-app .kiA-ed-title {
+  font-size: 32px;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+}
+.desktop-app .card-title {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: -0.025em;
+}
+.desktop-app .body-copy {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.7;
+}
+.desktop-app .eyebrow,
+.desktop-app .kiA-eyebrow {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--de-muted);
+}
+.desktop-app .metadata {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--de-muted);
+}
+/* hero copy is body-copy size; the morning 14px sub shrinks to spec */
+.desktop-app .kiA-hero-sub {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--de-muted);
+}
+/* ---- typography correction (critiqueC P0/P1.1): uppercase mono
+   ONLY for section identifiers and document codes. Sentence case
+   for descriptions, navigation, document metadata. ---- */
+.desktop-app .kiA-evidence {
+  text-transform: none;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+.desktop-app .kiA-nav-label {
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+.desktop-app .kiA-status-text {
+  text-transform: none;
+  letter-spacing: 0.06em;
+}
+.desktop-app .kiA-topbar-status {
+  text-transform: none;
+  letter-spacing: 0.06em;
+}
+.desktop-app .kiA-field-count {
+  text-transform: none;
+  letter-spacing: 0.08em;
+}
+/* nav labels: 12px Inter (morning: 11px) */
+.desktop-app .kiA-nav-label {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 12px;
+}
+
+/* ==================================================================
+ * SIDEBAR — 236px navigation instrument. Brand K/IND 28px serif;
+ * WORKSPACE nav; DISCIPLINES with counts right-aligned;
+ * ARCHIVE footer. Active item: cyan-tinted bg + 2px vertical
+ * cyan marker (kept from the morning build, re-pointed at the
+ * afternoon cyan).
+ * ================================================================== */
+.desktop-app .kiA-brand-mark {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: var(--de-ivory);
+}
+.desktop-app .kiA-brand-sub {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  color: var(--de-muted);
+}
+.desktop-app .kiA-brand-est {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  color: var(--de-muted);
+}
+.desktop-app .kiA-sidebar {
+  background:
+    linear-gradient(180deg, rgba(9, 19, 33, 0.98), rgba(5, 9, 17, 0.98));
+  border-right: 1px solid var(--de-hairline);
+}
+.desktop-app .kiA-nav--active {
+  background: rgba(89, 222, 211, 0.07);
+  box-shadow:
+    inset 2px 0 0 var(--de-cyan),
+    inset 0 0 24px rgba(89, 222, 211, 0.05);
+}
+.desktop-app .kiA-nav--active .kiA-nav-label { color: var(--de-ivory); }
+/* sidebar status: show the ARCHIVE ONLINE text again (morning
+   hid it as a topbar duplicate — the afternoon spec wants it in
+   the sidebar's ARCHIVE zone too). The ARCHIVE label sits on its
+   own row; dot + text + count share the row below. */
+.desktop-app .kiA-status { flex-wrap: wrap; row-gap: 6px; }
+.desktop-app .kiA-status .kiA-section-label { flex: 1 1 100%; }
+.desktop-app .kiA-status-text { display: inline; }
+.desktop-app .kiA-status-count {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  color: var(--de-muted);
+}
+
+/* ==================================================================
+ * TOPBAR — 68px command bar. Breadcrumb + ARCHIVE ONLINE +
+ * [⌘K Search the archive] already exist in Topbar.tsx; here the
+ * bar gets the spec height, hairline and midnight tint.
+ * ================================================================== */
+.desktop-app .kiA-topbar {
+  background: linear-gradient(180deg, rgba(9, 19, 33, 0.92), rgba(9, 19, 33, 0.72));
+  border-bottom: 1px solid var(--de-hairline);
+}
+.desktop-app .kiA-cmdk {
+  border-color: rgba(89, 222, 211, 0.35);
+}
+.desktop-app .kiA-cmdk:hover {
+  border-color: rgba(89, 222, 211, 0.55);
+  box-shadow: 0 0 0 1px rgba(89, 222, 211, 0.35), 0 0 24px rgba(89, 222, 211, 0.18);
+}
+
+/* ==================================================================
+ * BUTTONS — three types only. Primary: cyan fill, dark text.
+ * Secondary: transparent, fine hairline border. Tertiary: quiet
+ * text action. Hover max 2px lift; visible cyan focus outline.
+ * No glowing pills.
+ * ================================================================== */
+.desktop-app .de-btn-primary,
+.desktop-app .de-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 22px;
+  border-radius: 12px;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 180ms var(--de-ease), background-color 180ms var(--de-ease),
+    border-color 180ms var(--de-ease), box-shadow 180ms var(--de-ease);
+}
+.desktop-app .de-btn-primary {
+  background: var(--de-cyan);
+  color: #050911;
+  border: 1px solid var(--de-cyan);
+}
+.desktop-app .de-btn-primary:hover {
+  transform: translateY(-2px);
+  background: #6fe6dc;
+  box-shadow: 0 12px 32px rgba(89, 222, 211, 0.22);
+}
+.desktop-app .de-btn-secondary {
+  background: transparent;
+  color: var(--de-ivory);
+  border: 1px solid var(--de-hairline);
+}
+.desktop-app .de-btn-secondary:hover {
+  transform: translateY(-2px);
+  border-color: #3a526b;
+}
+.desktop-app .de-btn-primary:focus-visible,
+.desktop-app .de-btn-secondary:focus-visible {
+  outline: 2px solid var(--de-cyan);
+  outline-offset: 2px;
+}
+.desktop-app .de-btn-primary:disabled,
+.desktop-app .de-btn-secondary:disabled {
+  opacity: 0.45;
+  cursor: default;
+  transform: none;
+}
+
+/* ==================================================================
+ * P1 — OVERVIEW HERO (FINAL, critiqueC P0/P1.1). 56/44 grid:
+ * minmax(0,1.15fr) minmax(360px,.9fr), align center, gap 48px,
+ * min-height 390px. Fold: hero 390 + stats + 40px section gap
+ * puts the next heading ("Choose your discipline.") comfortably
+ * visible at 900px viewport height — never accidentally cut off.
+ * ================================================================== */
+.desktop-app .kiA-hero {
+  grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.9fr);
+  gap: 48px;
+  min-height: 390px;
+}
+.desktop-app .kiA-hero-title {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: clamp(48px, 5vw, 76px);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  font-weight: 400;
+  color: var(--de-ivory);
+  max-width: none;
+}
+/* BlurText renders word spans; the last word is "connection." */
+.desktop-app .kiA-hero-title .de-blurline > span:last-child {
+  font-style: italic;
+  color: var(--de-cyan);
+}
+.desktop-app .kiA-hero-copy { padding: 28px 0; }
+.desktop-app .kiA-hero-cta {
+  margin-top: 36px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+/* ---- Knowledge Field (FINAL presence, critiqueC P0/P1.1):
+   width 100%, min-height 300px, padding 28px, radius 22px;
+   radial bg circle 50%/50% rgba(36,116,127,.20) → transparent
+   56% over linear 145deg rgba(13,30,45,.96) → rgba(5,13,24,.98).
+   Node symbols 30–36px; discipline names 11–12px; doc counts
+   10px; central K/IND node 58–64px; lines slightly more visible. ---- */
+.desktop-app .kiA-field {
+  width: 100%;
+  min-height: 300px;
+  height: 100%;
+  padding: 28px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(36, 116, 127, 0.20), transparent 56%),
+    linear-gradient(145deg, rgba(13, 30, 45, 0.96), rgba(5, 13, 24, 0.98));
+  border: 1px solid var(--de-hairline);
+  border-radius: 22px;
+}
+.desktop-app .kiA-field-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+.desktop-app .kiA-field-lines line {
+  stroke: var(--line, #59ded3);
+  stroke-width: 1;
+  opacity: 0.22;
+  transition: opacity 300ms var(--de-ease);
+}
+.desktop-app .kiA-field[data-hover="em2"] .fl-em2,
+.desktop-app .kiA-field[data-hover="signals"] .fl-signals,
+.desktop-app .kiA-field[data-hover="fis"] .fl-fis,
+.desktop-app .kiA-field[data-hover="digital"] .fl-digital {
+  opacity: 0.9;
+}
+.desktop-app .kiA-field-centre {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  border: 1px solid rgba(89, 222, 211, 0.28);
+  background: radial-gradient(circle, rgba(89, 222, 211, 0.12), rgba(5, 9, 17, 0.85) 70%);
+  box-shadow: 0 0 40px rgba(89, 222, 211, 0.12);
+  pointer-events: none;
+}
+.desktop-app .kiA-field-centre span {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--de-ivory);
+}
+.desktop-app .kiA-field-glyph {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 34px;
+}
+.desktop-app .kiA-field-code {
+  font-size: 11px;
+}
+.desktop-app .kiA-field-count {
+  font-size: 10px;
+}
+.desktop-app .kiA-field-node {
+  transition: transform 220ms var(--de-ease);
+}
+.desktop-app .kiA-field-node:hover,
+.desktop-app .kiA-field-node:focus-visible {
+  transform: translate(-50%, -50%) scale(1.1);
+}
+.desktop-app .kiA-field-node:hover .kiA-field-glyph,
+.desktop-app .kiA-field-node:focus-visible .kiA-field-glyph {
+  text-shadow:
+    0 0 12px color-mix(in srgb, var(--node) 85%, transparent),
+    0 0 48px color-mix(in srgb, var(--node) 60%, transparent);
+}
+
+/* ---- stats strip (FINAL structure, critiqueC P0/P1.1):
+   border-top 1px rgba(137,167,190,.24); value 400 38px/.95
+   Instrument Serif #F1F0E9; label margin-top 9px, 500 10px/1.4
+   IBM Plex Mono, 0.12em, #8C9CAC, uppercase. Real values only. ---- */
+.desktop-app .kiA-stats {
+  margin: 36px 0 0;
+  gap: 32px;
+}
+.desktop-app .kiA-stat {
+  min-width: 0;
+  flex: 1 1 0;
+  gap: 0;
+  padding: 14px 16px 16px;
+  border-top: 1px solid rgba(137, 167, 190, 0.24);
+  border-bottom: 0;
+  border-left: 0;
+}
+.desktop-app .kiA-stat:first-child { padding-left: 16px; }
+.desktop-app .kiA-stat-num {
+  font-size: 38px;
+  line-height: 0.95;
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-weight: 400;
+  color: var(--de-ivory);
+  font-variant-numeric: tabular-nums;
+}
+.desktop-app .kiA-stat-label {
+  margin-top: 9px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8c9cac;
+}
+
+/* ==================================================================
+ * P1 — SUBJECT CARDS. Spec-exact .subject-card: min-height
+ * 250px, padding 28px, gradient, hairline border, radius 20px;
+ * hover -4px lift, subject border, 0 20px 60px + subject glow.
+ * Content: large symbol (50–65px), editorial name, tagline,
+ * mono doc count, arrow that moves on hover. No filler stats.
+ * ================================================================== */
+.desktop-app .kiA-plates {
+  gap: 20px;
+}
+.desktop-app .kiA-platecard-btn {
+  min-height: 250px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 28px;
+  background: linear-gradient(145deg, rgba(19, 37, 56, 0.96), rgba(8, 18, 31, 0.98));
+  border: 1px solid rgba(145, 175, 198, 0.13);
+  border-radius: 20px;
+  box-shadow: none;
+  transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.desktop-app .kiA-platecard-btn::before { display: none; }
+.desktop-app .kiA-platecard-btn::after {
+  right: -40px;
+  bottom: -40px;
+  width: 260px;
+  height: 260px;
+  opacity: 0.07;
+}
+.desktop-app .kiA-platecard-btn:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--subj) 55%, transparent);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.25),
+    0 0 40px color-mix(in srgb, var(--subj) 9%, transparent);
+}
+.desktop-app .kiA-platecard--lit .kiA-platecard-btn {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--subj) 55%, transparent);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.25),
+    0 0 40px color-mix(in srgb, var(--subj) 9%, transparent);
+}
+.desktop-app .kiA-platecard-glyph {
+  display: block;
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 58px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--subj);
+  margin-bottom: 18px;
+  text-shadow: 0 0 32px color-mix(in srgb, var(--subj) 35%, transparent);
+}
+.desktop-app .kiA-platecard-name {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  color: var(--de-ivory);
+  margin: 0 0 8px;
+}
+.desktop-app .kiA-platecard-tag {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--de-muted);
+  margin: 0 0 22px;
+}
+.desktop-app .kiA-platecard-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 18px;
+  border-top: 1px solid rgba(145, 175, 198, 0.13);
+}
+.desktop-app .kiA-platecard-count {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--de-muted);
+}
+.desktop-app .kiA-platecard-count strong {
+  color: var(--de-ivory);
+  font-weight: 500;
+}
+.desktop-app .kiA-platecard-arrow {
+  font-size: 16px;
+  color: var(--subj);
+  transition: transform 280ms var(--de-ease);
+}
+.desktop-app .kiA-platecard-btn:hover .kiA-platecard-arrow {
+  transform: translateX(4px);
+}
+/* the old plate chrome is gone for good (top row, stats, CTA) */
+.desktop-app .kiA-platecard-top,
+.desktop-app .kiA-platecard-stats,
+.desktop-app .kiA-platecard-cta,
+.desktop-app .kiA-platecard-plate { display: none; }
+
+/* ---- resume: keep the morning card, re-point at the new tokens;
+   its button is now the plain primary (no specular glow) ---- */
+.desktop-app .kiA-activity {
+  background: linear-gradient(145deg, rgba(19, 37, 56, 0.96), rgba(8, 18, 31, 0.98));
+  border: 1px solid rgba(145, 175, 198, 0.13);
+  border-radius: 22px;
+}
+.desktop-app .kiA-resume-empty {
+  background: linear-gradient(145deg, rgba(19, 37, 56, 0.96), rgba(8, 18, 31, 0.98));
+  border: 1px solid rgba(145, 175, 198, 0.13);
+  border-radius: 22px;
+}
+.desktop-app .kiA-activity-title {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-weight: 400;
+  font-size: 26px;
+}
+
+/* ==================================================================
+ * P2 — PDF READER (critiqueC, 2026-11-06). Scoped to
+ * .reader-shell.kiA-v2.kiA-v2 — the desktop reader root. The mobile reader
+ * uses .ap-reader classes and never matches. Three zones:
+ * 200px thumbnail rail · centre PDF stage · 310px study tools.
+ * Document header 68px; bottom controls 52px. The reader
+ * environment is deliberately more subdued / less atmospheric than
+ * the Overview (subdued blue, no Aurora). PDF rendering, text,
+ * pagination and zoom logic are untouched — only chrome/layout.
+ * ================================================================== */
+.reader-shell.kiA-v2.kiA-v2 {
+  grid-template-rows: 68px minmax(0, 1fr) 52px;
+  background:
+    radial-gradient(ellipse 60% 10% at 50% 0%, rgba(45, 75, 128, 0.12), transparent 45%),
+    linear-gradient(135deg, #050911 0%, #091321 48%, #07101b 100%);
+}
+.reader-shell.kiA-v2.kiA-v2 .ke-reader-progress { top: 68px; }
+.reader-shell.kiA-v2.kiA-v2 .ke-reader-header {
+  min-height: 68px;
+  height: 68px;
+  background: linear-gradient(180deg, #0c1322, #080d16);
+  border-bottom: 1px solid rgba(137, 167, 190, 0.25);
+}
+/* document metadata is metadata: sentence case, not uppercase mono */
+.reader-shell.kiA-v2.kiA-v2 .ke-reader-submeta {
+  text-transform: none;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+  color: #8c9cac;
+}
+.reader-shell.kiA-v2.kiA-v2 .ke-reader-title-text {
+  font-size: 15px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-workspace {
+  grid-template-columns: 200px minmax(0, 1fr) 310px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-workspace.no-left {
+  grid-template-columns: 0 minmax(0, 1fr) 310px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-workspace.no-right {
+  grid-template-columns: 200px minmax(0, 1fr) 0;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-workspace.no-left.no-right {
+  grid-template-columns: 0 minmax(0, 1fr) 0;
+}
+.reader-shell.kiA-v2.kiA-v2.reading .reader-workspace {
+  grid-template-columns: 0 minmax(0, 1fr) 0;
+}
+.reader-shell.kiA-v2.kiA-v2.reading {
+  grid-template-rows: 68px minmax(0, 1fr) 52px;
+}
+/* thumbnail rail: single column, full-width thumbs so each
+   thumbnail visibly matches its page */
+.reader-shell.kiA-v2.kiA-v2 .reader-thumb-grid {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-panel-left {
+  padding: 14px 12px;
+}
+/* centre stage: padding 28px 36px 48px; radial + #080F19; page
+   max-width min(100%,900px), white page, spec shadow. The PDF
+   renderer determines actual page dimensions — no fixed aspect
+   ratio is forced via CSS. */
+.reader-shell.kiA-v2.kiA-v2 .reader-document {
+  padding: 28px 36px 48px;
+  background:
+    radial-gradient(ellipse 50% 20% at 50% 0%, rgba(34, 70, 99, 0.18), transparent 65%),
+    #080f19;
+  box-shadow: none;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-doc-page {
+  width: 100%;
+  max-width: min(100%, 900px);
+  margin-inline: auto;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-doc-page .ke-reader-page {
+  background: #fff;
+  border: none;
+  box-shadow:
+    0 20px 70px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+/* study tools: 310px rail, four tabs, each a full working area */
+.reader-shell.kiA-v2.kiA-v2 .reader-panel-right {
+  padding: 14px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-tabs button {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  padding: 8px 2px;
+  white-space: nowrap;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-find {
+  position: relative;
+  margin-bottom: 10px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-find input {
+  width: 100%;
+  height: 36px;
+  padding: 0 32px 0 12px;
+  background: #0e131d;
+  border: 1px solid #273449;
+  border-radius: 9px;
+  color: #f1f0e9;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 12.5px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-find input:focus {
+  outline: none;
+  border-color: rgba(89, 222, 211, 0.6);
+  box-shadow: 0 0 0 1px rgba(89, 222, 211, 0.4);
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-find input::placeholder { color: #6b7585; }
+.reader-shell.kiA-v2.kiA-v2 .reader-find-clear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border: 0;
+  background: none;
+  color: #8997a8;
+  cursor: pointer;
+  font-size: 11px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-tab-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-tool-row--split {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: default;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-tool-row-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: block;
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-toc-row--sub { padding-left: 16px; }
+.reader-shell.kiA-v2.kiA-v2 .reader-toc-row--sub .row-title { font-weight: 500; }
+.reader-shell.kiA-v2.kiA-v2 .reader-note-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
+}
+.reader-shell.kiA-v2.kiA-v2 .note-edit,
+.reader-shell.kiA-v2.kiA-v2 .note-save {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: #59ded3;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: Inter, system-ui, sans-serif;
+}
+.reader-shell.kiA-v2.kiA-v2 .note-del {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: #8997a8;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: Inter, system-ui, sans-serif;
+  flex: none;
+}
+.reader-shell.kiA-v2.kiA-v2 .note-del:hover { color: #f1f0e9; }
+.reader-shell.kiA-v2.kiA-v2 .reader-note-edit,
+.reader-shell.kiA-v2.kiA-v2 .reader-hl-input {
+  width: 100%;
+  background: #141c2a;
+  border: 1px solid #273449;
+  border-radius: 8px;
+  color: #f1f0e9;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 12.5px;
+  padding: 8px 10px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-note-edit {
+  min-height: 64px;
+  resize: vertical;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-hl-input { height: 36px; }
+.reader-shell.kiA-v2.kiA-v2 .reader-note-edit:focus,
+.reader-shell.kiA-v2.kiA-v2 .reader-hl-input:focus {
+  outline: none;
+  border-color: rgba(89, 222, 211, 0.6);
+}
+.reader-shell.kiA-v2.kiA-v2 .note-page {
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+.reader-shell.kiA-v2.kiA-v2 .note-page:hover { color: #59ded3; }
+.reader-shell.kiA-v2.kiA-v2 .reader-bottombar .ke-reader-btn {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+/* bottom controls are 52px (spec): knowledge-instrument sets
+   height/min-height 48px on the doubled selector — beat it at
+   equal specificity, later in the file. */
+.reader-shell.kiA-v2.kiA-v2 .reader-bottombar {
+  height: 52px;
+  min-height: 52px;
+}
+
+/* ==================================================================
+ * P3 — LIBRARY (critiqueC, 2026-11-06). Subject hero 65/35 +
+ * editorial document cards. Same structural template for all four
+ * disciplines; the artwork (glyph + motif + accent) changes per
+ * subject. Cards use REAL document data/excerpts only.
+ * ================================================================== */
+/* subject hero: grid 1.5fr .8fr, align center, min-height 210px,
+   padding 32px 36px, overflow hidden; bg radial (subject accent
+   12% at 85% 50% → transparent 38%) over linear 135deg
+   #111A25 → #09111B. The old accent tick is dropped here — the
+   art side carries the identity. */
+.desktop-app .kiA-head--surfaced {
+  display: grid;
+  grid-template-columns: 1.5fr 0.8fr;
+  align-items: center;
+  gap: 32px;
+  min-height: 210px;
+  padding: 32px 36px;
+  overflow: hidden;
+  border: 1px solid rgba(145, 175, 198, 0.13);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 85% 50%, color-mix(in srgb, var(--ed-accent, #59ded3) 12%, transparent), transparent 38%),
+    linear-gradient(135deg, #111a25 0%, #09111b 100%);
+}
+.desktop-app .kiA-head--surfaced::after { display: none; }
+.desktop-app .kiA-ed-hero-main { min-width: 0; }
+.desktop-app .kiA-head--surfaced .kiA-ed-title { max-width: none; }
+.desktop-app .kiA-ed-hero-art {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 170px;
+  overflow: hidden;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--ed-accent, #59ded3) 14%, transparent), transparent 62%);
+}
+.desktop-app .kiA-ed-hero-glyph {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 120px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--ed-accent, #59ded3);
+  opacity: 0.14;
+}
+.desktop-app .kiA-ed-hero-motif { position: absolute; inset: 0; pointer-events: none; }
+/* FIS: very fine manuscript-inspired line motif */
+.desktop-app .kiA-ed-hero-motif--fis {
+  background:
+    repeating-linear-gradient(0deg, transparent 0 13px, rgba(230, 179, 108, 0.10) 13px 14px);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 30%, black 85%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, black 30%, black 85%, transparent 100%);
+}
+/* Digital: fine circuit-dot field */
+.desktop-app .kiA-ed-hero-motif--digital {
+  background-image: radial-gradient(rgba(118, 214, 160, 0.22) 1px, transparent 1.5px);
+  background-size: 18px 18px;
+  opacity: 0.5;
+}
+/* Signals: waveform lines (inline SVG, subject accent) */
+.desktop-app .kiA-ed-hero-motif--signals {
+  width: 100%;
+  height: 80px;
+  color: var(--ed-accent, #8baaff);
+  opacity: 0.3;
+  align-self: center;
+}
+/* EM2: equation fragments, low opacity */
+.desktop-app .kiA-ed-equation {
+  position: absolute;
+  font-family: 'Instrument Serif', Georgia, serif;
+  color: var(--ed-accent, #59ded3);
+  opacity: 0.18;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* editorial document cards (P3): min-height 245px, padding 24px,
+   radius 18px, subject border; 2-col grid at 1440px, 3-col only
+   when each card keeps sufficient width (≥1700px). */
+.desktop-app .kiA-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+@media (min-width: 1700px) {
+  .desktop-app .kiA-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.desktop-app .kiA-ed-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 245px;
+  padding: 24px;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--subj, #59ded3) 25%, transparent);
+  background: linear-gradient(145deg, #142238 0%, #091321 100%);
+  cursor: pointer;
+}
+.desktop-app .kiA-ed-watermark {
+  position: absolute;
+  right: 56px;
+  top: 10px;
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 56px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--subj, #59ded3);
+  opacity: 0.08;
+  pointer-events: none;
+}
+.desktop-app .kiA-ed-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.desktop-app .kiA-ed-plateno {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--de-muted);
+}
+.desktop-app .kiA-ed-card .kiA-bookmark {
+  position: static;
+  flex: none;
+}
+.desktop-app .kiA-ed-card-title {
+  margin: 0 0 6px;
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--de-ivory);
+}
+.desktop-app .kiA-ed-card-class {
+  margin: 0 0 12px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--de-muted);
+}
+.desktop-app .kiA-ed-card-desc {
+  flex: 1 1 auto;
+  margin: 0 0 14px;
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: #a0adba;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.desktop-app .kiA-ed-card .kiA-card-progress { margin: 0 0 14px; }
+.desktop-app .kiA-ed-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid rgba(145, 175, 198, 0.13);
+}
+.desktop-app .kiA-ed-card-meta {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--de-muted);
+  min-width: 0;
+}
+.desktop-app .kiA-ed-card-open {
+  flex: none;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--subj, #59ded3);
+}
+
+/* ==================================================================
+ * P4 — SEARCH (critiqueC, 2026-11-06). Composition: heading ~44px,
+ * 56px input, 16px text, cyan focus, ⌘K, clear button; results as
+ * ONE full-width row: grid 76px minmax(0,1fr) 160px, min-height
+ * 132px, padding 18px 22px, title 19px/1.35/550. More space between
+ * heading/input, input/filters, filters/results. States: empty,
+ * typing, loading, results, no-results with suggestions, filtered,
+ * error. Interaction (Ctrl+K, Escape, arrows, Enter) lives in
+ * App.tsx and is unchanged.
+ * ================================================================== */
+.desktop-app .kiA-page--search .kiA-head { margin-bottom: 48px; }
+.desktop-app .kiA-engine-title {
+  font-size: 44px;
+  line-height: 1.05;
+  max-width: none;
+}
+.desktop-app .kiA-search-sub {
+  margin: 14px 0 0;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.7;
+  color: var(--de-muted);
+}
+.desktop-app .kiA-searchwrap { margin-bottom: 32px; }
+.desktop-app .kiA-input {
+  height: 56px;
+  padding: 0 128px 0 24px;
+  font-size: 16px;
+  background: linear-gradient(180deg, rgba(17, 34, 52, 0.95), rgba(9, 19, 32, 0.97));
+  border: 1px solid rgba(137, 167, 190, 0.16);
+  color: var(--de-ivory);
+}
+.desktop-app .kiA-input:focus {
+  outline: none;
+  border-color: #59ded3;
+  box-shadow: 0 0 0 1px rgba(89, 222, 211, 0.5), 0 18px 50px -24px rgba(0, 0, 0, 0.8);
+}
+.desktop-app .kiA-clear {
+  position: absolute;
+  right: 62px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  color: var(--de-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.desktop-app .kiA-clear:hover { color: var(--de-ivory); background: rgba(241, 240, 233, 0.06); }
+.desktop-app .kiA-filterbar { margin-bottom: 32px; }
+.desktop-app .kiA-evidence { margin: 0 0 24px; }
+/* one full-width result row */
+.desktop-app .kiA-hits {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.desktop-app .kiA-hit {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) 160px;
+  align-items: center;
+  gap: 22px;
+  min-height: 132px;
+  padding: 18px 22px;
+  margin-bottom: 0;
+  background: linear-gradient(120deg, rgba(17, 34, 52, 0.95), rgba(9, 19, 32, 0.97));
+  border: 1px solid rgba(137, 167, 190, 0.16);
+  border-radius: 16px;
+}
+.desktop-app .kiA-hit-thumb {
+  width: 76px;
+  height: 96px;
+  border-radius: 5px;
+}
+.desktop-app .kiA-hit-thumb img { object-fit: contain; }
+.desktop-app .kiA-hit-title {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 19px;
+  font-weight: 550;
+  line-height: 1.35;
+  color: var(--de-ivory);
+}
+.desktop-app .kiA-hit-plate {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--de-muted);
+}
+.desktop-app .kiA-hit-meta {
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: var(--de-muted);
+}
+.desktop-app .kiA-hit-preview {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #8c9cac;
+}
+.desktop-app .kiA-hit-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  text-align: right;
+}
+.desktop-app .kiA-hit-open {
+  white-space: nowrap;
+  color: var(--de-cyan);
+}
+.desktop-app .kiA-hit-matches {
+  white-space: nowrap;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--de-muted);
+}
+.desktop-app .kiA-hit-num {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--de-muted);
+}
+/* skeletons match the new row geometry */
+.desktop-app .kiA-skel {
+  grid-template-columns: 76px 1fr;
+  gap: 22px;
+  min-height: 132px;
+  padding: 18px 22px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(137, 167, 190, 0.16);
+  border-radius: 16px;
+}
+.desktop-app .kiA-skel-thumb { width: 76px; height: 96px; }
+/* no-results suggestions + error retry */
+.desktop-app .kiA-empty-suggest-label {
+  margin: 20px 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--de-muted);
+}
+.desktop-app .kiA-empty-suggest {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.desktop-app .kiA-error { border-style: solid; border-color: rgba(230, 170, 83, 0.4); }
+.desktop-app .kiA-retry { margin-top: 20px; }
+
+/* ---- reduced motion: kill the continuous background animation
+   and the BlurText travel (BlurText itself honours the user
+   setting via MotionConfig reducedMotion="user") ---- */
+@media (prefers-reduced-motion: reduce) {
+  .desktop-app .kiA-hero-aurora { display: none; }
+  .desktop-app .kiA-field-particles { display: none; }
+  .desktop-app .kiA-platecard-btn,
+  .desktop-app .de-btn-primary,
+  .desktop-app .de-btn-secondary {
+    transition: none;
+  }
+}

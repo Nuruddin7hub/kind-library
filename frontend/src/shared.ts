@@ -109,17 +109,32 @@ export function subjectOf(id: string): Subject | undefined {
   return SUBJECTS.find(s => s.id === id);
 }
 
-/** OBSIDIAN ATLAS palette (ChatGPT Round A desktop redesign, 2026-11-05).
- *  DESKTOP ONLY — mobile views keep the legacy SUBJECTS colors above
- *  byte-identical, so desktop components must use v2SubjectColor() while
- *  every mobile component keeps reading SUBJECTS[].color.
- *  Spec tokens: EM2 #59E4D2 · Signals #80A8FF · FIS #E6AD65 · Digital #69D7A8. */
+/** FIELD EDITION palette (ChatGPT Round A desktop redesign,
+ * afternoon loop 2026-11-06, critiqueA-1420 spec). DESKTOP ONLY —
+ * mobile views keep the legacy SUBJECTS colors above byte-identical,
+ * so desktop components must use v2SubjectColor() while every mobile
+ * component keeps reading SUBJECTS[].color. Spec tokens:
+ * EM2 #59DED3 (cyan) · Signals #8BAAFF · FIS #E6AA53 ·
+ * Digital #76D6A0. */
 export const V2_SUBJECT_COLORS: Record<string, string> = {
-  em2: '#59E4D2',
-  signals: '#80A8FF',
-  fis: '#E6AD65',
-  digital: '#69D7A8',
+  em2: '#59DED3',
+  signals: '#8BAAFF',
+  fis: '#E6AA53',
+  digital: '#76D6A0',
 };
+
+/** Subject glyph shorthand (spec §11): EM2 ∑ · Signals ∿ · FIS Φ ·
+ *  Digital ⌘ — large editorial marks, Φ at 94px. */
+export const DISCIPLINE_GLYPHS: Record<string, string> = {
+  em2: '∑',
+  signals: '∿',
+  fis: 'Φ',
+  digital: '⌘',
+};
+
+export function disciplineGlyph(id: string): string {
+  return DISCIPLINE_GLYPHS[id] ?? '·';
+}
 
 /** Desktop (v2.0) subject color — the exact spec identity tokens. */
 export function v2SubjectColor(id: string): string {
