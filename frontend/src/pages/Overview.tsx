@@ -1,12 +1,14 @@
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import SpotlightCard from '../bits/SpotlightCard';
 import CountUp from '../bits/CountUp';
-import SpecularButton from '../bits/SpecularButton';
 import Aurora from '../bits/Aurora';
-import MagnetLines from '../bits/MagnetLines';
-import SplitText from '../components/SplitText';
+import Particles from '../bits/Particles';
+import BlurText from '../bits/BlurText';
+import Magnet from '../bits/Magnet';
+import AnimatedContent from '../bits/AnimatedContent';
 import {
   SUBJECTS,
+  disciplineGlyph,
   getSubjectCounts,
   pageImageUrl,
   posKey,
@@ -25,127 +27,128 @@ interface OverviewProps {
   onGoSearch: () => void;
 }
 
-const ROMAN = ['I', 'II', 'III', 'IV'];
-
 /* ------------------------------------------------------------------ */
-/* Atlas map plate: graticule frame, compass rose, four discipline      */
-/* nodes in subject colors. Particles drift behind (clipped canvas).   */
+/* Discipline field (critique §4, 2026-11-06): the signature hero      */
+/* object — a 420px field where React Bits Particles live (inside the  */
+/* field ONLY, never site-wide). Hovering a node illuminates it and    */
+/* shows its real count + discipline name; the matching plate below    */
+/* lights up too (P1 hero interaction). Replaces the 2026-11-05       */
+/* AtlasMap (Magnet Lines + SVG graticule).                           */
 /* ------------------------------------------------------------------ */
 
-function AtlasMap({
+const FIELD_NODES: Array<{ x: number; y: number }> = [
+  { x: 27, y: 24 }, // EM2
+  { x: 73, y: 27 }, // Signals
+  { x: 30, y: 72 }, // FIS
+  { x: 71, y: 70 }, // Digital
+];
+
+function DisciplineField({
   counts,
   onGoSubject,
   reducedMotion,
+  hovered,
+  onHover,
 }: {
   counts: Record<string, number>;
   onGoSubject: (subj: string) => void;
   reducedMotion: boolean;
+  hovered: string | null;
+  onHover: (subj: string | null) => void;
 }): ReactNode {
-  const nodes = SUBJECTS.map((s, i) => ({
-    id: s.id,
-    code: s.code,
-    name: s.name,
-    color: v2SubjectColor(s.id),
-    count: counts[s.id] ?? 0,
-    cx: [108, 332, 118, 322][i],
-    cy: [84, 96, 252, 244][i],
-  }));
-  const links: Array<[number, number]> = [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]];
-  const total = nodes.reduce((a, n) => a + n.count, 0);
+  const total = SUBJECTS.reduce((a, s) => a + (counts[s.id] ?? 0), 0);
+  const hoveredSubject = hovered ? SUBJECTS.find(s => s.id === hovered) : null;
   return (
-    <div className="kiA-mapframe">
-      {/* Magnet Lines — refined magnetic field around the four-discipline
-          viz (spec: very thin lines, restrained interaction, cyan
-          highlights, low contrast, no rainbow). */}
+    <div className="kiA-field" role="group" aria-label="Discipline field — four disciplines" data-hover={hovered ?? ''}>
+      {/* Connection lines: centre K/IND mark → each node. The hovered
+          discipline's line illuminates (field-edition.css, via
+          data-hover); the rest stay faint. */}
+      <svg className="kiA-field-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        {SUBJECTS.map((s, i) => (
+          <line
+            key={s.id}
+            className={`fl-${s.id}`}
+            x1="50" y1="50"
+            x2={FIELD_NODES[i].x} y2={FIELD_NODES[i].y}
+            vectorEffect="non-scaling-stroke"
+            style={{ '--line': v2SubjectColor(s.id) } as CSSProperties}
+          />
+        ))}
+      </svg>
+      <div className="kiA-field-centre" aria-hidden="true"><span>K/IND</span></div>
+      {/* Particles — spec §4 verbatim: 68 particles, discipline colors,
+          connections, hover attract. Field only. */}
       {!reducedMotion && (
-        <div className="kiA-map-magnet" aria-hidden="true">
-          <MagnetLines
-            spacing={26}
-            lineColor="rgba(166, 178, 194, 0.28)"
-            accentColor="#59E4D2"
-            lineWidth={1}
-            lineHeight={15}
-            mode="attract"
-            shape="line"
-            radius={90}
-            fade={0.55}
-            edgeFade={0.35}
-            stretch={1}
-            reach={0.6}
-            scatter={0.2}
-            inertia={0.85}
-            clickPulse={false}
-            intro={false}
-            idle={false}
+        <div className="kiA-field-particles" aria-hidden="true">
+          <Particles
+            particleCount={68}
+            particleSpread={7}
+            speed={0.08}
+            particleColors={['#59ded3', '#8baaff', '#e6aa53', '#76d6a0']}
+            /* DEVIATION from spec §4: spec says baseSize 2, but this
+               component's scale is ~100 (registry default; camera 20) —
+               baseSize 2 renders at ~1% alpha, i.e. invisible (verified
+               by pixel-sampling the live canvas: 0 lit pixels). 60 keeps
+               the dots restrained in a 420px field while actually
+               visible. All other spec values verbatim. */
+            particleBaseSize={60}
+            sizeRandomness={0.7}
+            shape="circle"
+            glow={0.35}
+            twinkle={0.15}
+            depthOfField={0.2}
+            connections
+            connectionDistance={92}
+            drift="none"
+            moveParticlesOnHover
+            hoverEffect="attract"
+            particleHoverFactor={0.3}
+            hoverRadius={110}
+            clickBurst
+            alphaParticles
+            opacity={0.55}
           />
         </div>
       )}
-      <div className="kiA-map-head">
-        <span>DISCIPLINE MAP</span>
-        <span><strong>04 ACTIVE</strong> · {total} DOCUMENTS</span>
+      <div className="kiA-field-head">
+        <span>DISCIPLINE FIELD</span>
+        <span><strong>04 active</strong> · {total} documents</span>
       </div>
-      <svg className="kiA-atlasmap" viewBox="0 0 440 340" role="img" aria-label="Atlas of the four disciplines">
-        <defs>
-          <pattern id="kiA-grat" width="24" height="24" patternUnits="userSpaceOnUse">
-            <path d="M 24 0 H 0 V 24" fill="none" stroke="rgba(216,209,194,0.10)" strokeWidth="1" />
-          </pattern>
-          {nodes.map(n => (
-            <radialGradient key={`halo-${n.id}`} id={`kiA-ahalo-${n.id}`}>
-              <stop offset="0%" stopColor={n.color} stopOpacity="0.5" />
-              <stop offset="55%" stopColor={n.color} stopOpacity="0.14" />
-              <stop offset="100%" stopColor={n.color} stopOpacity="0" />
-            </radialGradient>
-          ))}
-        </defs>
-        <rect x={10} y={10} width={420} height={320} fill="url(#kiA-grat)" />
-        <rect x={10} y={10} width={420} height={320} fill="none" stroke="rgba(216,209,194,0.35)" strokeWidth="1.2" />
-        {/* compass rose */}
-        <g className="kiA-compass" transform="translate(392,52)" aria-hidden="true">
-          <circle r={20} fill="none" stroke="rgba(216,209,194,0.4)" strokeWidth="1" />
-          <circle r={14} fill="none" stroke="rgba(216,209,194,0.22)" strokeWidth="1" />
-          <path d="M 0 -19 L 4 0 L 0 19 L -4 0 Z" fill="rgba(216,209,194,0.75)" />
-          <path d="M -19 0 L 0 -4 L 19 0 L 0 4 Z" fill="rgba(216,209,194,0.4)" />
-          <text y={-26} textAnchor="middle" className="kiA-compass-n">N</text>
-        </g>
-        {links.map(([a, b], i) => (
-          <line
-            key={i}
-            x1={nodes[a].cx} y1={nodes[a].cy}
-            x2={nodes[b].cx} y2={nodes[b].cy}
-            stroke="rgba(216,209,194,0.20)"
-            strokeWidth="1"
-            strokeDasharray="3 5"
-          />
-        ))}
-        {nodes.map(n => (
-          <g
-            key={n.id}
-            className="kiA-anode"
-            role="button"
-            tabIndex={0}
-            aria-label={`${n.name} — ${n.count} documents`}
-            onClick={() => onGoSubject(n.id)}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onGoSubject(n.id); } }}
+      {SUBJECTS.map((s, i) => {
+        const color = v2SubjectColor(s.id);
+        const pos = FIELD_NODES[i];
+        return (
+          <button
+            key={s.id}
+            type="button"
+            className="kiA-field-node"
+            style={{ left: `${pos.x}%`, top: `${pos.y}%`, '--node': color } as CSSProperties}
+            onClick={() => onGoSubject(s.id)}
+            onMouseEnter={() => onHover(s.id)}
+            onMouseLeave={() => onHover(null)}
+            onFocus={() => onHover(s.id)}
+            onBlur={() => onHover(null)}
+            aria-label={`${s.name} — ${counts[s.id] ?? 0} documents`}
           >
-            <circle cx={n.cx} cy={n.cy} r={36} fill={`url(#kiA-ahalo-${n.id})`} />
-            <circle cx={n.cx} cy={n.cy} r={12} fill="none" stroke={n.color} strokeWidth="1.4" />
-            <circle cx={n.cx} cy={n.cy} r={12} fill="none" stroke={n.color} strokeWidth="1" opacity={0.35}
-              transform={`rotate(0 ${n.cx} ${n.cy})`} className={reducedMotion ? undefined : 'kiA-anode-spin'}
-              style={{ transformOrigin: `${n.cx}px ${n.cy}px` }} />
-            <circle cx={n.cx} cy={n.cy} r={5} fill={n.color} />
-            <text x={n.cx} y={n.cy + 34} textAnchor="middle" className="kiA-anode-label">
-              {n.code}
-            </text>
-            <text x={n.cx} y={n.cy + 48} textAnchor="middle" className="kiA-anode-count" style={{ fill: n.color }}>
-              {n.count} DOCS
-            </text>
-          </g>
-        ))}
-        <text x={22} y={324} className="kiA-map-caption">04 DISCIPLINES</text>
-        <text x={418} y={324} textAnchor="end" className="kiA-map-caption">
-          {total} DOCUMENTS
-        </text>
-      </svg>
+            <span className="kiA-field-glyph" aria-hidden="true">{disciplineGlyph(s.id)}</span>
+            <span className="kiA-field-code">{s.code}</span>
+            <span className="kiA-field-count">{counts[s.id] ?? 0} docs</span>
+          </button>
+        );
+      })}
+      <div className="kiA-field-detail" aria-live="polite">
+        {hoveredSubject ? (
+          <span>
+            <strong style={{ ['--node' as string]: v2SubjectColor(hoveredSubject.id) } as CSSProperties}>
+              {hoveredSubject.code}
+            </strong>
+            {' — '}
+            {counts[hoveredSubject.id] ?? 0} documents · {hoveredSubject.short}
+          </span>
+        ) : (
+          <span>04 disciplines · {total} documents</span>
+        )}
+      </div>
     </div>
   );
 }
@@ -154,12 +157,12 @@ function AtlasMap({
 /* Overview page — THE GRAND ARCHIVE (ATLAS edition, 2026-11-05)       */
 /* ------------------------------------------------------------------ */
 
-function Stat({ value, label, loaded }: { value: number; label: string; loaded: boolean }) {
+function Stat({ value, label, loaded, pad2 }: { value: number; label: string; loaded: boolean; pad2?: boolean }) {
   return (
     <div className="kiA-stat" role="listitem">
       <span className="kiA-stat-num">
         {loaded
-          ? <CountUp to={value} duration={0.9} trigger="load" separator="," className="kiA-stat-count" />
+          ? <CountUp to={value} duration={0.9} trigger="load" separator="," prefix={pad2 && value < 10 ? '0' : ''} className="kiA-stat-count" />
           : '—'}
       </span>
       <span className="kiA-stat-label">{label}</span>
@@ -176,15 +179,12 @@ export default function Overview({ files, onOpenReader, onGoSubject, onGoSearch 
   const [reduceMotion] = useState(
     () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
   );
+  // P1 hero interaction: hovering a discipline node lights its plate.
+  const [fieldHover, setFieldHover] = useState<string | null>(null);
 
   const counts = useMemo(() => getSubjectCounts(files), [files]);
   const totalDocs = useMemo(() => Object.values(counts).reduce((a, b) => a + b, 0), [counts]);
   const totalPages = useMemo(() => files.reduce((s, f) => s + (f.pages || 0), 0), [files]);
-  const subjectPages = useMemo(() => {
-    const m: Record<string, number> = {};
-    for (const f of files) m[f.subj] = (m[f.subj] ?? 0) + (f.pages || 0);
-    return m;
-  }, [files]);
   const loaded = files.length > 0;
 
   const filesByKey = useMemo(() => {
@@ -277,70 +277,170 @@ export default function Overview({ files, onOpenReader, onGoSubject, onGoSearch 
 
   return (
     <div className="kiA">
-      {/* 1 — Hero: "Knowledge, connected." (OBSIDIAN ATLAS, 2026-11-05) */}
+      {/* 1 — Hero: "Knowledge, connected." (KNOWLEDGE INSTRUMENT, 2026-11-06) */}
       <header className="kiA-hero">
-        {/* Aurora — restrained flowing light inside the hero only:
-            cyan + muted blue + deep indigo, speed 0.2, opacity 0.22, 2 layers */}
+        {/* Aurora — spec §2 verbatim, behind the hero only (right 72%,
+            520px): an illuminated archive chamber, not a landing page. */}
         {!reduceMotion && (
           <div className="kiA-hero-aurora" aria-hidden="true">
             <Aurora
-              colorStops={['#59E4D2', '#4A7FBF', '#1B2B4A']}
-              amplitude={1}
-              blend={0.5}
-              speed={0.2}
-              height={0.5}
+              colorStops={['#0b2630', '#123f4b', '#071722']}
+              amplitude={0.8}
+              blend={0.72}
+              speed={0.35}
+              height={0.58}
+              scale={1.15}
+              glow={0.42}
+              brightness={0.7}
               layers={2}
-              opacity={0.18}
-              mouseInteraction={false}
+              mouseInteraction
+              opacity={0.34}
               intro={false}
             />
           </div>
         )}
         <div className="kiA-hero-copy">
-          <p className="kiA-eyebrow">K/IND / THE KNOWLEDGE INSTRUMENT</p>
-          <p className="kiA-eyebrow">REGISTRY NO. 001 · YOUR PERSONAL STUDY ARCHIVE</p>
+          <p className="kiA-eyebrow">YOUR PERSONAL KNOWLEDGE SYSTEM</p>
+          {/* BlurText (React Bits, verified) — hero headline, focus-to-
+              sharp reveal once on load; "connection." is italic + cyan
+              via the last-word rule in field-edition.css */}
           <h1 className="kiA-display kiA-hero-title">
-            <SplitText
-              lines={[
-                { text: 'Knowledge,' },
-                { text: 'connected.', italic: true },
-              ]}
+            <BlurText
+              text="Your knowledge lives in connection."
+              trigger="load"
+              animateBy="words"
+              delay={90}
+              stepDuration={0.3}
+              blur={10}
+              distance={40}
+              className="de-blurline"
             />
           </h1>
           <p className="kiA-hero-sub">
             Four disciplines. One connected archive. Every page within reach.
           </p>
           <div className="kiA-hero-cta">
-            <SpecularButton
-              size="lg"
-              className="kiA-cta"
-              onClick={() => onGoSubject('all')}
-              baseColor="#1a2b45"
-              lineColor="#59e4d2"
-              textColor="#f1eee6"
-              glow={0.8}
-            >
-              Explore the archive&nbsp;&nbsp;→
-            </SpecularButton>
-            <button type="button" className="kiA-cta-ghost" onClick={onGoSearch}>
+            {/* Magnet on the primary CTA only, very slight */}
+            <Magnet magnetStrength={0.6} maxOffset={6}>
+              <button
+                type="button"
+                className="de-btn-primary"
+                onClick={() => onGoSubject('all')}
+              >
+                Explore the archive&nbsp;&nbsp;→
+              </button>
+            </Magnet>
+            <button type="button" className="de-btn-secondary" onClick={onGoSearch}>
               Search the archive
             </button>
           </div>
         </div>
-        <div className="kiA-hero-map">
-          <AtlasMap counts={counts} onGoSubject={onGoSubject} reducedMotion={reduceMotion} />
+        <div className="kiA-hero-field">
+          <DisciplineField
+            counts={counts}
+            onGoSubject={onGoSubject}
+            reducedMotion={reduceMotion}
+            hovered={fieldHover}
+            onHover={setFieldHover}
+          />
         </div>
       </header>
 
-      {/* Statistics strip — real backend counts, 38px serif numerals */}
-      <div className="kiA-stats" role="list" aria-label="Archive statistics">
-        <Stat value={totalDocs} label="DOCUMENTS" loaded={loaded} />
-        <Stat value={totalPages} label="PAGES" loaded={loaded} />
-        <Stat value={SUBJECTS.length} label="DISCIPLINES" loaded={loaded} />
-        <Stat value={bookmarkCount} label="SAVED" loaded={loaded} />
-      </div>
+      {/* Statistics strip — real backend counts, 42px data objects (§16),
+          Count Up once on load only */}
+      <AnimatedContent
+        className="kiA-stats"
+        trigger="mount"
+        distance={24}
+        duration={0.7}
+        ease="power3.out"
+        initialOpacity={0}
+        threshold={0.1}
+        once
+      >
+        <div role="list" aria-label="Archive statistics" style={{ display: 'contents' }}>
+          <Stat value={totalDocs} label="DOCUMENTS" loaded={loaded} />
+          <Stat value={totalPages} label="PAGES" loaded={loaded} />
+          <Stat value={SUBJECTS.length} label="FIELDS" loaded={loaded} pad2 />
+          <Stat value={bookmarkCount} label="SAVED" loaded={loaded} pad2 />
+        </div>
+      </AnimatedContent>
+
+      {/* 2 — The four discipline plates */}
+      <AnimatedContent
+        trigger="mount"
+        distance={24}
+        duration={0.7}
+        ease="power3.out"
+        initialOpacity={0}
+        threshold={0.1}
+        once
+      >
+      <section className="kiA-section">
+        <p className="kiA-eyebrow">Your disciplines</p>
+        <h2 className="kiA-display kiA-section-title">Choose your discipline.</h2>
+        {/* Staggered entrance: AnimatedContent staggers its direct
+            children (the four SpotlightCards) on mount. */}
+        <AnimatedContent
+          className="kiA-plates"
+          trigger="mount"
+          distance={18}
+          duration={0.6}
+          ease="power3.out"
+          initialOpacity={0}
+          threshold={0.1}
+          stagger={0.08}
+          once
+        >
+          {SUBJECTS.map((s) => {
+            const color = v2SubjectColor(s.id);
+            return (
+              <SpotlightCard
+                key={s.id}
+                className={`kiA-platecard${fieldHover === s.id ? ' kiA-platecard--lit' : ''}`}
+                spotlightColor={color}
+                intensity={0.2}
+                softness={0.7}
+                spotlightSize={240}
+                borderGlow={0.45}
+                proximity={130}
+                flare={false}
+                theme="dark"
+                style={{ '--subj': color } as CSSProperties}
+              >
+                <button
+                  type="button"
+                  className="kiA-platecard-btn"
+                  onClick={() => onGoSubject(s.id)}
+                  aria-label={`Open ${s.name} — ${counts[s.id] ?? 0} documents`}
+                >
+                  <span className="kiA-platecard-glyph" aria-hidden="true">{disciplineGlyph(s.id)}</span>
+                  <h3 className="kiA-platecard-name">{s.name}</h3>
+                  <p className="kiA-platecard-tag">{s.tagline}</p>
+                  <span className="kiA-platecard-foot">
+                    <span className="kiA-platecard-count">
+                      <strong>{loaded ? counts[s.id] ?? 0 : '—'}</strong> documents
+                    </span>
+                    <span className="kiA-platecard-arrow" aria-hidden="true">→</span>
+                  </span>
+                </button>
+              </SpotlightCard>
+            );
+          })}
+        </AnimatedContent>
+      </section>
+      </AnimatedContent>
 
       {/* Resume reading — intentional empty state, never a dashed box */}
+      <AnimatedContent
+        trigger="mount"
+        distance={24}
+        duration={0.7}
+        ease="power3.out"
+        initialOpacity={0}
+        threshold={0.1}
+        once
+      >
       <section className="kiA-section">
         <p className="kiA-eyebrow">Continue where you left off</p>
         <h2 className="kiA-display kiA-section-title">Resume your reading.</h2>
@@ -379,64 +479,19 @@ export default function Overview({ files, onOpenReader, onGoSubject, onGoSearch 
           )}
         </div>
       </section>
-
-      {/* 2 — The four discipline plates */}
-      <section className="kiA-section">
-        <p className="kiA-eyebrow">Your four disciplines</p>
-        <h2 className="kiA-display kiA-section-title">Choose your discipline.</h2>
-        <div className="kiA-plates">
-          {SUBJECTS.map((s, i) => {
-            const color = v2SubjectColor(s.id);
-            return (
-              <SpotlightCard
-                key={s.id}
-                className="kiA-platecard"
-                spotlightColor={color}
-                intensity={0.2}
-                softness={0.7}
-                spotlightSize={240}
-                borderGlow={0.45}
-                proximity={130}
-                flare={false}
-                theme="dark"
-                style={{ '--subj': color } as CSSProperties}
-              >
-                <button
-                  type="button"
-                  className="kiA-platecard-btn"
-                  onClick={() => onGoSubject(s.id)}
-                  aria-label={`Open ${s.name} — ${counts[s.id] ?? 0} documents`}
-                >
-                  <div className="kiA-platecard-top">
-                    <span className="kiA-platecard-plate">PLATE {ROMAN[i]}</span>
-                    <span className="kiA-platecard-num">{s.num}</span>
-                  </div>
-                  <h3 className="kiA-platecard-name">{s.name}</h3>
-                  <p className="kiA-platecard-tag">{s.tagline}</p>
-                  <div className="kiA-platecard-stats">
-                    <span className="kiA-platecard-stat">
-                      <span className="kiA-platecard-stat-num">
-                        {loaded ? <CountUp to={counts[s.id] ?? 0} duration={0.9} trigger="view" /> : '—'}
-                      </span>
-                      <span className="kiA-platecard-stat-label">DOCUMENTS</span>
-                    </span>
-                    <span className="kiA-platecard-stat">
-                      <span className="kiA-platecard-stat-num">
-                        {loaded ? <CountUp to={subjectPages[s.id] ?? 0} duration={0.9} trigger="view" separator="," /> : '—'}
-                      </span>
-                      <span className="kiA-platecard-stat-label">PAGES</span>
-                    </span>
-                  </div>
-                  <span className="kiA-platecard-cta">OPEN DISCIPLINE →</span>
-                </button>
-              </SpotlightCard>
-            );
-          })}
-        </div>
-      </section>
+      </AnimatedContent>
 
       {/* 3 — Quick access ledger */}
       {qaSections.length > 0 && (
+      <AnimatedContent
+        trigger="mount"
+        distance={24}
+        duration={0.7}
+        ease="power3.out"
+        initialOpacity={0}
+        threshold={0.1}
+        once
+      >
         <section className="kiA-section">
           <p className="kiA-eyebrow">Quick access</p>
           <h2 className="kiA-display kiA-section-title">Pick up where you left off.</h2>
@@ -469,9 +524,19 @@ export default function Overview({ files, onOpenReader, onGoSubject, onGoSearch 
             ))}
           </div>
         </section>
+      </AnimatedContent>
       )}
 
       {/* 4 — Recent shelf */}
+      <AnimatedContent
+        trigger="mount"
+        distance={24}
+        duration={0.7}
+        ease="power3.out"
+        initialOpacity={0}
+        threshold={0.1}
+        once
+      >
       <section className="kiA-section">
         <p className="kiA-eyebrow">Recently added</p>
         <h2 className="kiA-display kiA-section-title">Your recent shelf.</h2>
@@ -490,6 +555,7 @@ export default function Overview({ files, onOpenReader, onGoSubject, onGoSearch 
           <p className="kiA-empty">Your recently opened documents will appear here.</p>
         )}
       </section>
+      </AnimatedContent>
     </div>
   );
 }
@@ -514,7 +580,7 @@ function StudyActivityCard({
     <div className="kiA-plate kiA-activity" style={{ '--subj': subjColor } as CSSProperties}>
       <p className="kiA-activity-kicker">
         <span className="kiA-dot" style={{ background: subjColor }} />
-        {subj?.code ?? file.subj.toUpperCase()} · LAST OPENED {openedDate.toUpperCase()}
+        {subj?.code ?? file.subj.toUpperCase()} · Last opened {openedDate}
       </p>
       <h3 className="kiA-activity-title">{file.title}</h3>
       <p className="kiA-activity-meta">
@@ -523,17 +589,9 @@ function StudyActivityCard({
       <div className="kiA-progress" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
         <div className="kiA-progress-fill" style={{ width: `${pct}%` }} />
       </div>
-      <SpecularButton
-        size="md"
-        className="kiA-activity-btn"
-        onClick={onOpen}
-        baseColor="#1a2b45"
-        lineColor="#65d9d0"
-        textColor="#f2ecdd"
-        glow={0.7}
-      >
+      <button type="button" className="de-btn-primary" onClick={onOpen}>
         Resume&nbsp;&nbsp;→
-      </SpecularButton>
+      </button>
     </div>
   );
 }

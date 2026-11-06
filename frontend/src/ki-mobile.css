@@ -498,3 +498,18 @@
   .ki-idx-stats { gap: 20px; }
   .ki-status-num { font-size: 30px; }
 }
+
+/* ---------- Round B 1420 P0: bottom-nav clearance for scroll anchoring ----------
+ * #root is the true mobile scroll container (proven in Playwright:
+ * #kl-mobile-scroll never scrolls — its height grows to its content —
+ * while #root's scrollTop tracks the wheel; #root scrolls because its
+ * overflow-x:hidden computes overflow-y to auto). scroll-padding-bottom
+ * keeps scrollIntoView / restored scroll positions clear of the fixed
+ * dock. padding-bottom itself is already satisfied (.mobile-page 96px +
+ * safe-area; .ml-list 108px; subject-index wrapper 100px — verified:
+ * Digital bottom content clears the dock by ~24px at full scroll).
+ * Inert on desktop: there the window / inner app div scrolls and #root
+ * is not a scroll container. */
+#root {
+  scroll-padding-bottom: calc(100px + env(safe-area-inset-bottom));
+}

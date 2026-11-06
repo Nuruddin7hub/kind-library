@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import SplitText from '../components/SplitText';
-import AnimatedList from '../bits/AnimatedList';
-import type { AnimatedListItem } from '../bits/AnimatedList';
+import AnimatedContent from '../bits/AnimatedContent';
 import {
   SUBJECTS,
   subjectOf,
@@ -36,6 +35,8 @@ export interface SearchPageProps {
   onSelect: (i: number) => void;
   onOpen: (hit: SearchHit) => void;
   inputRef: React.RefObject<HTMLInputElement | null>;
+  searchError: boolean;
+  onRetry: () => void;
 }
 
 const RECENT_KEY = 'kl:recentSearches';
@@ -102,6 +103,7 @@ export default function SearchPage(props: SearchPageProps) {
     typeFilter, onTypeFilterChange, resultSections,
     sortMode, onSortModeChange,
     selected, onSelect, onOpen, inputRef,
+    searchError, onRetry,
   } = props;
 
   const [recent, setRecent] = useState<string[]>(readRecent);
@@ -138,17 +140,15 @@ export default function SearchPage(props: SearchPageProps) {
 
   const qEmpty = query.trim() === '';
   const showTypeFilter = resultSections.length > 1;
+  // Suggested terms — verified live against /api/search (each returns
+  // real results): Laplace 3, Fourier 1, Metaphysics 2, Logic 15.
+  const SUGGESTED_TERMS = ['Laplace', 'Fourier', 'Metaphysics', 'Logic'];
 
-  const items: AnimatedListItem[] = results.map((hit, i) => ({
-    id: `${hit.key}::${i}`,
-    title: hit.title,
-    hit,
-    index: i,
-  }) as unknown as AnimatedListItem);
-
-  const renderHit = (item: AnimatedListItem) => {
-    const { hit, index } = item as unknown as { hit: SearchHit; index: number };
-    const i = index;
+  /** One full-width result row (P4 spec): 76px thumbnail |
+   *  title + meta + real excerpt | right-aligned action. No
+   *  GlareHover (not one of the three approved React Bits) — the
+   *  row itself carries the hover/focus states. */
+  const renderHit = (hit: SearchHit, i: number) => {
     const subj = subjectOf(hit.subj);
     const color = v2SubjectColor(hit.subj);
     const file = hit.file || hit.key.split('::')[2] || '';
@@ -161,66 +161,70 @@ export default function SearchPage(props: SearchPageProps) {
     const preview = hit.excerpt || hit.passages?.[0]?.snippet || '';
     const pg = hitPage(hit);
     const matchCount = typeof hit.match_count === 'number' ? hit.match_count : null;
+    // P4 result row: thumbnail | subject/result + match type, title,
+    // subject name · type · pages · match page, real excerpt |
+    // right-aligned number + OPEN DOCUMENT + match count.
     return (
-      <button
-        type="button"
+      <div
         className={'kiA-hit' + (isSel ? ' kiA-hit--selected' : '')}
         style={{ '--hit-subject': color } as CSSProperties}
+        role="button"
+        tabIndex={0}
         onClick={() => { onSelect(i); onOpen(hit); }}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(i); onOpen(hit); } }}
         onMouseEnter={() => { setKbdSel(false); if (i !== selected) onSelect(i); }}
         aria-label={`${hit.title} — ${matchKindLabel(hit, query)}`}
       >
-        <span className="kiA-hit-top">
-          <span className="kiA-hit-plate">SEARCH RESULT · {String(i + 1).padStart(3, '0')}</span>
-          <span className={matchPlateClass(hit, query)}>
-            {matchKindLabel(hit, query)}
-          </span>
+        <span className="kiA-hit-thumb" aria-hidden="true">
+          {thumb && file ? (
+            <img
+              src={thumb}
+              alt=""
+              loading="lazy"
+              onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+            />
+          ) : null}
         </span>
-        <span className="kiA-hit-body">
-          <span className="kiA-hit-thumb" aria-hidden="true">
-            {thumb && file ? (
-              <img
-                src={thumb}
-                alt=""
-                loading="lazy"
-                onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-              />
-            ) : null}
-          </span>
-          <span className="kiA-hit-main">
-            <span className="kiA-hit-title">{highlightQuery(hit.title, query)}</span>
-            <span className="kiA-hit-meta">
-              <span className="kiA-dot" style={{ backgroundColor: color }} aria-hidden="true" />
-              {subj?.code ?? hit.subj.toUpperCase()}
-              {' · '}
-              {sectionLabel(hit.section)}
-              {' · '}
-              {hit.pages} page{hit.pages === 1 ? '' : 's'}
-              {pg !== null && (
-                <span className="kiA-hit-page"> · match on p. {pg}</span>
-              )}
+        <span className="kiA-hit-main">
+          <span className="kiA-hit-top">
+            <span className="kiA-hit-plate">{subj?.code ?? hit.subj.toUpperCase()} / RESULT {String(i + 1).padStart(3, '0')}</span>
+            <span className={matchPlateClass(hit, query)}>
+              {matchKindLabel(hit, query)}
             </span>
-            {preview && (
-              <span className="kiA-hit-preview">{highlightQuery(preview, query)}</span>
+          </span>
+          <span className="kiA-hit-title">{highlightQuery(hit.title, query)}</span>
+          <span className="kiA-hit-meta">
+            <span className="kiA-dot" style={{ backgroundColor: color }} aria-hidden="true" />
+            {subj?.name ?? hit.subj}
+            {' · '}
+            {sectionLabel(hit.section)}
+            {' · '}
+            {hit.pages} page{hit.pages === 1 ? '' : 's'}
+            {pg !== null && (
+              <span className="kiA-hit-page"> · match on p. {pg}</span>
             )}
           </span>
+          {preview && (
+            <span className="kiA-hit-preview">{highlightQuery(preview, query)}</span>
+          )}
         </span>
-        <span className="kiA-hit-foot">
+        <span className="kiA-hit-side">
+          <span className="kiA-hit-num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
           <span className="kiA-hit-open">OPEN DOCUMENT →</span>
           {matchCount !== null && (
             <span className="kiA-hit-matches">
-              {matchCount} MATCH{matchCount === 1 ? '' : 'ES'}
+              {matchCount} match{matchCount === 1 ? '' : 'es'}
             </span>
           )}
         </span>
-      </button>
+      </div>
     );
   };
 
   return (
-    <div className="kiA-page">
+    <div className="kiA-page kiA-page--search">
       <header className="kiA-head">
-        <p className="kiA-eyebrow">RETRIEVAL / INDEX 001</p>
+        <p className="kiA-eyebrow">DISCOVERY / INDEX 001</p>
         <h1 className="kiA-display kiA-engine-title">
           <SplitText
             lines={[
@@ -229,6 +233,7 @@ export default function SearchPage(props: SearchPageProps) {
             ]}
           />
         </h1>
+        <p className="kiA-search-sub">Search across {total} documents, 4 disciplines.</p>
       </header>
 
       <div className="kiA-searchwrap">
@@ -239,11 +244,21 @@ export default function SearchPage(props: SearchPageProps) {
           value={query}
           onChange={e => onQueryChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Search titles, full text, equations…  ( / )"
+          placeholder={`Search ${total} documents — titles, text, equations…`}
           spellCheck={false}
           autoComplete="off"
           aria-label="Search the archive"
         />
+        {!qEmpty && (
+          <button
+            type="button"
+            className="kiA-clear"
+            onClick={() => { onQueryChange(''); inputRef.current?.focus(); }}
+            aria-label="Clear search"
+          >
+            ✕
+          </button>
+        )}
         <button
           type="button"
           className="kiA-cmdk-hint"
@@ -334,11 +349,13 @@ export default function SearchPage(props: SearchPageProps) {
       </div>
 
       <p className="kiA-evidence" aria-live="polite">
-        {searching
-          ? 'Searching…'
-          : !qEmpty
-            ? `${results.length} document${results.length === 1 ? '' : 's'} · ${totalMatches} match${totalMatches === 1 ? '' : 'es'}`
-            : `${total} documents · 4 disciplines`}
+        {searchError
+          ? 'Search unavailable — your query and filters are kept'
+          : searching
+            ? 'Searching…'
+            : !qEmpty
+              ? `${results.length} document${results.length === 1 ? '' : 's'} found · ${totalMatches} match${totalMatches === 1 ? '' : 'es'}${searchSubject !== 'all' ? ` · ${subjectOf(searchSubject)?.code ?? searchSubject}` : ''}${typeFilter !== 'all' ? ` · ${sectionLabel(typeFilter)}` : ''}`
+              : `${total} documents · 4 disciplines`}
       </p>
 
       {searching && (
@@ -355,36 +372,81 @@ export default function SearchPage(props: SearchPageProps) {
         </div>
       )}
 
-      {!searching && !qEmpty && results.length === 0 && (
-        <div className="kiA-empty">
-          <p className="kiA-empty-title">No matches for &ldquo;{query.trim()}&rdquo;</p>
-          <p className="kiA-empty-tip">Try fewer words, or check the spelling.</p>
+      {!searching && searchError && !qEmpty && (
+        <div className="kiA-empty kiA-error" role="alert">
+          <p className="kiA-empty-title">Search didn't respond</p>
+          <p className="kiA-empty-tip">The archive index is unreachable right now. Your query &ldquo;{query.trim()}&rdquo; and filters are kept.</p>
+          <button type="button" className="de-btn-secondary kiA-retry" onClick={onRetry}>
+            Try again
+          </button>
         </div>
       )}
 
-      {!searching && !qEmpty && results.length > 0 && (
-        <AnimatedList
+      {!searching && !searchError && !qEmpty && results.length === 0 && (
+        <div className="kiA-empty">
+          <p className="kiA-empty-title">No matches for &ldquo;{query.trim()}&rdquo;</p>
+          <p className="kiA-empty-tip">Try fewer words, or check the spelling.</p>
+          <p className="kiA-empty-suggest-label">Try a subject instead — your query stays:</p>
+          <div className="kiA-empty-suggest">
+            {SUBJECTS.map(s => (
+              <button
+                key={s.id}
+                type="button"
+                className="kiA-recent-chip"
+                onClick={() => onSubjectChange(s.id)}
+              >
+                {s.code} · {counts[s.id] ?? 0}
+              </button>
+            ))}
+          </div>
+          <p className="kiA-empty-suggest-label">Or try:</p>
+          <div className="kiA-empty-suggest">
+            {SUGGESTED_TERMS.filter(t => t.toLowerCase() !== query.trim().toLowerCase()).map(term => (
+              <button
+                key={term}
+                type="button"
+                className="kiA-recent-chip"
+                onClick={() => onQueryChange(term)}
+              >
+                {term}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!searching && !searchError && !qEmpty && results.length > 0 && (
+        <AnimatedContent
           key={query + searchSubject + typeFilter + sortMode}
-          items={items}
-          renderItem={renderHit}
-          animation="slide"
-          stagger={0.045}
-          animateOnce
-          frame={false}
-          showGradients={false}
-          displayScrollbar={false}
-          maxHeight="none"
-          width="100%"
-          theme="dark"
-          accentColor="#59E4D2"
           className="kiA-hits"
-          selectOnHover={false}
-          enableArrowNavigation={false}
-        />
+          trigger="mount"
+          distance={12}
+          duration={0.2}
+          ease="power3.out"
+          initialOpacity={0}
+          threshold={0.05}
+          stagger={0.02}
+          once
+        >
+          {results.map((hit, i) => renderHit(hit, i))}
+        </AnimatedContent>
       )}
 
       {!searching && qEmpty && (
         <div className="kiA-idle">
+          <p className="kiA-recent-label">Suggested searches</p>
+          <div className="kiA-recent">
+            {SUGGESTED_TERMS.map(term => (
+              <button
+                key={term}
+                type="button"
+                className="kiA-recent-chip"
+                onClick={() => onQueryChange(term)}
+              >
+                {term}
+              </button>
+            ))}
+          </div>
           {recent.length > 0 && (
             <>
               <p className="kiA-recent-label">Recent searches</p>

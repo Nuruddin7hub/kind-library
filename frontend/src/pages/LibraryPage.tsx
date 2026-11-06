@@ -1,8 +1,7 @@
-import { useMemo, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import SpotlightCard from '../bits/SpotlightCard';
 import SplitText from '../components/SplitText';
 import AnimatedContent from '../bits/AnimatedContent';
-import AtlasPlate from '../components/AtlasPlate';
 import type { LibFile } from '../shared';
 import {
   SUBJECTS,
@@ -13,8 +12,15 @@ import {
   readJson,
   relTime,
   v2SubjectColor,
+  disciplineGlyph,
 } from '../shared';
 import './LibraryPage.css';
+
+/* Real document excerpts (P3 editorial cards): fetched once per key
+ * from /api/excerpts (backend text index — real PDF text only).
+ * Docs with no indexed text get NO description line, never a
+ * fabricated one. Module cache so re-sorts/filters don't refetch. */
+const excerptCache = new Map<string, string>();
 
 export interface LibraryPageProps {
   files: LibFile[];
@@ -138,6 +144,25 @@ export default function LibraryPage(props: LibraryPageProps) {
   }, [baseFiltered, filter, sort, recentTs]);
 
   const filteredKeys = useMemo(() => filtered.map(f => f.key), [filtered]);
+  const filteredKeySet = useMemo(() => [...filteredKeys].sort().join(','), [filteredKeys]);
+  const [excerpts, setExcerpts] = useState<Record<string, string>>({});
+  useEffect(() => {
+    setExcerpts(Object.fromEntries([...excerptCache.entries()]));
+    const missing = filteredKeys.filter(k => !excerptCache.has(k));
+    if (!missing.length) return;
+    let cancelled = false;
+    fetch(`/api/excerpts?keys=${encodeURIComponent(missing.join(','))}`)
+      .then(r => r.json())
+      .then(d => {
+        if (cancelled) return;
+        const map = (d.excerpts || {}) as Record<string, string>;
+        for (const [k, v] of Object.entries(map)) excerptCache.set(k, v);
+        setExcerpts(Object.fromEntries([...excerptCache.entries()]));
+      })
+      .catch(() => { /* excerpts are enhancement-only: cards render without them */ });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredKeySet]);
   const availableSections = useMemo(() => sectionsIn(subjectFiles), [subjectFiles]);
   const showSections = section !== 'all' || availableSections.length > 1;
 
@@ -198,66 +223,121 @@ export default function LibraryPage(props: LibraryPageProps) {
 
   return (
     <div className="kiA-page">
-      {/* ---------- edition header ---------- */}
-      <header className="kiA-head" style={{ ['--ed-accent' as string]: accent }}>
-        <p className="kiA-eyebrow">{eyebrow}</p>
-        <h1 className="kiA-display kiA-ed-title">
-          <SplitText
-            lines={[{ text: title }]}
-          />
-        </h1>
-        {subject !== 'all' && hero && (
-          <p className="kiA-ed-subline">{hero.keys}.</p>
-        )}
-        <div className="kiA-ed-stats" role="list" aria-label="Collection statistics">
-          <span className="kiA-ed-stat" role="listitem">
-            <span className="kiA-ed-stat-num">{String(subjectFiles.length).padStart(2, '0')}</span>
-            <span className="kiA-ed-stat-label">DOCUMENTS</span>
-          </span>
-          <span className="kiA-ed-stat" role="listitem">
-            <span className="kiA-ed-stat-num">{subjPages.toLocaleString('en-US')}</span>
-            <span className="kiA-ed-stat-label">PAGES</span>
-          </span>
-          <span className="kiA-ed-stat" role="listitem">
-            <span className="kiA-ed-stat-num">{String(subjCollections).padStart(2, '0')}</span>
-            <span className="kiA-ed-stat-label">COLLECTIONS</span>
-          </span>
+      {/* ---------- edition header ----------
+          P3 subject hero (65/35): left title/desc/metrics, right
+          large low-opacity discipline glyph with a subject-colour
+          radial glow + fine discipline motif (manuscript lines for
+          FIS, waveform for Signals, equation fragments for EM2,
+          circuit dots for Digital). Same structural template, the
+          artwork changes per discipline. */}
+      <header className={`kiA-head${subject !== 'all' ? ' kiA-head--surfaced' : ''}`} style={{ ['--ed-accent' as string]: accent }}>
+        <div className="kiA-ed-hero-main">
+          <p className="kiA-eyebrow">{eyebrow}</p>
+          <h1 className="kiA-display kiA-ed-title">
+            <SplitText
+              lines={[{ text: title }]}
+            />
+          </h1>
+          {subject !== 'all' && hero && (
+            <p className="kiA-ed-subline">{hero.keys}.</p>
+          )}
+          <div className="kiA-ed-stats" role="list" aria-label="Collection statistics">
+            <span className="kiA-ed-stat" role="listitem">
+              <span className="kiA-ed-stat-num">{String(subjectFiles.length).padStart(2, '0')}</span>
+              <span className="kiA-ed-stat-label">DOCUMENTS</span>
+            </span>
+            <span className="kiA-ed-stat" role="listitem">
+              <span className="kiA-ed-stat-num">{subjPages.toLocaleString('en-US')}</span>
+              <span className="kiA-ed-stat-label">PAGES</span>
+            </span>
+            <span className="kiA-ed-stat" role="listitem">
+              <span className="kiA-ed-stat-num">{String(subjCollections).padStart(2, '0')}</span>
+              <span className="kiA-ed-stat-label">COLLECTIONS</span>
+            </span>
+          </div>
+          {subject === 'all' && (
+            <p className="kiA-ed-subline">
+              {baseFiltered.length} documents · {subjPages.toLocaleString('en-US')} pages · {subjCollections} collections
+            </p>
+          )}
         </div>
-        {subject === 'all' && (
-          <p className="kiA-ed-subline">
-            {baseFiltered.length} documents · {subjPages.toLocaleString('en-US')} pages · {subjCollections} collections
-          </p>
+        {subject !== 'all' && activeSubject && (
+          <div className={`kiA-ed-hero-art kiA-ed-hero-art--${subject}`} aria-hidden="true">
+            <span className="kiA-ed-hero-glyph">{disciplineGlyph(subject)}</span>
+            {subject === 'fis' && <span className="kiA-ed-hero-motif kiA-ed-hero-motif--fis" />}
+            {subject === 'digital' && <span className="kiA-ed-hero-motif kiA-ed-hero-motif--digital" />}
+            {subject === 'signals' && (
+              <svg className="kiA-ed-hero-motif kiA-ed-hero-motif--signals" viewBox="0 0 300 80" fill="none" preserveAspectRatio="none">
+                <path d="M0 40 Q 37 5, 75 40 T 150 40 T 225 40 T 300 40" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M0 52 Q 37 25, 75 52 T 150 52 T 225 52 T 300 52" stroke="currentColor" strokeWidth="1" opacity="0.55" />
+                <path d="M0 28 Q 37 -5, 75 28 T 150 28 T 225 28 T 300 28" stroke="currentColor" strokeWidth="1" opacity="0.55" />
+              </svg>
+            )}
+            {subject === 'em2' && (
+              <>
+                <span className="kiA-ed-equation" style={{ top: '8%', right: '12%', fontSize: 56 }}>∫</span>
+                <span className="kiA-ed-equation" style={{ top: '58%', right: '4%', fontSize: 40 }}>∂</span>
+                <span className="kiA-ed-equation" style={{ bottom: '6%', right: '30%', fontSize: 34 }}>π</span>
+              </>
+            )}
+          </div>
         )}
       </header>
 
       {/* ---------- controls ---------- */}
       <div className="kiA-controls" role="toolbar" aria-label="Library controls">
-        <div className="kiA-tabs" role="tablist" aria-label="Subject edition">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={subject === 'all'}
-            className={`kiA-tab${subject === 'all' ? ' kiA-tab--active' : ''}`}
-            onClick={() => onSubjectChange('all')}
-          >
-            <span className="kiA-tab-code">ALL</span>
-            <span className="kiA-tab-count">{total}</span>
-          </button>
-          {SUBJECTS.map((s) => (
+        {/* Editorial selectors (§20): DISCIPLINE: / TYPE: text lines with
+            a thin cyan indicator under the active option — no chunky pills */}
+        <div className="kiA-selectors">
+          <div className="kiA-selector" role="tablist" aria-label="Discipline">
+            <span className="kiA-selector-label">DISCIPLINE</span>
             <button
-              key={s.id}
               type="button"
               role="tab"
-              aria-selected={subject === s.id}
-              className={`kiA-tab${subject === s.id ? ' kiA-tab--active' : ''}`}
-              style={{ ['--subj' as string]: v2SubjectColor(s.id) }}
-              onClick={() => onSubjectChange(s.id)}
+              aria-selected={subject === 'all'}
+              className={`kiA-sel-opt${subject === 'all' ? ' kiA-sel-opt--active' : ''}`}
+              onClick={() => onSubjectChange('all')}
             >
-              <span className="kiA-tab-dot" style={{ background: v2SubjectColor(s.id) }} />
-              <span className="kiA-tab-code">{s.code}</span>
-              <span className="kiA-tab-count">{counts[s.id] ?? 0}</span>
+              All<span className="kiA-sel-count">{total}</span>
             </button>
-          ))}
+            {SUBJECTS.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                role="tab"
+                aria-selected={subject === s.id}
+                className={`kiA-sel-opt${subject === s.id ? ' kiA-sel-opt--active' : ''}`}
+                style={{ ['--sel-accent' as string]: v2SubjectColor(s.id) }}
+                onClick={() => onSubjectChange(s.id)}
+              >
+                {s.code}<span className="kiA-sel-count">{counts[s.id] ?? 0}</span>
+              </button>
+            ))}
+          </div>
+          {showSections && (
+            <div className="kiA-selector" role="group" aria-label="Document type">
+              <span className="kiA-selector-label">TYPE</span>
+              <button
+                type="button"
+                className={`kiA-sel-opt${section === 'all' ? ' kiA-sel-opt--active' : ''}`}
+                aria-pressed={section === 'all'}
+                onClick={() => onSectionChange('all')}
+              >
+                All
+              </button>
+              {availableSections.map((sid) => (
+                <button
+                  key={sid}
+                  type="button"
+                  className={`kiA-sel-opt${section === sid ? ' kiA-sel-opt--active' : ''}`}
+                  aria-pressed={section === sid}
+                  onClick={() => onSectionChange(sid)}
+                >
+                  {sectionLabel(sid)}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="kiA-controls-row">
@@ -269,27 +349,6 @@ export default function LibraryPage(props: LibraryPageProps) {
             placeholder="Search titles…"
             aria-label="Search titles"
           />
-          {showSections && (
-            <div className="kiA-type-chips" aria-label="Type filter">
-              <button
-                type="button"
-                className={`kiA-chip${section === 'all' ? ' kiA-chip--active' : ''}`}
-                onClick={() => onSectionChange('all')}
-              >
-                All types
-              </button>
-              {availableSections.map((sid) => (
-                <button
-                  key={sid}
-                  type="button"
-                  className={`kiA-chip${section === sid ? ' kiA-chip--active' : ''}`}
-                  onClick={() => onSectionChange(sid)}
-                >
-                  {sectionLabel(sid)}
-                </button>
-              ))}
-            </div>
-          )}
           <label className="kiA-sort">
             <span className="kiA-sort-label">Sort</span>
             <select
@@ -342,8 +401,11 @@ export default function LibraryPage(props: LibraryPageProps) {
           key={`${subject}-${section}-${sort}`}
           className="kiA-grid"
           trigger="mount"
-          distance={22}
-          duration={0.55}
+          distance={24}
+          duration={0.7}
+          ease="power3.out"
+          initialOpacity={0}
+          threshold={0.1}
           stagger={0.02}
           staggerFrom="start"
           once
@@ -354,6 +416,8 @@ export default function LibraryPage(props: LibraryPageProps) {
             const progress = progressOf(f);
             const opened = recentTs[f.key] ? relTime(recentTs[f.key]) : null;
             const saved = bookmarks.includes(f.key);
+            const subjCode = subjectOf(f.subj)?.code ?? f.subj.toUpperCase();
+            const excerpt = excerpts[f.key] || '';
             return (
               <SpotlightCard
                 key={f.key}
@@ -368,37 +432,48 @@ export default function LibraryPage(props: LibraryPageProps) {
                 theme="dark"
                 style={{ ['--subj' as string]: color } as CSSProperties}
               >
+                {/* Editorial document card (P3): plate number, title,
+                    classification, page count, large low-opacity
+                    discipline watermark behind the content, real
+                    document excerpt where the text index has one
+                    (no description at all where it doesn't),
+                    bookmark action. */}
                 <div
-                  className="kiA-card-inner"
+                  className="kiA-ed-card"
                   role="button"
                   tabIndex={0}
                   onClick={() => openReader(f.key)}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openReader(f.key); } }}
                   aria-label={`Open ${f.title}`}
                 >
-                  <div className="kiA-cover">
-                    <AtlasPlate
-                      subj={f.subj}
-                      title={f.title}
-                      section={f.section}
-                      pages={f.pages}
-                      docNo={subjOrder.get(f.key) ?? 1}
-                    />
+                  <span className="kiA-ed-watermark" aria-hidden="true">{disciplineGlyph(f.subj)}</span>
+                  <div className="kiA-ed-card-top">
+                    <span className="kiA-ed-plateno">
+                      {subjCode}-{String(subjOrder.get(f.key) ?? 1).padStart(2, '0')}
+                    </span>
                     {bookmarkBtn(f)}
                   </div>
-                  <div className="kiA-card-body">
-                    {progress !== null && (
-                      <div className="kiA-card-progress" role="progressbar"
-                        aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}
-                        aria-label={`${progress}% read`}>
-                        <div className="kiA-card-progress-fill" style={{ width: `${progress}%` }} />
-                      </div>
-                    )}
-                    <p className="kiA-card-foot">
-                      {opened ? `opened ${opened}` : 'not opened yet'}
+                  <h3 className="kiA-ed-card-title">{f.title}</h3>
+                  <p className="kiA-ed-card-class">
+                    {sectionLabel(f.section)} · {f.pages} pages
+                  </p>
+                  {excerpt && (
+                    <p className="kiA-ed-card-desc">{excerpt}</p>
+                  )}
+                  {progress !== null && (
+                    <div className="kiA-card-progress" role="progressbar"
+                      aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}
+                      aria-label={`${progress}% read`}>
+                      <div className="kiA-card-progress-fill" style={{ width: `${progress}%` }} />
+                    </div>
+                  )}
+                  <div className="kiA-ed-card-foot">
+                    <span className="kiA-ed-card-meta">
+                      {opened ? `Opened ${opened}` : 'Not opened yet'}
                       {pos ? ` · p.${pos}` : ''}
-                      {saved ? ' · saved' : ''}
-                    </p>
+                      {saved ? ' · Saved' : ''}
+                    </span>
+                    <span className="kiA-ed-card-open">Open →</span>
                   </div>
                 </div>
               </SpotlightCard>
