@@ -135,6 +135,22 @@ p.mh-eyebrow {
   position: relative;
   margin: 18px 0 4px;
 }
+/* Round B 2026-11-06 P0: one very slow light bloom behind the discipline
+ * map ONLY — faint teal radial, blurred, pointer-transparent. NOT an
+ * Aurora, NOT neon; the existing hero Aurora above stays (part of the
+ * 9.5-scored hero — the critique's "NO Aurora" bans ADDING one). */
+.mh-network-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 8% 10% 15% 10%;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 50%,
+    rgba(63, 211, 205, 0.08) 0%,
+    rgba(63, 211, 205, 0.025) 55%,
+    transparent 75%);
+  filter: blur(24px);
+}
 /* Particles drift behind the constellation (low count, decorative) */
 .mh-particles {
   position: absolute;
@@ -366,9 +382,12 @@ button.mh-search-go:not(.specular-button) {
 }
 
 /* Round C re-score: .hero-metrics — editorial strip (border-block +
- * gradient, border-left dividers), 60px high. */
+ * gradient, border-left dividers), 60px high.
+ * Round B 2026-11-06 (deferred 2026-11-05 P1): compress the metrics
+ * footprint ~12px (margin −4px, stat padding −8px) — margins/padding
+ * only, typography untouched. */
 .hero-metrics {
-  margin-top: 16px;
+  margin-top: 12px;
 }
 .hero-metrics .mh-stats-strip {
   min-height: 60px;
@@ -380,7 +399,7 @@ button.mh-search-go:not(.specular-button) {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
-.hero-metrics .mh-stat { min-height: 60px; }
+.hero-metrics .mh-stat { min-height: 52px; padding: 6px 6px; }
 .hero-metrics .mh-stat + .mh-stat { border-left: 1px solid rgba(255, 255, 255, 0.09); }
 .hero-metrics .mh-stat-divider { display: none; }
 

@@ -11,9 +11,11 @@
   position: fixed;
   left: 8px; /* spec: full width minus 16px */
   right: 8px;
-  bottom: 0; /* 66px content + safe area lives inside the dock */
-  height: calc(66px + env(safe-area-inset-bottom)); /* spec: 66px + safe area */
-  padding-bottom: env(safe-area-inset-bottom);
+  /* Round C 2026-11-06 P0: the dock floats above the home indicator —
+   * bottom max(8px, safe-area), height the named nav token. The safe
+   * area now lives OUTSIDE the dock (below it), not as inside padding. */
+  bottom: max(8px, env(safe-area-inset-bottom));
+  height: var(--mobile-nav-height, 68px); /* spec: 68px */
   border-radius: 21px; /* spec: radius 21px */
   background: rgba(10, 18, 30, 0.94); /* spec: translucent midnight */
   border: 1px solid rgba(130, 165, 195, 0.2);
@@ -84,7 +86,8 @@
    PillNav's sliding indicator (compact adaptation). */
 .md-indicator {
   position: absolute;
-  bottom: calc(7px + env(safe-area-inset-bottom));
+  /* Round C 2026-11-06 P0: safe-area no longer lives inside the dock. */
+  bottom: 7px;
   left: 0;
   width: 24px;
   height: 2px; /* spec: 2px underline */

@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { v2SubjectColor, sectionLabel } from '../shared';
+import { v2SubjectColor, disciplineGlyph, sectionLabel } from '../shared';
 import './AtlasPlate.css';
 
 interface AtlasPlateProps {
@@ -11,37 +11,20 @@ interface AtlasPlateProps {
   docNo: number;
 }
 
-/** Subject ornament — minimal cartographic glyphs drawn for this plate. */
+/** Subject ornament — large glyph shorthand (critique §11, 2026-11-06):
+ *  EM2 ∑ · Signals ∿ · FIS Φ · Digital ⌘, Φ at 94px, opacity .9,
+ *  near the lower third of the plate. Replaces the 2026-11-05 SVG
+ *  line-art ornaments (curve / wave / circuit). */
 function Ornament({ subj, color }: { subj: string; color: string }): ReactNode {
-  switch (subj) {
-    case 'em2':
-      return (
-        <svg viewBox="0 0 120 44" className="kiA-ap-orn" aria-hidden="true">
-          <path d="M 6 38 Q 40 38 60 10 T 114 6" fill="none" stroke={color} strokeWidth="1.6" />
-          <circle cx={60} cy={10} r={2.6} fill={color} />
-        </svg>
-      );
-    case 'signals':
-      return (
-        <svg viewBox="0 0 120 44" className="kiA-ap-orn" aria-hidden="true">
-          <path d="M 4 22 C 22 4, 34 4, 48 22 S 74 40, 92 22 S 110 8, 116 22" fill="none" stroke={color} strokeWidth="1.6" />
-        </svg>
-      );
-    case 'fis':
-      return (
-        <svg viewBox="0 0 120 44" className="kiA-ap-orn" aria-hidden="true">
-          <text x={52} y={36} textAnchor="middle" className="kiA-ap-phi" fill={color}>Φ</text>
-        </svg>
-      );
-    default:
-      return (
-        <svg viewBox="0 0 120 44" className="kiA-ap-orn" aria-hidden="true">
-          <path d="M 6 34 L 34 34 L 46 22 L 78 22 L 90 10 L 114 10" fill="none" stroke={color} strokeWidth="1.6" />
-          <circle cx={6} cy={34} r={2.4} fill={color} />
-          <circle cx={114} cy={10} r={2.4} fill={color} />
-        </svg>
-      );
-  }
+  return (
+    <span
+      className={`kiA-ap-glyph kiA-ap-glyph--${subj}`}
+      style={{ color }}
+      aria-hidden="true"
+    >
+      {disciplineGlyph(subj)}
+    </span>
+  );
 }
 
 /** ATLAS edition document plate — the desktop replacement for DocCoverCard.

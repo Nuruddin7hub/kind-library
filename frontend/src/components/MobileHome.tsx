@@ -164,7 +164,7 @@ function NetworkField({ animate, onNodeTap }: {
       {links.map(([a, b], i) => (
         <line key={i}
           x1={nodes[a].x} y1={nodes[a].y} x2={nodes[b].x} y2={nodes[b].y}
-          stroke="rgba(170,200,235,.22)" strokeWidth="1" />
+          stroke="rgba(112,197,204,0.34)" strokeWidth="1.15" />
       ))}
       {nodes.map((n, i) => (
         <g key={i}
@@ -182,8 +182,9 @@ function NetworkField({ animate, onNodeTap }: {
           <title>{n.s.name}</title>
           {/* 52px invisible tap target (44px minimum, thumb-friendly) */}
           <circle cx={n.x} cy={n.y} r="26" fill="transparent" />
-          {/* faint subject-color outer halo (Round C re-score) */}
-          <circle cx={n.x} cy={n.y} r="26" fill={n.s.color} opacity="0.1" />
+          {/* faint subject-color outer halo (Round C re-score;
+              Round B 1420 P1: opacity 0.16) */}
+          <circle cx={n.x} cy={n.y} r="26" fill={n.s.color} opacity="0.16" />
           <circle cx={n.x} cy={n.y} r="13" fill={n.s.color} opacity="0.22"
             className={animate ? 'mh-halo-pulse' : undefined} style={{ animationDelay: `${i * 0.7}s` }} />
           <circle cx={n.x} cy={n.y} r="5.5" fill={n.s.color} opacity="0.95" />
@@ -313,23 +314,27 @@ export default function MobileHome(props: MobileHomeProps) {
           )}
 
           <div className="mh-network-wrap">
-            {/* Particles behind the constellation (low count, no hover) */}
+            {/* Particles behind the constellation — Round B 2026-11-06 spec:
+                28 faint ambient particles INSIDE the discipline-map area
+                only (spread 5, speed 0.06, opacity 0.28, hover-reactive).
+                particleBaseSize 16, NOT the spec's 1.5: in this WebGL
+                implementation coverage scales as (size/dist*dpr)^2, so 1.5
+                renders ~2% alpha = invisible (same finding as Round A
+                desktop, where 2 was invisible); 16 is the smallest size
+                that visibly renders at opacity 0.28. */}
             {!reducedMotion && (
               <div className="mh-particles" aria-hidden="true">
                 <Particles
-                  particleCount={56}
-                  speed={0.12}
+                  particleCount={28}
+                  particleSpread={5}
+                  speed={0.06}
                   particleColors={['#8FE8DA', '#719AFF', '#B38AFF', '#E6B36C']}
                   alphaParticles
-                  particleBaseSize={22}
-                  sizeRandomness={0.6}
+                  particleBaseSize={16}
+                  sizeRandomness={0.35}
                   disableRotation
-                  moveParticlesOnHover={false}
-                  glow={0.6}
-                  twinkle={0.35}
-                  drift="up"
-                  driftSpeed={0.12}
-                  opacity={0.5}
+                  moveParticlesOnHover
+                  opacity={0.28}
                   className="mh-particles-canvas"
                 />
               </div>
@@ -542,6 +547,18 @@ export default function MobileHome(props: MobileHomeProps) {
       {recent.length > 0 && (
         <section className="mh-section">
           <h2 className="mh-section-head">RECENTLY EXPLORED</h2>
+          {/* Round B 2026-11-06 (deferred 2026-11-05 P2): AnimatedContent on
+              the hero's lower archive content too — tiles + resume already
+              had it; this was the one section missing it. */}
+          <MaybeAnim
+            reducedMotion={reducedMotion}
+            distance={18}
+            duration={0.45}
+            ease="power3.out"
+            once
+            trigger="scroll"
+            container="#kl-mobile-scroll"
+          >
           <Carousel cardWidth={150} gap={10} showArrows={false} ariaLabel="Recently explored documents">
             {recent.map((r, i) => (
               <button
@@ -563,6 +580,7 @@ export default function MobileHome(props: MobileHomeProps) {
               </button>
             ))}
           </Carousel>
+          </MaybeAnim>
         </section>
       )}
     </div>
