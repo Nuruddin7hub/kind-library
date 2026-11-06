@@ -10,7 +10,7 @@
 
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import type { SearchHit } from '../shared';
-import { SUBJECTS, sectionLabel, subjectOf, matchKindsOf, matchScore, hitOpenPage, pageImageUrl } from '../shared';
+import { SUBJECTS, sectionLabel, subjectOf, v2SubjectColor, matchKindsOf, matchScore, hitOpenPage, pageImageUrl } from '../shared';
 import DocCover from './DocCover';
 import BottomSheet from './BottomSheet';
 import SpecularButton from '../bits/SpecularButton';
@@ -151,6 +151,12 @@ function SearchCard({ hit, index, query, bookmarked, onToggleBookmark, onOpenHit
       className="ms-card"
       role="button"
       tabIndex={0}
+      // Round C 2026-11-06 P1: --sc feeds the inset ::before accent bar
+      // only (CSS) — the critique's spec identity token per subject
+      // (em2 #59E1D2, signals #8CA8FF, fis #E6A84F, digital #74D89A).
+      // Labels keep the live SUBJECTS color (`color`) — the bar is the
+      // only element on this token.
+      style={{ ['--sc' as any]: v2SubjectColor(hit.subj) }}
       onClick={open}
       onKeyDown={onCardKeyDown}
       aria-label={`Open ${hit.title} — ${matchInfo}`}
@@ -247,17 +253,29 @@ export default function MobileSearch(props: MobileSearchProps) {
 
   // query+filters+sort+scroll preserved on return (Round C re-score):
   // query persists in the parent (App), scope/sort in kl:msearch:*; the
-  // scroll offset of the shared #kl-mobile-scroll container is saved when
-  // a hit is opened and restored when this view mounts again.
+  // scroll offset of the true scroller is saved when a hit is opened and
+  // restored when this view mounts again. Round B 1420 fix: the scroller
+  // is #root — #kl-mobile-scroll never scrolls (its height grows to its
+  // content, scrollHeight == clientHeight), so saving its scrollTop
+  // always saved 0 and the return position was lost. #root scrolls
+  // because overflow-x:hidden on it computes overflow-y to auto
+  // (same correction Round C made for AnimatedContent triggers).
   const SCROLL_KEY = 'kl:msearch:scroll';
   const scrollerOf = () =>
-    typeof document !== 'undefined' ? document.getElementById('kl-mobile-scroll') : null;
+    typeof document !== 'undefined' ? document.getElementById('root') : null;
+  // Round B 1420: the rail effect below scrolls the active chip into view
+  // on mount — which would drag a restored scroll position back to the
+  // top of the page. Skip it once when a restore just happened.
+  const restoredRef = useRef(false);
   useEffect(() => {
     const el = scrollerOf();
     if (!el) return;
     try {
       const v = parseInt(sessionStorage.getItem(SCROLL_KEY) || '0', 10);
-      if (Number.isFinite(v) && v > 0) el.scrollTop = v;
+      if (Number.isFinite(v) && v > 0) {
+        el.scrollTop = v;
+        restoredRef.current = true;
+      }
     } catch { /* ignore */ }
   }, []);
   const openHitAndSave = (hit: SearchHit, page?: number) => {
@@ -280,6 +298,7 @@ export default function MobileSearch(props: MobileSearchProps) {
   // selected subject chip stays visible in the rail
   const railRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    if (restoredRef.current) { restoredRef.current = false; return; }
     const rail = railRef.current;
     if (!rail) return;
     const active = rail.querySelector('.ms-pill.active') as HTMLElement | null;

@@ -97,9 +97,12 @@ p.msi-headline { margin: 12px 0 0; }
 }
 /* Digital circuit art (Round B 2026-11-04, 1420 loop): taller 200px frame,
  * Circuit Lab accents (#42D9B5 signal / #1C938A trace / #0A2425 base),
- * glass frame: teal edge + inner highlight + depth shadow */
+ * glass frame: teal edge + inner highlight + depth shadow.
+ * Round B 2026-11-06 (deferred 2026-11-05 P1): diagram ~8% shorter
+ * (200px → 184px, max-height 220px cap) for more breathing room below. */
 .msi[data-subject="digital"] .msi-art {
-  height: 200px;
+  height: 184px;
+  max-height: 220px;
   background:
     linear-gradient(180deg, rgba(66, 217, 181, 0.06), transparent 40%),
     #0A2425;
@@ -211,8 +214,11 @@ p.msi-headline { margin: 12px 0 0; }
   text-transform: uppercase;
 }
 
-/* ---------- BROWSE BY TYPE category chips (40px, subject-tinted active) ---------- */
+/* ---------- BROWSE BY TYPE category chips (40px, subject-tinted active) ----------
+ * Round B 2026-11-06 (deferred 2026-11-05 P1): Digital gets ~12px more
+ * breathing room before BROWSE BY TYPE. */
 .msi-cats { margin-top: 18px; }
+.msi[data-subject="digital"] .msi-cats { margin-top: 30px; }
 .msi-cats-label {
   margin: 0 0 10px;
   font-family: var(--font-mono);
@@ -590,7 +596,8 @@ p.msi-headline { margin: 12px 0 0; }
   min-height: 88px;
   padding: 14px 16px;
   border-radius: 14px;
-  border: 1px solid rgba(230, 179, 108, 0.32);
+  /* Round B 1420 P1: spec amber border (was rgba(230,179,108,0.32)). */
+  border: 1px solid rgba(214, 164, 87, 0.38);
   background:
     radial-gradient(120% 140% at 100% 0%, rgba(230, 179, 108, 0.1), transparent 60%),
     rgba(20, 16, 11, 0.85);
@@ -617,19 +624,23 @@ p.msi-headline { margin: 12px 0 0; }
 }
 .msi-qcard-q {
   font-family: var(--font-display, 'Instrument Serif', Georgia, serif);
-  font-size: 19px;
+  /* Round C 2026-11-06 P1: serif 21px/1.04, -0.015em tracking. */
+  font-size: 21px;
   font-style: italic;
-  line-height: 1.25;
+  line-height: 1.04;
+  letter-spacing: -0.015em;
   color: #F4EDE0;
 }
 /* Round B P1: intentional 2-line clamp on every FIS question description
  * (line-height 1.5); the full description is the card's own text, revealed
  * when the card is opened (tap runs the search for that question). */
 .msi-qcard-desc {
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: rgba(240, 238, 233, 0.68);
-  max-width: 32ch;
+  /* Round B 1420 P1: spec descriptive-text contrast — #B5AA98, 12px/1.55
+   * (was rgba(236,225,204,.58) at 1.45). Serif questions untouched. */
+  font-size: 12px;
+  line-height: 1.55;
+  color: #B5AA98;
+  max-width: 30ch;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
@@ -678,7 +689,7 @@ p.msi-headline { margin: 12px 0 0; }
 }
 .msi-qcard.featured .msi-qcard-q {
   font-size: 23px;
-  line-height: 1.22;
+  line-height: 1.04;
 }
 .msi-qcard.featured {
   min-height: 104px;
@@ -688,8 +699,16 @@ p.msi-headline { margin: 12px 0 0; }
     radial-gradient(130% 150% at 100% 0%, rgba(230, 179, 108, 0.16), transparent 60%),
     rgba(24, 19, 13, 0.92);
 }
-.msi-qcard:not(.featured) .msi-qcard-q { font-size: 16px; }
+/* Round B 2026-11-06 P1: compact questions match the base 21px — the
+ * featured card stays dominant via its 23px question + larger frame. */
+.msi-qcard:not(.featured) .msi-qcard-q { font-size: 21px; }
 .msi-qcard:not(.featured) { min-height: 76px; padding: 12px 14px; }
+
+/* Round B 2026-11-06 (deferred 2026-11-05 P2): tiny vertical rhythm
+ * variation between Q01/Q02/Q03 — progressively increasing top padding.
+ * Padding only: no horizontal shift, touch hitboxes untouched. */
+.msi-qcard:nth-child(2) { padding-top: 20px; }
+.msi-qcard:nth-child(3) { padding-top: 22px; }
 
 /* Round C re-score: Big Question exact composition — FIELD NOTE eyebrow */
 .msi-bigq-field {
@@ -803,31 +822,50 @@ p.msi-headline { margin: 12px 0 0; }
   }
 }
 
-/* ---------- Digital live-instrument circuit (Round C re-score) ----------
- * .logic-pulse: signal pulses travel the A/B input lines and the Y output
- * fires on a delay — only after BOTH inputs arrive (both high).
- * stroke-dasharray + stroke-dashoffset keyframes; pathLength=100 on the
- * SVG paths normalises the dash units. No SMIL. */
+/* ---------- Digital tap-to-flow gate (Round B 2026-11-06 P1) ----------
+ * The artwork band is a real button on Digital: tap toggles the signal.
+ * .logic-pulse: illuminated signal path — stroke-dasharray 8 8, flowing
+ * via signalFlow 850ms linear infinite (dashoffset 0 → -32). The flow
+ * runs ONLY while .gate-on is set; the gate body brightens with it.
+ * A/B inputs fire first, Y fires on a delay (both inputs high). No other
+ * new animation on Digital. */
+.msi-art-gate {
+  display: block;
+  width: 100%;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.msi-art-gate:focus-visible {
+  outline: 2px solid #42D9B5;
+  outline-offset: 2px;
+}
+.msi-art-gate.gate-on .msi-gate-body { fill: rgba(66, 217, 181, 0.16); }
 .logic-pulse {
   fill: none;
   stroke: #42D9B5;
   stroke-width: 3.5;
   stroke-linecap: round;
-  stroke-dasharray: 16 84;
+  stroke-dasharray: 8 8;
   filter: drop-shadow(0 0 5px rgba(66, 217, 181, 0.9));
-  animation: logic-pulse-move 3.6s linear infinite;
 }
-.logic-pulse-a { animation-delay: 0s; }
-.logic-pulse-b { animation-delay: 0.45s; }
-.logic-pulse-y {
-  animation-delay: 1.6s; /* output fires only after both inputs are high */
-  stroke-dasharray: 22 78;
+.msi-art-gate.gate-on .logic-pulse {
+  /* Round C 2026-11-06 P1: 850ms per the critique (was 900ms) — the
+   * only change to the gate; the tap behaviour is Round B's, verified. */
+  animation: signalFlow 850ms linear infinite;
+}
+/* delays must outrank the shorthand above (it resets delay to 0s) */
+.msi-art-gate.gate-on .logic-pulse-a { animation-delay: 0s; }
+.msi-art-gate.gate-on .logic-pulse-b { animation-delay: 0.12s; }
+.msi-art-gate.gate-on .logic-pulse-y {
+  animation-delay: 0.4s; /* output fires only after both inputs are high */
   stroke-width: 4;
 }
-@keyframes logic-pulse-move {
-  from { stroke-dashoffset: 100; }
-  to { stroke-dashoffset: -100; }
+@keyframes signalFlow {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -32; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .logic-pulse { animation: none; }
+  .msi-art-gate.gate-on .logic-pulse { animation: none; }
 }
