@@ -164,7 +164,9 @@ p.msi-headline { margin: 12px 0 0; }
   font-family: var(--font-display, 'Instrument Serif', Georgia, serif);
   font-size: 24px;
   line-height: 1.2;
-  color: #F4EDE0;
+  /* Round B 2026-11-07 P1: same question-title contrast as the qcards
+   * (was #F4EDE0). */
+  color: rgba(255, 247, 228, 0.96);
 }
 .msi-bigq-desc {
   margin: 0;
@@ -192,19 +194,28 @@ p.msi-headline { margin: 12px 0 0; }
   transform: scale(0.97);
   background: rgba(185, 138, 78, 0.24);
 }
-/* bronze serif mark, right ~42%, restrained amber light */
+/* bronze serif mark, right ~42%, restrained amber light.
+ * Round B 2026-11-07 P1: the "?" shrinks −15% — clamp(82px,24vw,112px)
+ * (was 140px) — and recedes to opacity .78 (was .92), so the question
+ * outranks the graphic. This is the "?" the critique saw: FisArt's
+ * 112px "?" is NOT rendered on the FIS screen (the Big Question card
+ * replaces the artwork band — see MobileSubjectIndex.tsx); the same
+ * clamp is applied there too, for the reduced-motion path. */
 .msi-bigq-mark {
   flex: 0 0 42%;
   align-self: center;
   text-align: right;
   font-family: var(--font-display, 'Instrument Serif', Georgia, serif);
-  font-size: 140px;
+  font-size: clamp(82px, 24vw, 112px);
   line-height: 1;
-  opacity: 0.92;
+  opacity: 0.78;
   text-shadow: 0 0 44px rgba(185, 138, 78, 0.35);
 }
 
-/* ---------- meta: one mono line, no big stat blocks ---------- */
+/* ---------- meta: one mono line, no big stat blocks ----------
+ * Round B 2026-11-07 P2: Digital gets +8px breathing room — the section
+ * gap above the "N DOCUMENTS · M TYPES" line is 24px on Digital
+ * (was 14px). Other subjects keep 14px. */
 .msi-meta {
   margin: 14px 0 0;
   font-family: var(--font-mono);
@@ -213,10 +224,13 @@ p.msi-headline { margin: 12px 0 0; }
   color: var(--muted);
   text-transform: uppercase;
 }
+.msi[data-subject="digital"] .msi-meta { margin-top: 24px; }
 
 /* ---------- BROWSE BY TYPE category chips (40px, subject-tinted active) ----------
  * Round B 2026-11-06 (deferred 2026-11-05 P1): Digital gets ~12px more
- * breathing room before BROWSE BY TYPE. */
+ * breathing room before BROWSE BY TYPE.
+ * Round B 2026-11-07 P2: Digital browse already sits at 30px — the
+ * spec's 28px target is already met, so the override is untouched. */
 .msi-cats { margin-top: 18px; }
 .msi[data-subject="digital"] .msi-cats { margin-top: 30px; }
 .msi-cats-label {
@@ -624,12 +638,14 @@ p.msi-headline { margin: 12px 0 0; }
 }
 .msi-qcard-q {
   font-family: var(--font-display, 'Instrument Serif', Georgia, serif);
-  /* Round C 2026-11-06 P1: serif 21px/1.04, -0.015em tracking. */
+  /* Round C 2026-11-06 P1: serif 21px/1.04, -0.015em tracking.
+   * Round B 2026-11-07 P1: question-title contrast
+   * rgba(255,247,228,.96) (was #F4EDE0) — hierarchy: question > graphic. */
   font-size: 21px;
   font-style: italic;
   line-height: 1.04;
   letter-spacing: -0.015em;
-  color: #F4EDE0;
+  color: rgba(255, 247, 228, 0.96);
 }
 /* Round B P1: intentional 2-line clamp on every FIS question description
  * (line-height 1.5); the full description is the card's own text, revealed
@@ -811,7 +827,7 @@ p.msi-headline { margin: 12px 0 0; }
 }
 @keyframes msi-fis-qfade {
   from { opacity: 0; }
-  to { opacity: 0.92; }
+  to { opacity: 0.78; } /* Round B 2026-11-07 P1: settles at the spec's .78 (was .92) */
 }
 @media (prefers-reduced-motion: reduce) {
   .msi[data-subject="fis"] .msi-headline,

@@ -130,10 +130,12 @@ p.mh-eyebrow {
   margin: 0;
 }
 
-/* ——— network art: the knowledge field (300px, spec 290–320px) ——— */
+/* ——— network art: the knowledge field (250px, Round B 2026-11-07 P1:
+ * graph height −50px for vertical balance — was 300px, spec 290–320px;
+ * the freed space goes to the search CTA below) ——— */
 .mh-network-wrap {
   position: relative;
-  margin: 18px 0 4px;
+  margin: 18px 0 20px; /* Round B 2026-11-07 P1: bottom 4px → 20px */
 }
 /* Round B 2026-11-06 P0: one very slow light bloom behind the discipline
  * map ONLY — faint teal radial, blurred, pointer-transparent. NOT an
@@ -172,7 +174,7 @@ p.mh-eyebrow {
   z-index: 1;
   display: block;
   width: 100%;
-  height: 300px; /* spec: 290–320px */
+  height: 250px; /* Round B 2026-11-07 P1: was 300px (spec target 250px) */
   margin: 0 auto;
   overflow: visible;
 }
@@ -305,7 +307,8 @@ p.mh-eyebrow {
 /* ——— search: 54px, #0F1723, teal border, specular GO ——— */
 .mh-search {
   position: relative;
-  margin-top: 14px;
+  margin-top: 4px; /* Round B 2026-11-07 P1: was 14px — the CTA takes the
+   * space the shorter graph freed, so it sits closer under the copy */
 }
 .mh-search-input {
   width: 100%;

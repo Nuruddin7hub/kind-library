@@ -12,6 +12,8 @@ import './MobileSubjectIndex.css';
 import MobileDocRow, { type RowFile } from './MobileDocRow';
 import DocCover from './DocCover';
 import RowStagger from './RowStagger';
+import MobileRowEntrance from './MobileRowEntrance';
+import ScrollRail from './ScrollRail';
 import { pageImageUrl, SUBJECTS } from '../shared';
 import ScrollReveal from '../bits/ScrollReveal';
 import BlurText from '../bits/BlurText';
@@ -95,27 +97,27 @@ const CURATED_FEATURED: Record<string, string> = {
   digital: 'Dig_Elec_Sep26_Course_Intro__Overview.pdf',
 };
 
-/** Round C 2026-11-06 P1 — Digital/FIS AnimatedContent entrance, the
- * critique's exact spec (distance 18, vertical, 0.55s, power3.out,
- * initialOpacity 0, animateOpacity, scale 0.99, blur 0, threshold 0.12,
- * delay 0, stagger 0.06, once). container '#root' is the TRUE scroller:
- * the app scrolls inside #root (window stays at 0; #kl-mobile-scroll
- * never scrolls — its clientHeight IS the content height, so a trigger
- * bound to it fires at mount, not on scroll). Digital + FIS content
- * entering the viewport only — NOT Reader, NOT search results, NOT the
- * bottom nav. */
+/** Round B 2026-11-07 P2 — Digital/FIS AnimatedContent entrance, the
+ * critique's exact spec (distance 18, vertical, 0.42s, power3.out,
+ * initialOpacity 0, animateOpacity, scale 1, blur 0, threshold 0.12,
+ * delay 0, stagger 0.055, once — was 0.55s / 0.06 / scale 0.99).
+ * container '#root' is the TRUE scroller: the app scrolls inside #root
+ * (window stays at 0; #kl-mobile-scroll never scrolls — its clientHeight
+ * IS the content height, so a trigger bound to it fires at mount, not
+ * on scroll). Digital + FIS content entering the viewport only — NOT
+ * Reader, NOT search results, NOT the bottom nav. */
 const ANIM_C = {
   distance: 18,
   direction: 'vertical' as const,
-  duration: 0.55,
+  duration: 0.42,
   ease: 'power3.out',
   initialOpacity: 0,
   animateOpacity: true,
-  scale: 0.99,
+  scale: 1,
   blur: 0,
   threshold: 0.12,
   delay: 0,
-  stagger: 0.06,
+  stagger: 0.055,
   trigger: 'scroll' as const,
   container: '#root',
   once: true,
@@ -125,7 +127,7 @@ const ANIM_C = {
  * block isn't in the entrance sequence or reduced-motion is on. When
  * `className` is given, the entrance element itself carries it (the
  * FIS question list: the 3 cards are its direct children, so the
- * 0.06 stagger sequences Q01 → Q02 → Q03). */
+ * 0.055 stagger sequences Q01 → Q02 → Q03). */
 function MaybeAnimC({ children, active, reducedMotion, className, role, ariaLabel }: {
   children: ReactNode; active: boolean; reducedMotion: boolean;
   className?: string; role?: string; ariaLabel?: string;
@@ -140,6 +142,18 @@ function MaybeAnimC({ children, active, reducedMotion, className, role, ariaLabe
       {children}
     </AnimatedContent>
   );
+}
+
+/** Round B 2026-11-07 P2 — the index document rows enter with the
+ * AnimatedContent spec on Digital/FIS only (the critique's scope:
+ * "Digital index cards, FIS index cards"). EM2/Signals keep the proven
+ * RowStagger — out of scope for this loop, and the restraint verdict
+ * says not to touch what already scores. */
+function ListEntrance({ children, active, reducedMotion }: {
+  children: ReactNode; active: boolean; reducedMotion: boolean;
+}) {
+  if (!active) return <RowStagger>{children}</RowStagger>;
+  return <MobileRowEntrance reducedMotion={reducedMotion}>{children}</MobileRowEntrance>;
 }
 
 /** Titles that read like internal working notes — never featured. */
@@ -247,8 +261,13 @@ function FisArt({ accent }: { accent: string }) {
       <text x="24" y="66" fontFamily="var(--font-mono)" fontSize="10" fill={accent} opacity="0.85">Q.01 — WHAT IS KNOWLEDGE?</text>
       <text x="24" y="88" fontFamily="var(--font-mono)" fontSize="10" fill="#ffffff" opacity="0.5">Q.02 — WHAT CAN BE KNOWN?</text>
       <text x="24" y="110" fontFamily="var(--font-mono)" fontSize="10" fill="#ffffff" opacity="0.38">Q.03 — WHY DOES IT MATTER?</text>
-      {/* oversized serif question mark */}
-      <text x="252" y="116" fontFamily="var(--font-display)" fontSize="112" fill={accent} opacity="0.85">?</text>
+      {/* oversized serif question mark — Round B 2026-11-07 P1: −15%,
+          clamp(82px,24vw,112px), opacity .78 (was 112px / .85). This is
+          the reduced-motion path: the artwork band is replaced by the Big
+          Question card on the live FIS screen, whose "?" is .msi-bigq-mark
+          (same clamp, same opacity — see MobileSubjectIndex.css). */}
+      <text x="252" y="116" fontFamily="var(--font-display)" fill={accent}
+        style={{ fontSize: 'clamp(82px, 24vw, 112px)', opacity: 0.78 }}>?</text>
     </svg>
   );
 }
@@ -593,6 +612,9 @@ export default function MobileSubjectIndex({
 
   return (
     <div className={`msi${subject === 'fis' ? ' fis-shell' : ''}`} data-subject={subject} key={subject} style={{ ['--subject-accent' as any]: accent }}>
+      {/* Round B 2026-11-07 P3: subtle scroll-position indicator (Library
+          + subject-index screens only). */}
+      <ScrollRail />
       {onBack && (
         <button className="msi-back" onClick={onBack} aria-label="Back to all documents">
           ‹ LIBRARY
@@ -781,7 +803,7 @@ export default function MobileSubjectIndex({
         </span>
       </div>
       <div className="msi-list">
-        <RowStagger>
+        <ListEntrance active={subject === 'digital' || subject === 'fis'} reducedMotion={reducedMotion}>
           {filtered.map((f, i) => (
             <MobileDocRow
               key={f.key}
@@ -796,7 +818,7 @@ export default function MobileSubjectIndex({
               onToggleBookmark={() => toggleBookmark(f.key)}
             />
           ))}
-        </RowStagger>
+        </ListEntrance>
       </div>
       <p className="msi-hint">SWIPE A ROW LEFT TO BOOKMARK</p>
 

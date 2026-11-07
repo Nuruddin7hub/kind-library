@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import SplitText from '../components/SplitText';
 import AnimatedContent from '../bits/AnimatedContent';
+import SpotlightCard from '../bits/SpotlightCard';
 import {
   SUBJECTS,
   subjectOf,
@@ -107,6 +108,15 @@ export default function SearchPage(props: SearchPageProps) {
   } = props;
 
   const [recent, setRecent] = useState<string[]>(readRecent);
+  // One-shot scan line: increments (debounced) each time the query
+  // settles — the line element re-mounts on the new key and sweeps
+  // once across the input. Never continuous.
+  const [scanTick, setScanTick] = useState(0);
+  useEffect(() => {
+    if (query.trim().length < 2) return;
+    const t = setTimeout(() => setScanTick(n => n + 1), 350);
+    return () => clearTimeout(t);
+  }, [query]);
   // Keyboard-focus only: the selected-row outline appears ONLY after the
   // user actually navigates with the arrow keys — never a permanent outline
   // on the first result. Mouse hover clears it.
@@ -145,9 +155,10 @@ export default function SearchPage(props: SearchPageProps) {
   const SUGGESTED_TERMS = ['Laplace', 'Fourier', 'Metaphysics', 'Logic'];
 
   /** One full-width result row (P4 spec): 76px thumbnail |
-   *  title + meta + real excerpt | right-aligned action. No
-   *  GlareHover (not one of the three approved React Bits) — the
-   *  row itself carries the hover/focus states. */
+   *  title + meta + real excerpt | right-aligned action. Wrapped in
+   *  a restrained SpotlightCard (critiqueA 2026-11-07 P1: spotlight
+   *  rgba(78,242,232,0.07), no tilt, NOT Magic Bento) — the card
+   *  carries the frame, the row keeps the border + geometry. */
   const renderHit = (hit: SearchHit, i: number) => {
     const subj = subjectOf(hit.subj);
     const color = v2SubjectColor(hit.subj);
@@ -165,6 +176,19 @@ export default function SearchPage(props: SearchPageProps) {
     // subject name · type · pages · match page, real excerpt |
     // right-aligned number + OPEN DOCUMENT + match count.
     return (
+      <SpotlightCard
+        key={hit.key}
+        className="kiA-hit-spot"
+        spotlightColor="rgba(78,242,232,0.07)"
+        intensity={0.12}
+        spotlightSize={260}
+        softness={0.8}
+        borderGlow={0}
+        proximity={120}
+        flare={false}
+        grain={0}
+        theme="dark"
+      >
       <div
         className={'kiA-hit' + (isSel ? ' kiA-hit--selected' : '')}
         style={{ '--hit-subject': color } as CSSProperties}
@@ -192,7 +216,9 @@ export default function SearchPage(props: SearchPageProps) {
               {matchKindLabel(hit, query)}
             </span>
           </span>
-          <span className="kiA-hit-title">{highlightQuery(hit.title, query)}</span>
+          {/* Round C P0: structure is metadata / title / excerpt /
+              footer — the meta line moves above the title so the
+              result reads as search evidence, not a title card. */}
           <span className="kiA-hit-meta">
             <span className="kiA-dot" style={{ backgroundColor: color }} aria-hidden="true" />
             {subj?.name ?? hit.subj}
@@ -204,6 +230,7 @@ export default function SearchPage(props: SearchPageProps) {
               <span className="kiA-hit-page"> · match on p. {pg}</span>
             )}
           </span>
+          <span className="kiA-hit-title">{highlightQuery(hit.title, query)}</span>
           {preview && (
             <span className="kiA-hit-preview">{highlightQuery(preview, query)}</span>
           )}
@@ -218,6 +245,7 @@ export default function SearchPage(props: SearchPageProps) {
           )}
         </span>
       </div>
+      </SpotlightCard>
     );
   };
 
@@ -237,6 +265,11 @@ export default function SearchPage(props: SearchPageProps) {
       </header>
 
       <div className="kiA-searchwrap">
+        {/* One-shot scan line (critiqueA 2026-11-07 P1): re-mounts on
+            each settled query change and sweeps once. */}
+        {scanTick > 0 && !qEmpty && (
+          <span key={scanTick} className="kiA-scanline" aria-hidden="true" />
+        )}
         <input
           ref={inputRef}
           className="kiA-input"
@@ -416,16 +449,23 @@ export default function SearchPage(props: SearchPageProps) {
       )}
 
       {!searching && !searchError && !qEmpty && results.length > 0 && (
+        // Round C P1: search-result entrances on the spec motion
+        // language (distance 18, duration 0.48, threshold 0.12,
+        // stagger 0.045, once) — Round A 2026-11-07 sets the spec's
+        // 35-50ms stagger (was 0.06). AnimatedList is NOT used: its
+        // vendored 620ms spring violates the 160-220ms/no-spring
+        // rules; AnimatedContent is the compliant equivalent.
         <AnimatedContent
           key={query + searchSubject + typeFilter + sortMode}
           className="kiA-hits"
           trigger="mount"
-          distance={12}
-          duration={0.2}
+          distance={18}
+          duration={0.48}
           ease="power3.out"
           initialOpacity={0}
-          threshold={0.05}
-          stagger={0.02}
+          blur={0}
+          threshold={0.12}
+          stagger={0.045}
           once
         >
           {results.map((hit, i) => renderHit(hit, i))}

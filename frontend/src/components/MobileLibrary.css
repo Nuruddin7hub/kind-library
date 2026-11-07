@@ -297,6 +297,11 @@
   font-size: 10px;
   letter-spacing: 0.12em;
   color: rgba(255, 255, 255, 0.72);
+  /* Round B 2026-11-07 P1: subject-count separation — the count recedes
+   * (opacity .52) and aligns on tabular figures. margin-left:auto was
+   * already in the rule. */
+  opacity: 0.52;
+  font-variant-numeric: tabular-nums;
 }
 .ml-group-chev {
   font-size: 13px;

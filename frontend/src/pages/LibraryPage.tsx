@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type HTMLAttributes } from 'react';
 import SpotlightCard from '../bits/SpotlightCard';
+import MagicBento from '../bits/MagicBento';
+import CountUp from '../bits/CountUp';
 import SplitText from '../components/SplitText';
 import AnimatedContent from '../bits/AnimatedContent';
 import type { LibFile } from '../shared';
@@ -221,6 +223,69 @@ export default function LibraryPage(props: LibraryPageProps) {
       ? 'No bookmarks yet — tap the bookmark icon on any document.'
       : 'No documents match these filters.';
 
+  // Magic Bento (critiqueA 2026-11-07 P1) covers ONLY the first 4
+  // documents in the current order; the rest keep the plain
+  // SpotlightCard editorial card.
+  const featured = filtered.slice(0, 4);
+  const rest = filtered.slice(4);
+
+  /** Archival record card (critiqueA 2026-11-07 P1): subject · number
+   *  / type / title / pages — OPEN → / real excerpt. When
+   *  `interactive` is false the card is a plain div and navigation
+   *  comes from the Magic Bento item's onClick instead. */
+  const renderEdCard = (f: LibFile, interactive: boolean) => {
+    const color = v2SubjectColor(f.subj);
+    const pos = posMap.get(f.key);
+    const progress = progressOf(f);
+    const opened = recentTs[f.key] ? relTime(recentTs[f.key]) : null;
+    const saved = bookmarks.includes(f.key);
+    const subjCode = subjectOf(f.subj)?.code ?? f.subj.toUpperCase();
+    const excerpt = excerpts[f.key] || '';
+    const interactiveProps: HTMLAttributes<HTMLDivElement> = interactive ? {
+      role: 'button',
+      tabIndex: 0,
+      onClick: () => openReader(f.key),
+      onKeyDown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openReader(f.key); } },
+      'aria-label': `Open ${f.title}`,
+    } : {};
+    return (
+      <div
+        className="kiA-ed-card"
+        style={{ ['--subj' as string]: color } as CSSProperties}
+        {...interactiveProps}
+      >
+        <span className="kiA-ed-watermark" aria-hidden="true">{disciplineGlyph(f.subj)}</span>
+        <div className="kiA-ed-card-top">
+          <span className="kiA-ed-plateno">
+            {subjCode}-{String(subjOrder.get(f.key) ?? 1).padStart(2, '0')}
+          </span>
+          {bookmarkBtn(f)}
+        </div>
+        <p className="kiA-ed-card-type">{sectionLabel(f.section)}</p>
+        <h3 className="kiA-ed-card-title">{f.title}</h3>
+        {excerpt && (
+          <p className="kiA-ed-card-desc">{excerpt}</p>
+        )}
+        {progress !== null && (
+          <div className="kiA-card-progress" role="progressbar"
+            aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}
+            aria-label={`${progress}% read`}>
+            <div className="kiA-card-progress-fill" style={{ width: `${progress}%` }} />
+          </div>
+        )}
+        <div className="kiA-ed-card-foot">
+          <span className="kiA-ed-card-meta">
+            {f.pages} pages
+            {opened ? ` · Opened ${opened}` : ''}
+            {pos ? ` · p.${pos}` : ''}
+            {saved ? ' · Saved' : ''}
+          </span>
+          <span className="kiA-ed-card-open">OPEN →</span>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="kiA-page">
       {/* ---------- edition header ----------
@@ -241,17 +306,25 @@ export default function LibraryPage(props: LibraryPageProps) {
           {subject !== 'all' && hero && (
             <p className="kiA-ed-subline">{hero.keys}.</p>
           )}
+          {/* ROUND A 2026-11-07 (critiqueA-1420 §React Bits): the three
+              collection statistics count up once on entry, like the
+              Overview stats (CountUp trigger="load", 0.9s). Real
+              values only; CountUp re-animates from the current value
+              when the subject changes. */}
           <div className="kiA-ed-stats" role="list" aria-label="Collection statistics">
             <span className="kiA-ed-stat" role="listitem">
-              <span className="kiA-ed-stat-num">{String(subjectFiles.length).padStart(2, '0')}</span>
+              <CountUp to={subjectFiles.length} duration={0.9} trigger="load"
+                prefix={subjectFiles.length < 10 ? '0' : ''} className="kiA-ed-stat-num" />
               <span className="kiA-ed-stat-label">DOCUMENTS</span>
             </span>
             <span className="kiA-ed-stat" role="listitem">
-              <span className="kiA-ed-stat-num">{subjPages.toLocaleString('en-US')}</span>
+              <CountUp to={subjPages} duration={0.9} trigger="load"
+                separator="," className="kiA-ed-stat-num" />
               <span className="kiA-ed-stat-label">PAGES</span>
             </span>
             <span className="kiA-ed-stat" role="listitem">
-              <span className="kiA-ed-stat-num">{String(subjCollections).padStart(2, '0')}</span>
+              <CountUp to={subjCollections} duration={0.9} trigger="load"
+                prefix={subjCollections < 10 ? '0' : ''} className="kiA-ed-stat-num" />
               <span className="kiA-ed-stat-label">COLLECTIONS</span>
             </span>
           </div>
@@ -284,8 +357,10 @@ export default function LibraryPage(props: LibraryPageProps) {
         )}
       </header>
 
-      {/* ---------- controls ---------- */}
-      <div className="kiA-controls" role="toolbar" aria-label="Library controls">
+      {/* ---------- split layout: quiet filter rail + document field
+          (critiqueA 2026-11-07 §Global) ---------- */}
+      <div className="kiA-lib-split">
+        <aside className="kiA-lib-rail" aria-label="Library filters">
         {/* Editorial selectors (§20): DISCIPLINE: / TYPE: text lines with
             a thin cyan indicator under the active option — no chunky pills */}
         <div className="kiA-selectors">
@@ -339,8 +414,9 @@ export default function LibraryPage(props: LibraryPageProps) {
             </div>
           )}
         </div>
-
-        <div className="kiA-controls-row">
+        </aside>
+        <div className="kiA-lib-field">
+        <div className="kiA-controls-row" role="toolbar" aria-label="Library controls">
           <input
             className="kiA-search"
             type="search"
@@ -388,97 +464,99 @@ export default function LibraryPage(props: LibraryPageProps) {
               List
             </button>
           </div>
+          {/* ROUND A 2026-11-07 (critiqueA-1420 §P4.4): the control
+              row states the visible document count — real count of
+              the current filter, not the subject total. */}
+          <span className="kiA-controls-count" aria-live="polite">
+            {String(filtered.length).padStart(2, '0')} DOCUMENT{filtered.length === 1 ? '' : 'S'}
+          </span>
         </div>
-      </div>
 
-      {/* ---------- content ---------- */}
+      {/* ---------- document field ---------- */}
       {filtered.length === 0 ? (
         <div className="kiA-empty" role="status">
           <p>{emptyMessage}</p>
         </div>
       ) : viewMode === 'grid' ? (
+        // Round C P1: document-record entrances on the spec motion
+        // language (distance 18, duration 0.48, threshold 0.12,
+        // stagger 0.045, once) — Round A 2026-11-07 sets the spec's
+        // 35-50ms stagger (was 0.06).
         <AnimatedContent
           key={`${subject}-${section}-${sort}`}
-          className="kiA-grid"
+          className="kiA-lib-grids"
           trigger="mount"
-          distance={24}
-          duration={0.7}
+          distance={18}
+          duration={0.48}
           ease="power3.out"
           initialOpacity={0}
-          threshold={0.1}
-          stagger={0.02}
+          blur={0}
+          threshold={0.12}
+          stagger={0.045}
           staggerFrom="start"
           once
         >
-          {filtered.map((f) => {
-            const color = v2SubjectColor(f.subj);
-            const pos = posMap.get(f.key);
-            const progress = progressOf(f);
-            const opened = recentTs[f.key] ? relTime(recentTs[f.key]) : null;
-            const saved = bookmarks.includes(f.key);
-            const subjCode = subjectOf(f.subj)?.code ?? f.subj.toUpperCase();
-            const excerpt = excerpts[f.key] || '';
-            return (
-              <SpotlightCard
-                key={f.key}
-                className="kiA-card"
-                spotlightColor={color}
-                intensity={0.2}
-                softness={0.7}
-                spotlightSize={230}
-                borderGlow={0.45}
-                proximity={130}
-                flare={false}
-                theme="dark"
-                style={{ ['--subj' as string]: color } as CSSProperties}
-              >
-                {/* Editorial document card (P3): plate number, title,
-                    classification, page count, large low-opacity
-                    discipline watermark behind the content, real
-                    document excerpt where the text index has one
-                    (no description at all where it doesn't),
-                    bookmark action. */}
-                <div
-                  className="kiA-ed-card"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => openReader(f.key)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openReader(f.key); } }}
-                  aria-label={`Open ${f.title}`}
-                >
-                  <span className="kiA-ed-watermark" aria-hidden="true">{disciplineGlyph(f.subj)}</span>
-                  <div className="kiA-ed-card-top">
-                    <span className="kiA-ed-plateno">
-                      {subjCode}-{String(subjOrder.get(f.key) ?? 1).padStart(2, '0')}
-                    </span>
-                    {bookmarkBtn(f)}
-                  </div>
-                  <h3 className="kiA-ed-card-title">{f.title}</h3>
-                  <p className="kiA-ed-card-class">
-                    {sectionLabel(f.section)} · {f.pages} pages
-                  </p>
-                  {excerpt && (
-                    <p className="kiA-ed-card-desc">{excerpt}</p>
-                  )}
-                  {progress !== null && (
-                    <div className="kiA-card-progress" role="progressbar"
-                      aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}
-                      aria-label={`${progress}% read`}>
-                      <div className="kiA-card-progress-fill" style={{ width: `${progress}%` }} />
-                    </div>
-                  )}
-                  <div className="kiA-ed-card-foot">
-                    <span className="kiA-ed-card-meta">
-                      {opened ? `Opened ${opened}` : 'Not opened yet'}
-                      {pos ? ` · p.${pos}` : ''}
-                      {saved ? ' · Saved' : ''}
-                    </span>
-                    <span className="kiA-ed-card-open">Open →</span>
-                  </div>
-                </div>
-              </SpotlightCard>
-            );
-          })}
+          {/* Magic Bento — first 4 documents only (critiqueA 2026-11-07
+              P1; critiqueC 2026-11-07 P0 FIS: rowHeight 210, gap 16,
+              radius 16, textAutoHide false, glowColor #d9a84c for the
+              FIS featured records). No tilt, no stars, no magnetism.
+              rowHeight is a floor — MagicBento uses
+              minmax(rowHeight, auto), so the 245px archival cards
+              still fit without clipping. The "featured FIS records
+              only" wording is read as the FIS screen's featured set
+              (all 4 FIS docs); the first-4 bento stays on the other
+              subjects — removing it there would regress Round A's
+              verified state and the critique never asks for that. */}
+          {featured.length > 0 && (
+            <MagicBento
+              className="de-bento-featured"
+              columns={2}
+              rowHeight={210}
+              gap={16}
+              radius={16}
+              theme="dark"
+              glowColor={subject === 'fis' ? '#d9a84c' : accent}
+              enableBorderGlow
+              enableSpotlight
+              spotlightRadius={220}
+              enableStars={false}
+              enableTilt={false}
+              enableMagnetism={false}
+              clickEffect
+              textAutoHide={false}
+              intro
+              items={featured.map((f) => ({
+                id: f.key,
+                title: f.title,
+                onClick: () => openReader(f.key),
+                content: renderEdCard(f, false),
+              }))}
+            />
+          )}
+          {rest.length > 0 && (
+            <div className="kiA-grid">
+              {rest.map((f) => {
+                const color = v2SubjectColor(f.subj);
+                return (
+                  <SpotlightCard
+                    key={f.key}
+                    className="kiA-card"
+                    spotlightColor={color}
+                    intensity={0.2}
+                    softness={0.7}
+                    spotlightSize={230}
+                    borderGlow={0.45}
+                    proximity={130}
+                    flare={false}
+                    theme="dark"
+                    style={{ ['--subj' as string]: color } as CSSProperties}
+                  >
+                    {renderEdCard(f, true)}
+                  </SpotlightCard>
+                );
+              })}
+            </div>
+          )}
         </AnimatedContent>
       ) : (
         <div className="kiA-list" key={`${subject}-${section}-${sort}`}>
@@ -522,6 +600,8 @@ export default function LibraryPage(props: LibraryPageProps) {
           })}
         </div>
       )}
+        </div>
+      </div>
     </div>
   );
 }

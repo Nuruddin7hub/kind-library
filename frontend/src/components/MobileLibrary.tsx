@@ -10,7 +10,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { LibFile } from '../shared';
 import { SUBJECTS, SECTION_LABELS, sectionLabel, subjectOf, relTime } from '../shared';
 import MobileDocRow from './MobileDocRow';
-import RowStagger from './RowStagger';
+import MobileRowEntrance from './MobileRowEntrance';
+import ScrollRail from './ScrollRail';
 import BottomSheet from './BottomSheet';
 import Dither from '../bits/Dither';
 import SpecularButton from '../bits/SpecularButton';
@@ -229,6 +230,9 @@ export default function MobileLibrary(props: MobileLibraryProps) {
   return (
     <div className={`ml-root mobile-page${reducedMotion ? ' ml-reduced' : ''}`}
       data-subject={indexSubject !== 'all' ? indexSubject : undefined}>
+      {/* Round B 2026-11-07 P3: subtle scroll-position indicator (Library
+          + subject-index screens only). */}
+      <ScrollRail />
       <header className="ml-header">
         {!reducedMotion && (
           <div className="ml-dither" aria-hidden="true">
@@ -376,7 +380,7 @@ export default function MobileLibrary(props: MobileLibraryProps) {
                       <span className={`ml-group-chev${isCollapsed ? ' closed' : ''}`} aria-hidden="true">▾</span>
                     </button>
                     {!isCollapsed && (
-                      <RowStagger>
+                      <MobileRowEntrance reducedMotion={reducedMotion}>
                         {docs.map(f =>
                           docRow(
                             f, globalIndex.get(f.key) ?? 0, bookmarks, onToggleBookmark,
@@ -384,7 +388,7 @@ export default function MobileLibrary(props: MobileLibraryProps) {
                             false,
                           ),
                         )}
-                      </RowStagger>
+                      </MobileRowEntrance>
                     )}
                   </section>
                 );
@@ -392,14 +396,14 @@ export default function MobileLibrary(props: MobileLibraryProps) {
             </div>
           ) : (
             <div className="ml-list">
-              <RowStagger>
+              <MobileRowEntrance reducedMotion={reducedMotion}>
                 {effectiveFiles.map((f, i) =>
                   docRow(
                     f, i, bookmarks, onToggleBookmark,
                     key => onOpenReader(key, effectiveList), studyStateFor(f, recentKeys),
                   ),
                 )}
-              </RowStagger>
+              </MobileRowEntrance>
             </div>
           )}
         </>
@@ -486,12 +490,13 @@ export default function MobileLibrary(props: MobileLibraryProps) {
 
 /** Saved view: header "Saved." + count, bookmarked docs via MobileDocRow. */
 export function MobileSaved({
-  files, bookmarks, onToggleBookmark, onOpenReader,
+  files, bookmarks, onToggleBookmark, onOpenReader, reducedMotion,
 }: {
   files: LibFile[];
   bookmarks: string[];
   onToggleBookmark: (key: string) => void;
   onOpenReader: (key: string, list: string[]) => void;
+  reducedMotion?: boolean;
 }) {
   const saved = useMemo(
     () => files.filter(f => bookmarks.includes(f.key)),
@@ -513,11 +518,11 @@ export function MobileSaved({
         </div>
       ) : (
         <div className="ml-list">
-          <RowStagger>
+          <MobileRowEntrance reducedMotion={reducedMotion}>
             {saved.map((f, i) =>
               docRow(f, i, bookmarks, onToggleBookmark, key => onOpenReader(key, savedList)),
             )}
-          </RowStagger>
+          </MobileRowEntrance>
         </div>
       )}
     </div>

@@ -463,12 +463,19 @@ export default function MobileReader(props: Props) {
   // bottom (48px) — FIT PAGE must fit the content box exactly, so the
   // whole page is visible with no scroll at 100%.
   const fitH = Math.max(0, stageSize.h - 48);
-  let baseW = fitW, baseH = fitW / Math.max(0.2, imgAR);
-  if (fit === 'page' && baseH > fitH) { baseH = fitH; baseW = fitH * Math.max(0.2, imgAR); }
+  // Round B 2026-11-07 P1: the document-stage frame (.mr-stage-frame)
+  // wraps the PDF with 8px padding + 1px border = 18px total. FIT
+  // geometry reserves it, or the framed page would overflow the stage
+  // by 18px and force a horizontal scrollbar at FIT PAGE / FIT WIDTH.
+  const FRAME = 18;
+  const frameW = Math.max(0, fitW - FRAME);
+  const frameH = Math.max(0, fitH - FRAME);
+  let baseW = frameW, baseH = frameW / Math.max(0.2, imgAR);
+  if (fit === 'page' && baseH > frameH) { baseH = frameH; baseW = frameH * Math.max(0.2, imgAR); }
   const boxW = Math.max(40, Math.round(baseW * zoom / 100));
   const boxH = Math.max(40, Math.round(baseH * zoom / 100));
   // continuous geometry: every page at full width minus 24px, 18px gutters
-  const contW = Math.max(40, Math.round(fitW * zoom / 100));
+  const contW = Math.max(40, Math.round((fitW - FRAME) * zoom / 100));
   const contH = Math.max(40, Math.round(contW / Math.max(0.2, imgAR)));
 
   const closeSheet = useCallback(() => setSheet(null), []);
@@ -1076,8 +1083,10 @@ export default function MobileReader(props: Props) {
             onScroll={continuous ? onStageScroll : undefined}
           >
             {continuous
-              ? Array.from({ length: total }, (_, i) => i + 1).map(p => pageBox(p, contW, contH, true))
-              : pageBox(page, boxW, boxH, false)}
+              ? Array.from({ length: total }, (_, i) => i + 1).map(p => (
+                  <div className="mr-stage-frame" key={p}>{pageBox(p, contW, contH, true)}</div>
+                ))
+              : <div className="mr-stage-frame">{pageBox(page, boxW, boxH, false)}</div>}
           </div>
           {/* Gradual Blur feathering on the chrome edges only — never the document */}
           <GradualBlur position="top" height="20px" strength={1.4} layers={6} zIndex={4} />

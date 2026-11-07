@@ -164,14 +164,16 @@
 /* Round C re-score P0 — exact .document-row spec:
  * grid 48px minmax(0,1fr) 44px · min-height 88px · 12px padding · 12px gap ·
  * 14px radius · bookmark 44px justify-self end · cyan active state.
- * width:100% is belt-and-braces with the glare fix above. */
+ * Round B 2026-11-07 P1: −4px vertical padding — min-height 84px,
+ * padding 10px 12px (was 88px / 12px). width:100% is belt-and-braces
+ * with the glare fix above. */
 .ki-row-inner {
   position: relative; display: grid;
   grid-template-columns: 48px minmax(0, 1fr) 44px; /* cover / text / bookmark */
   align-items: center; gap: 12px; /* spec: 12px padding, 12px gap */
-  min-height: 88px; /* spec: 84–100px rows */
+  min-height: 84px; /* Round B 2026-11-07 P1: was 88px */
   width: 100%;
-  padding: 12px;
+  padding: 10px 12px; /* Round B 2026-11-07 P1: was 12px */
   border-radius: 14px; /* spec: 14px */
   border: 1px solid rgba(255, 255, 255, 0.07);
   background: rgba(16, 24, 39, 0.72);
@@ -208,23 +210,27 @@
   font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 10px; letter-spacing: 0.14em; font-weight: 500;
   text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-/* 14px titles (Round B 2026-11-04) */
+/* 14px titles (Round B 2026-11-04) — Round B 2026-11-07 P1: line-height
+ * 1.12 (was 1.35), so two-line titles sit tighter in the 84px rows. */
 .ki-row-title {
-  font-family: var(--font-doc); font-size: 14px; font-weight: 600; line-height: 1.35;
+  font-family: var(--font-doc); font-size: 14px; font-weight: 600; line-height: 1.12;
   color: var(--ke-text);
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-/* 10px metadata line — IBM Plex Mono uppercase (Round B 2026-11-04, 1420 loop) */
+/* 10px metadata line — IBM Plex Mono uppercase (Round B 2026-11-04, 1420 loop).
+ * Round B 2026-11-07 P1: margin-top 2px (the body flex gap already
+ * gives 4px, so title→meta reads 6px — tighter than the old 4px+0). */
 .ki-row-meta {
   font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 10px; letter-spacing: 0.1em;
   text-transform: uppercase; color: var(--muted);
+  margin-top: 2px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-/* 48×64 cover (Round C re-score: matches the 48px grid column) —
- * never blank (DocCover fallback renders on failure) */
-.ki-row-cover { width: 48px; height: 64px; flex-shrink: 0; }
+/* 48×58 cover (Round B 2026-11-07 P1: was 48×64 — matches the reader
+ * thumbnail size now) — never blank (DocCover fallback renders on failure) */
+.ki-row-cover { width: 48px; height: 58px; flex-shrink: 0; }
 .ki-row-coverimg {
-  width: 48px; height: 64px; border-radius: 8px; object-fit: cover;
+  width: 48px; height: 58px; border-radius: 8px; object-fit: cover;
   border: 1px solid var(--line); background: #0C1220; display: block;
 }
 .ki-row-hint {
@@ -253,6 +259,41 @@
   font-size: 11px; letter-spacing: 0.1em; white-space: nowrap;
 }
 .ki-row-menu-btn:active { background: #1B293D; }
+
+/* ---------- subtle scroll-position indicator (Round B 2026-11-07 P3) ----------
+ * Fixed to the viewport's right edge — never inside the content flow, so
+ * it cannot push, cover, or reflow rows, chips, or the bottom nav (it
+ * lives in the 16–18px side gutter). pointer-events:none: it is purely
+ * positional, never tappable. The component hides itself (opacity 0)
+ * when the page doesn't scroll. Track 2px × 96px; thumb 22px #54e7df
+ * with glow; fixed right 5px, top 42%. */
+.ki-scrollrail {
+  position: fixed;
+  right: 5px;
+  top: 42%;
+  z-index: 30;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+.ki-scrollrail-track {
+  position: relative;
+  width: 2px;
+  height: 96px;
+  margin: 0 auto;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.ki-scrollrail-thumb {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 4px;
+  height: 22px;
+  margin-left: -2px;
+  border-radius: 999px;
+  background: #54e7df;
+  box-shadow: 0 0 10px rgba(84, 231, 223, 0.55);
+}
 
 /* ---------- spec-exact list entrance (ChatGPT Round B 2026-11-04, 1420 loop;
  * Round C re-score 2026-11-04: 8px travel, 220ms (0.2–0.25s), 40ms stagger

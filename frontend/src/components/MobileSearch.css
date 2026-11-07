@@ -255,13 +255,14 @@
   display: flex;
   flex-direction: column;
 }
-/* Round C re-score: result layout grid 40px 1fr 40px —
- * cover / title+micro+match+excerpt / bookmark. Whole row opens. */
+/* Round C re-score: result layout grid 42px 1fr 32px (Round B 2026-11-07
+ * P1: was 40px 1fr 40px) — cover / title+micro+match+excerpt / bookmark.
+ * column-gap 12px. Whole row opens. */
 .ms-card {
   position: relative;
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) 40px;
-  gap: 12px;
+  grid-template-columns: 42px minmax(0, 1fr) 32px;
+  column-gap: 12px;
   align-items: center;
   min-height: 96px;
   padding: 12px 0 12px 10px;
@@ -378,11 +379,15 @@
   overflow: hidden;
 }
 
-/* bookmark: own 44px target in the 40px column, never nested in the open action */
+/* bookmark: Round B 2026-11-07 P1 — 32×32, align-self center (was
+ * 44×44). The spec's explicit size: the 32px grid column fits it
+ * exactly. Note: 32px is below the usual 44px tap-target floor — the
+ * critique specified it, and the whole row stays a full-width open tap. */
 .ms-bookmark {
-  width: 44px;
-  height: 44px;
+  width: 32px;
+  height: 32px;
   justify-self: center;
+  align-self: center;
   border: none;
   background: transparent;
   color: var(--text-muted);

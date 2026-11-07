@@ -40,9 +40,21 @@ import './styles/knowledge-instrument.css';
 // critiqueA-1420 spec: P0 foundation + P1 Overview) — imported LAST
 // so its rules win. Every rule lives under `.desktop-app`.
 import './styles/field-edition.css';
-// React Bits Noise — global film grain, opacity 0.055 (critique §1).
+// React Bits Noise — global film grain, opacity 0.025 (critiqueA
+// 2026-11-07 §Global: 4-layer background, mix-blend screen).
 // Desktop only; the component is position:fixed + pointer-events:none.
 import Noise from './bits/Noise';
+// React Bits Aurora — GLOBAL atmosphere layer (critiqueA 2026-11-07:
+// Aurora behind the entire main content, very low opacity, spec
+// colorStops). Replaces the hero-only Aurora (removed from Overview).
+import Aurora from './bits/Aurora';
+// House-written contour-field texture (React Bits has no Topography
+// component — verified 2026-11-07). Global background layer 2.
+import TopographyLayer from './components/TopographyLayer';
+// React Bits Web Threads (verified real 2026-11-07:
+// reactbits.dev/backgrounds/web-threads, registry WebThreads-TS-TW).
+// P2 TEST: the Overview ambient background INSTEAD OF Topography.
+import WebThreads from './bits/WebThreads';
 
 // (LibFile / SearchHit live in ./shared — imported above.)
 
@@ -232,6 +244,14 @@ export default function App() {
   }, [recentOpened]);
 
   const readerFile = files.find(f => f.key === readerKey) || null;
+  // Per-subject document number for the reader identity strip (real
+  // position of this doc within its subject, in library order).
+  const readerDocNumber = useMemo(() => {
+    if (!readerFile) return null;
+    const inSubject = files.filter(f => f.subj === readerFile.subj);
+    const i = inSubject.findIndex(f => f.key === readerFile.key);
+    return i >= 0 ? i + 1 : null;
+  }, [files, readerFile]);
 
 
   // index view: filtered + sorted files (Knowledge Engine: sort = Recent / Title A–Z / Pages)
@@ -290,9 +310,15 @@ export default function App() {
   [searchResults]);
 
   // search keyboard (desktop only): / focuses, arrows move, Enter opens, Escape clears
+  // Round A fix (2026-11-07): when the reader overlay is open, search-view
+  // shortcuts must not fire — Escape belongs to the reader (close), and
+  // Enter would otherwise open a search hit behind the reader. Previously
+  // the first physical Escape only cleared the query and the reader needed
+  // a second press to close.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (isMobile) return;
+      if (readerKey) return;
       const tag = (e.target as HTMLElement)?.tagName;
       const inInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
       if (e.key === '/' && !inInput && !e.metaKey && !e.ctrlKey) {
@@ -323,7 +349,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [view, isMobile, mobileTab, queryActive, searchResults, searchSelected, openReader]);
+  }, [view, isMobile, mobileTab, queryActive, searchResults, searchSelected, openReader, readerKey]);
 
   // Subject counts — single source of truth via shared.getSubjectCounts.
   const subjectCounts = useMemo(() => getSubjectCounts(files), [files]);
@@ -588,6 +614,7 @@ export default function App() {
                 bookmarks={bookmarks}
                 onToggleBookmark={toggleBookmark}
                 onOpenReader={openReader}
+                reducedMotion={reducedMotion}
               />
             )}
             <div className="ki-dock-fade" aria-hidden="true" />
@@ -609,8 +636,100 @@ export default function App() {
           {...(view === 'library' && indexSubject !== 'all' ? { 'data-subject': indexSubject } : {})}
         >
           <GlobalBackdrop />
-          {/* React Bits Noise — global grain, opacity 0.055 (critique §1) */}
-          <Noise opacity={0.055} />
+          {/* LAYER 1 — React Bits Aurora, OVERVIEW ONLY, much quieter
+              (critiqueC 2026-11-07 §Overview: colorStops
+              #083d4b/#071724/#0d2937, amplitude 0.35, blend 0.92,
+              height 0.34, speed 0.16, scale 1.7, glow 0.22,
+              brightness 0.34, layers 2, direction top, opacity 0.22).
+              Round A ran it globally at 0.28 — the critique moves it
+              to Overview-only so Search/Library/Reader stay quiet. */}
+          {view === 'overview' && (
+            <div className="de-aurora-global" aria-hidden="true">
+              <Aurora
+                colorStops={['#083d4b', '#071724', '#0d2937']}
+                amplitude={0.35}
+                blend={0.92}
+                height={0.34}
+                speed={0.16}
+                scale={1.7}
+                glow={0.22}
+                brightness={0.34}
+                layers={2}
+                direction="top"
+                mouseInteraction
+                opacity={0.22}
+                intro
+              />
+            </div>
+          )}
+          {/* P2 TEST — Web Threads replaces Topography on the Overview
+              ONLY (critiqueC: use INSTEAD OF, not on top of, the
+              current background field). Other views keep the house
+              Topography contour field. Remove this layer + the
+              view-gate below to roll back to the old Overview field. */}
+          {view === 'overview' && (
+            <div className="de-webthreads" aria-hidden="true">
+              <WebThreads
+                colors={['#1d7f8c', '#2b6f8f', '#54e7df']}
+                coreColor="#bff3ee"
+                backgroundColor="transparent"
+                threadCount={8}
+                speed={0.12}
+                frequency={4}
+                spread={0.22}
+                glow={0.02}
+                thickness={0.9}
+                brightness={0.35}
+                opacity={0.55}
+                mouseInteraction
+                mouseStrength={0.4}
+                pulseOnClick
+                intro
+              />
+            </div>
+          )}
+          {/* ROUND A 2026-11-07 (critiqueA-1420 §React Bits): Web
+              Threads is the SEARCH background too — verified real
+              (reactbits.dev/backgrounds/web-threads, registry
+              WebThreads-TS-TW). Quieter than the Overview layer
+              (fewer threads, slower, dimmer) and INSTEAD OF
+              Topography on search — one background field per page. */}
+          {view === 'search' && (
+            <div className="de-webthreads de-webthreads--search" aria-hidden="true">
+              <WebThreads
+                colors={['#1d7f8c', '#2b6f8f', '#54e7df']}
+                coreColor="#bff3ee"
+                backgroundColor="transparent"
+                threadCount={6}
+                speed={0.08}
+                frequency={3}
+                spread={0.18}
+                glow={0.02}
+                thickness={0.8}
+                brightness={0.25}
+                opacity={0.35}
+                mouseInteraction
+                mouseStrength={0.3}
+                pulseOnClick
+                intro
+              />
+            </div>
+          )}
+          {/* LAYER 2 — house-written Topography contour field (slow
+              drift). Opacity prop scales the baked 0.10 stroke alpha:
+              0.55 → effective 0.055 (critiqueC P0). Skipped on the
+              Overview and Search, where Web Threads is the field. */}
+          {view !== 'overview' && view !== 'search' && (
+            <TopographyLayer
+              className="de-topo-global"
+              opacity={0.55}
+            />
+          )}
+          {/* LAYER 4 — React Bits Noise grain, opacity 0.018
+              (critiqueC P0: was 0.025), screen blend. */}
+          <div className="de-noise-wrap" aria-hidden="true">
+            <Noise opacity={0.018} />
+          </div>
           <DesktopSidebar
             files={files}
             view={sidebarView}
@@ -618,7 +737,7 @@ export default function App() {
             onGoSubject={gotoLibrarySubject}
             activeSubject={view === 'library' && indexSubject !== 'all' ? indexSubject : null}
           />
-          <Topbar onSearch={goSearch} crumb={view === 'library' ? 'LIBRARY' : view === 'search' ? 'SEARCH' : 'OVERVIEW'} />
+          <Topbar onSearch={goSearch} crumb={view === 'library' ? 'LIBRARY' : view === 'search' ? 'SEARCH' : 'OVERVIEW'} totalDocs={files.length} />
           <main className="kiA-main">
             {view === 'overview' && (
               <Overview
@@ -701,6 +820,7 @@ export default function App() {
           contents={readerContents}
           bookmarkedDocs={readerBookmarked}
           onOpenDoc={(key) => openReader(key, readerList)}
+          docNumber={readerDocNumber ?? undefined}
         />
       )}
     </div>

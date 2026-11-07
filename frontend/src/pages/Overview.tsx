@@ -1,11 +1,11 @@
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
-import SpotlightCard from '../bits/SpotlightCard';
 import CountUp from '../bits/CountUp';
-import Aurora from '../bits/Aurora';
 import Particles from '../bits/Particles';
 import BlurText from '../bits/BlurText';
 import Magnet from '../bits/Magnet';
 import AnimatedContent from '../bits/AnimatedContent';
+import MagicBento from '../bits/MagicBento';
+import GlareHover from '../bits/GlareHover';
 import {
   SUBJECTS,
   disciplineGlyph,
@@ -36,11 +36,16 @@ interface OverviewProps {
 /* AtlasMap (Magnet Lines + SVG graticule).                           */
 /* ------------------------------------------------------------------ */
 
+/* Orbital discipline network (critiqueA 2026-11-07 P2): Σ EM2 top,
+ * ◉ KIND centre, Φ FIS / ∿ SIGNALS sides, ⌘ DIGITAL bottom, with
+ * orbital traces + centre spokes + a selective Particles field.
+ * Nodes sit on/near the outer orbit (top 50,20 · sides 10/90,50 ·
+ * bottom 50,74, clear of the head/detail lines). */
 const FIELD_NODES: Array<{ x: number; y: number }> = [
-  { x: 27, y: 24 }, // EM2
-  { x: 73, y: 27 }, // Signals
-  { x: 30, y: 72 }, // FIS
-  { x: 71, y: 70 }, // Digital
+  { x: 50, y: 20 }, // EM2 — top
+  { x: 90, y: 50 }, // Signals — right
+  { x: 10, y: 50 }, // FIS — left
+  { x: 50, y: 74 }, // Digital — bottom
 ];
 
 function DisciplineField({
@@ -60,7 +65,14 @@ function DisciplineField({
   const hoveredSubject = hovered ? SUBJECTS.find(s => s.id === hovered) : null;
   return (
     <div className="kiA-field" role="group" aria-label="Discipline field — four disciplines" data-hover={hovered ?? ''}>
-      {/* Connection lines: centre K/IND mark → each node. The hovered
+      {/* Orbital traces: three ellipses around the centre KIND mark.
+          Nodes sit on/near the outer trace. */}
+      <svg className="kiA-field-orbits" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <ellipse cx="50" cy="50" rx="40" ry="30" />
+        <ellipse cx="50" cy="50" rx="30" ry="20" transform="rotate(35 50 50)" />
+        <ellipse cx="50" cy="50" rx="20" ry="12" transform="rotate(-30 50 50)" />
+      </svg>
+      {/* Connection lines: centre KIND mark → each node. The hovered
           discipline's line illuminates (field-edition.css, via
           data-hover); the rest stay faint. */}
       <svg className="kiA-field-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
@@ -75,38 +87,36 @@ function DisciplineField({
           />
         ))}
       </svg>
-      <div className="kiA-field-centre" aria-hidden="true"><span>K/IND</span></div>
-      {/* Particles — spec §4 verbatim: 68 particles, discipline colors,
-          connections, hover attract. Field only. */}
+      <div className="kiA-field-centre" aria-hidden="true"><span>◉ KIND</span></div>
+      {/* Particles — critiqueA 2026-11-07 §1 verbatim, except
+          particleBaseSize: spec 48 renders near-invisible in this
+          WebGL impl (same finding as every prior loop: baseSize 2
+          and 48 both leave ~0 lit pixels when sampled). 60 is the
+          proven working value. clickBurst off; drift forward. */}
       {!reducedMotion && (
         <div className="kiA-field-particles" aria-hidden="true">
           <Particles
-            particleCount={68}
-            particleSpread={7}
-            speed={0.08}
+            particleCount={65}
+            particleSpread={9}
+            speed={0.035}
             particleColors={['#59ded3', '#8baaff', '#e6aa53', '#76d6a0']}
-            /* DEVIATION from spec §4: spec says baseSize 2, but this
-               component's scale is ~100 (registry default; camera 20) —
-               baseSize 2 renders at ~1% alpha, i.e. invisible (verified
-               by pixel-sampling the live canvas: 0 lit pixels). 60 keeps
-               the dots restrained in a 420px field while actually
-               visible. All other spec values verbatim. */
             particleBaseSize={60}
-            sizeRandomness={0.7}
+            sizeRandomness={0.8}
             shape="circle"
             glow={0.35}
             twinkle={0.15}
-            depthOfField={0.2}
+            depthOfField={0.35}
             connections
-            connectionDistance={92}
-            drift="none"
+            connectionDistance={125}
+            drift="forward"
+            driftSpeed={0.12}
             moveParticlesOnHover
             hoverEffect="attract"
-            particleHoverFactor={0.3}
-            hoverRadius={110}
-            clickBurst
+            particleHoverFactor={0.35}
+            hoverRadius={180}
+            clickBurst={false}
             alphaParticles
-            opacity={0.55}
+            opacity={0.2}
           />
         </div>
       )}
@@ -156,6 +166,65 @@ function DisciplineField({
 /* ------------------------------------------------------------------ */
 /* Overview page — THE GRAND ARCHIVE (ATLAS edition, 2026-11-05)       */
 /* ------------------------------------------------------------------ */
+
+/* Per-subject card visuals (critiqueA 2026-11-07 P2): each discipline
+ * its own tiny behaviour — EM2 contour lines, Signals waveform, FIS
+ * orbit network, Digital binary grid. Pure SVG, subject-coloured. */
+function DisciplineVisual({ id }: { id: string }) {
+  if (id === 'em2') {
+    return (
+      <svg viewBox="0 0 120 56" fill="none" stroke="currentColor" strokeWidth="1" aria-hidden="true">
+        <ellipse cx="60" cy="28" rx="54" ry="24" opacity="0.9" />
+        <ellipse cx="62" cy="28" rx="40" ry="17" opacity="0.65" />
+        <ellipse cx="58" cy="28" rx="26" ry="11" opacity="0.45" />
+        <ellipse cx="60" cy="28" rx="12" ry="5" opacity="0.3" />
+      </svg>
+    );
+  }
+  if (id === 'signals') {
+    return (
+      <svg viewBox="0 0 120 56" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+        <path d="M0 28 Q 15 6, 30 28 T 60 28 T 90 28 T 120 28" />
+        <path d="M0 40 Q 15 22, 30 40 T 60 40 T 90 40 T 120 40" opacity="0.55" strokeWidth="1" />
+        <path d="M0 16 Q 15 -4, 30 16 T 60 16 T 90 16 T 120 16" opacity="0.55" strokeWidth="1" />
+      </svg>
+    );
+  }
+  if (id === 'fis') {
+    return (
+      <svg viewBox="0 0 120 56" fill="none" stroke="currentColor" aria-hidden="true">
+        <ellipse cx="60" cy="28" rx="52" ry="20" strokeWidth="1" opacity="0.9" />
+        <ellipse cx="60" cy="28" rx="34" ry="13" strokeWidth="1" opacity="0.6" transform="rotate(28 60 28)" />
+        <circle cx="60" cy="28" r="3" fill="currentColor" stroke="none" />
+        <circle cx="98" cy="18" r="2.2" fill="currentColor" stroke="none" />
+        <circle cx="28" cy="40" r="2.2" fill="currentColor" stroke="none" />
+        <circle cx="76" cy="44" r="2.2" fill="currentColor" stroke="none" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 120 56" fill="currentColor" aria-hidden="true">
+      {Array.from({ length: 20 }, (_, i) => {
+        const col = i % 5;
+        const row = Math.floor(i / 5);
+        return (
+          <circle
+            key={i}
+            cx={14 + col * 23}
+            cy={10 + row * 12}
+            r={i % 4 === 0 ? 2.4 : 1.5}
+            opacity={i % 3 === 0 ? 0.9 : 0.45}
+          />
+        );
+      })}
+      <g stroke="currentColor" strokeWidth="1" opacity="0.5">
+        <line x1="14" y1="10" x2="60" y2="22" />
+        <line x1="60" y1="22" x2="106" y2="10" />
+        <line x1="37" y1="34" x2="83" y2="34" />
+      </g>
+    </svg>
+  );
+}
 
 function Stat({ value, label, loaded, pad2 }: { value: number; label: string; loaded: boolean; pad2?: boolean }) {
   return (
@@ -279,28 +348,12 @@ export default function Overview({ files, onOpenReader, onGoSubject, onGoSearch 
     <div className="kiA">
       {/* 1 — Hero: "Knowledge, connected." (KNOWLEDGE INSTRUMENT, 2026-11-06) */}
       <header className="kiA-hero">
-        {/* Aurora — spec §2 verbatim, behind the hero only (right 72%,
-            520px): an illuminated archive chamber, not a landing page. */}
-        {!reduceMotion && (
-          <div className="kiA-hero-aurora" aria-hidden="true">
-            <Aurora
-              colorStops={['#0b2630', '#123f4b', '#071722']}
-              amplitude={0.8}
-              blend={0.72}
-              speed={0.35}
-              height={0.58}
-              scale={1.15}
-              glow={0.42}
-              brightness={0.7}
-              layers={2}
-              mouseInteraction
-              opacity={0.34}
-              intro={false}
-            />
-          </div>
-        )}
+        {/* Aurora lived here (hero-only) until 2026-11-06. Round A
+            2026-11-07 moves it to a GLOBAL layer behind the entire
+            main content (App.tsx, spec colorStops, opacity 0.28) —
+            the hero no longer carries its own Aurora. */}
         <div className="kiA-hero-copy">
-          <p className="kiA-eyebrow">YOUR PERSONAL KNOWLEDGE SYSTEM</p>
+          <p className="kiA-eyebrow">FIELD EDITION · 004 · YOUR PERSONAL KNOWLEDGE SYSTEM</p>
           {/* BlurText (React Bits, verified) — hero headline, focus-to-
               sharp reveal once on load; "connection." is italic + cyan
               via the last-word rule in field-edition.css */}
@@ -320,19 +373,24 @@ export default function Overview({ files, onOpenReader, onGoSubject, onGoSearch 
             Four disciplines. One connected archive. Every page within reach.
           </p>
           <div className="kiA-hero-cta">
-            {/* Magnet on the primary CTA only, very slight */}
+            {/* Magnet on the primary CTA only, very slight; GlareHover
+                (React Bits) on both hero CTAs — critical buttons only. */}
             <Magnet magnetStrength={0.6} maxOffset={6}>
-              <button
-                type="button"
-                className="de-btn-primary"
-                onClick={() => onGoSubject('all')}
-              >
-                Explore the archive&nbsp;&nbsp;→
-              </button>
+              <GlareHover glareColor="#59ded3" glareOpacity={0.3}>
+                <button
+                  type="button"
+                  className="de-btn-primary"
+                  onClick={() => onGoSubject('all')}
+                >
+                  Explore the archive&nbsp;&nbsp;→
+                </button>
+              </GlareHover>
             </Magnet>
-            <button type="button" className="de-btn-secondary" onClick={onGoSearch}>
-              Search the archive
-            </button>
+            <GlareHover glareColor="#ffffff" glareOpacity={0.18}>
+              <button type="button" className="de-btn-secondary" onClick={onGoSearch}>
+                Search the archive
+              </button>
+            </GlareHover>
           </div>
         </div>
         <div className="kiA-hero-field">
@@ -348,72 +406,71 @@ export default function Overview({ files, onOpenReader, onGoSubject, onGoSearch 
 
       {/* Statistics strip — real backend counts, 42px data objects (§16),
           Count Up once on load only */}
-      <AnimatedContent
-        className="kiA-stats"
-        trigger="mount"
-        distance={24}
-        duration={0.7}
-        ease="power3.out"
-        initialOpacity={0}
-        threshold={0.1}
-        once
-      >
-        <div role="list" aria-label="Archive statistics" style={{ display: 'contents' }}>
-          <Stat value={totalDocs} label="DOCUMENTS" loaded={loaded} />
-          <Stat value={totalPages} label="PAGES" loaded={loaded} />
-          <Stat value={SUBJECTS.length} label="FIELDS" loaded={loaded} pad2 />
-          <Stat value={bookmarkCount} label="SAVED" loaded={loaded} pad2 />
-        </div>
-      </AnimatedContent>
+      {/* Statistics strip — real backend counts, 42px data objects (§16),
+          Count Up once on load only. Round C P1: no AnimatedContent
+          wrapper here — the spec reserves it for document/card
+          entrances, and the stats already animate via CountUp. */}
+      <div className="kiA-stats" role="list" aria-label="Archive statistics">
+        <Stat value={totalDocs} label="DOCUMENTS" loaded={loaded} />
+        <Stat value={totalPages} label="PAGES" loaded={loaded} />
+        <Stat value={SUBJECTS.length} label="FIELDS" loaded={loaded} pad2 />
+        <Stat value={bookmarkCount} label="SAVED" loaded={loaded} pad2 />
+      </div>
 
-      {/* 2 — The four discipline plates */}
+      {/* 2 — The four discipline plates. Round C P1: this IS a
+          card entrance, so it keeps AnimatedContent — on the spec
+          motion language (distance 18, duration 0.48, threshold
+          0.12, stagger 0.06, once). */}
       <AnimatedContent
         trigger="mount"
-        distance={24}
-        duration={0.7}
+        distance={18}
+        duration={0.48}
         ease="power3.out"
         initialOpacity={0}
-        threshold={0.1}
+        blur={0}
+        threshold={0.12}
+        stagger={0.06}
         once
       >
       <section className="kiA-section">
         <p className="kiA-eyebrow">Your disciplines</p>
         <h2 className="kiA-display kiA-section-title">Choose your discipline.</h2>
-        {/* Staggered entrance: AnimatedContent staggers its direct
-            children (the four SpotlightCards) on mount. */}
-        <AnimatedContent
-          className="kiA-plates"
-          trigger="mount"
-          distance={18}
-          duration={0.6}
-          ease="power3.out"
-          initialOpacity={0}
-          threshold={0.1}
-          stagger={0.08}
-          once
-        >
-          {SUBJECTS.map((s) => {
+        {/* Magic Bento (React Bits, verified) for the four discipline
+            cards: edge illumination, cursor spotlight, live per-subject
+            artwork, click wave, staggered entrance. No tilt, no stars,
+            no magnetism (props). The bento card carries the surface;
+            the plate inside goes transparent so the spotlight washes
+            the card (field-edition.css). */}
+        <MagicBento
+          className="de-bento-plates"
+          columns={4}
+          rowHeight={320}
+          gap={20}
+          radius={20}
+          theme="dark"
+          glowColor="#59ded3"
+          enableBorderGlow
+          enableSpotlight
+          spotlightRadius={220}
+          enableStars={false}
+          enableTilt={false}
+          enableMagnetism={false}
+          clickEffect
+          intro
+          items={SUBJECTS.map((s) => {
             const color = v2SubjectColor(s.id);
-            return (
-              <SpotlightCard
-                key={s.id}
-                className={`kiA-platecard${fieldHover === s.id ? ' kiA-platecard--lit' : ''}`}
-                spotlightColor={color}
-                intensity={0.2}
-                softness={0.7}
-                spotlightSize={240}
-                borderGlow={0.45}
-                proximity={130}
-                flare={false}
-                theme="dark"
-                style={{ '--subj': color } as CSSProperties}
-              >
-                <button
-                  type="button"
-                  className="kiA-platecard-btn"
-                  onClick={() => onGoSubject(s.id)}
-                  aria-label={`Open ${s.name} — ${counts[s.id] ?? 0} documents`}
+            return {
+              id: s.id,
+              title: `${s.name} — ${counts[s.id] ?? 0} documents`,
+              onClick: () => onGoSubject(s.id),
+              content: (
+                <div
+                  className={`kiA-platecard-btn${fieldHover === s.id ? ' kiA-platecard--lit' : ''}`}
+                  style={{ '--subj': color } as CSSProperties}
                 >
+                  <span className="de-plate-visual" aria-hidden="true">
+                    <DisciplineVisual id={s.id} />
+                  </span>
                   <span className="kiA-platecard-glyph" aria-hidden="true">{disciplineGlyph(s.id)}</span>
                   <h3 className="kiA-platecard-name">{s.name}</h3>
                   <p className="kiA-platecard-tag">{s.tagline}</p>
@@ -421,26 +478,22 @@ export default function Overview({ files, onOpenReader, onGoSubject, onGoSearch 
                     <span className="kiA-platecard-count">
                       <strong>{loaded ? counts[s.id] ?? 0 : '—'}</strong> documents
                     </span>
-                    <span className="kiA-platecard-arrow" aria-hidden="true">→</span>
+                    {/* ROUND A 2026-11-07 (critiqueA-1420 §P1.3):
+                        the bottom action is an explicit label, not a
+                        bare arrow — same slot, same hover slide. */}
+                    <span className="kiA-platecard-arrow" aria-hidden="true">Explore discipline →</span>
                   </span>
-                </button>
-              </SpotlightCard>
-            );
+                </div>
+              ),
+            };
           })}
-        </AnimatedContent>
+        />
       </section>
       </AnimatedContent>
 
-      {/* Resume reading — intentional empty state, never a dashed box */}
-      <AnimatedContent
-        trigger="mount"
-        distance={24}
-        duration={0.7}
-        ease="power3.out"
-        initialOpacity={0}
-        threshold={0.1}
-        once
-      >
+      {/* Resume reading — intentional empty state, never a dashed box.
+          Round C P1: no AnimatedContent wrapper — the spec reserves
+          it for document/card entrances. */}
       <section className="kiA-section">
         <p className="kiA-eyebrow">Continue where you left off</p>
         <h2 className="kiA-display kiA-section-title">Resume your reading.</h2>
@@ -479,19 +532,11 @@ export default function Overview({ files, onOpenReader, onGoSubject, onGoSearch 
           )}
         </div>
       </section>
-      </AnimatedContent>
 
-      {/* 3 — Quick access ledger */}
+      {/* 3 — Quick access ledger. Round C P1: no AnimatedContent
+          wrapper — the spec reserves it for document/card
+          entrances. */}
       {qaSections.length > 0 && (
-      <AnimatedContent
-        trigger="mount"
-        distance={24}
-        duration={0.7}
-        ease="power3.out"
-        initialOpacity={0}
-        threshold={0.1}
-        once
-      >
         <section className="kiA-section">
           <p className="kiA-eyebrow">Quick access</p>
           <h2 className="kiA-display kiA-section-title">Pick up where you left off.</h2>
@@ -524,19 +569,10 @@ export default function Overview({ files, onOpenReader, onGoSubject, onGoSearch 
             ))}
           </div>
         </section>
-      </AnimatedContent>
       )}
 
-      {/* 4 — Recent shelf */}
-      <AnimatedContent
-        trigger="mount"
-        distance={24}
-        duration={0.7}
-        ease="power3.out"
-        initialOpacity={0}
-        threshold={0.1}
-        once
-      >
+      {/* 4 — Recent shelf. Round C P1: no AnimatedContent wrapper —
+          the spec reserves it for document/card entrances. */}
       <section className="kiA-section">
         <p className="kiA-eyebrow">Recently added</p>
         <h2 className="kiA-display kiA-section-title">Your recent shelf.</h2>
@@ -555,7 +591,6 @@ export default function Overview({ files, onOpenReader, onGoSubject, onGoSearch 
           <p className="kiA-empty">Your recently opened documents will appear here.</p>
         )}
       </section>
-      </AnimatedContent>
     </div>
   );
 }

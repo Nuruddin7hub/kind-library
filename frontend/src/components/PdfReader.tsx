@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { consumeReaderStartPage } from '../readerStart';
 import { v2SubjectColor } from '../shared';
 import AnimatedContent from '../bits/AnimatedContent';
+import GlareHover from '../bits/GlareHover';
 import '../styles/reader-env.css';
 
 interface ReaderFile {
@@ -32,6 +33,9 @@ interface Props {
   contents: ContentsSection[];
   bookmarkedDocs: ReaderFile[];
   onOpenDoc: (key: string) => void;
+  /** per-subject document number (real position within its subject,
+      in library order) for the identity strip */
+  docNumber?: number;
 }
 
 function pageImageUrl(subj: string, file: string, page: number, totalPages: number): string {
@@ -49,6 +53,13 @@ const SUBJECT_LABELS: Record<string, string> = {
   signals: 'Signals & Systems',
   fis: 'FIS · Philosophy',
   digital: 'Digital Electronics',
+};
+
+const SUBJECT_CODES: Record<string, string> = {
+  em2: 'EM2',
+  signals: 'SIGNALS',
+  fis: 'FIS',
+  digital: 'DIGITAL',
 };
 
 interface Note {
@@ -73,7 +84,18 @@ interface Highlight {
   page: number;
   label: string;
   ts: number;
+  /** ROUND A 2026-11-07 (critiqueA-1420 §P3.3): highlight colour —
+      distinguishable, not neon. Defaults to yellow for older saves. */
+  color?: HlColor;
 }
+
+/** Highlight colours (spec §P3.3): Yellow / Cyan / Pink. */
+const HL_COLORS = {
+  yellow: { label: 'Yellow', dot: '#E8C86A' },
+  cyan: { label: 'Cyan', dot: '#59DED3' },
+  pink: { label: 'Pink', dot: '#E89BB0' },
+} as const;
+type HlColor = keyof typeof HL_COLORS;
 
 interface TocEntry {
   page: number;
@@ -112,6 +134,7 @@ function loadHighlights(key: string): Highlight[] {
 export default function PdfReader({
   file, sectionLabel, onClose, bookmarked, onToggleBookmark,
   onPrev, onNext, docIndex, docTotal, contents, bookmarkedDocs, onOpenDoc,
+  docNumber,
 }: Props) {
   const [zoom, setZoom] = useState(100);
   const [visiblePage, setVisiblePage] = useState(1);
@@ -122,12 +145,18 @@ export default function PdfReader({
     try { return localStorage.getItem('kl:rail') !== '0'; } catch { return true; }
   });
   const [rightOpen, setRightOpen] = useState(() => {
-    try { return localStorage.getItem('kl:tools') !== '0'; } catch { return true; }
+    try {
+      const stored = localStorage.getItem('kl:tools');
+      // ROUND A 2026-11-07 (critiqueA-1420 §P3.1): below 1200px the
+      // study console starts collapsed — the reader opens it with
+      // TOOLS when wanted — unless the reader already chose.
+      if (stored !== null) return stored !== '0';
+      return window.innerWidth >= 1200;
+    } catch { return true; }
   });
   // P2: four full working areas — BOOKMARKS / NOTES / CONTENTS /
-  // HIGHLIGHTS. Default = bookmarks (no launcher: every tab gets
-  // its full working area immediately).
-  const [tab, setTab] = useState<'bookmarks' | 'notes' | 'contents' | 'highlights'>('bookmarks');
+  // HIGHLIGHTS — shown as stacked Study Console modules (Round A
+  // 2026-11-07: no tabs; every module visible at once).
   const [notes, setNotes] = useState<Note[]>(() => loadNotes(file.key));
   const [noteDraft, setNoteDraft] = useState('');
   const [editingNote, setEditingNote] = useState<number | null>(null);
@@ -136,6 +165,7 @@ export default function PdfReader({
   const [pageBms, setPageBms] = useState<PageBookmark[]>(() => loadPageBms(file.key));
   const [highlights, setHighlights] = useState<Highlight[]>(() => loadHighlights(file.key));
   const [hlDraft, setHlDraft] = useState('');
+  const [hlColor, setHlColor] = useState<HlColor>('yellow');
   // Contents: real PDF TOC from /api/toc where available (heading
   // lines from the actual PDF text); falls back to the subject's
   // section → document list (the `contents` prop) when the doc has
@@ -196,7 +226,7 @@ export default function PdfReader({
     setPageBms(loadPageBms(file.key));
     setHighlights(loadHighlights(file.key));
     setHlDraft('');
-    setTab('bookmarks');
+    setHlColor('yellow');
     setFindQ('');
     setFindResults([]);
     restored.current = false;
@@ -349,6 +379,8 @@ export default function PdfReader({
 
   // page width derives from the available viewport (Round C: document canvas
   // is the dominant surface) — preserves the PDF's natural aspect ratio.
+  // Round C 2026-11-07: cap 900 → 980 (spec: .reader-document
+  // max-width 980px); the stage itself grew too (82px/244px rails).
   const [stageW, setStageW] = useState(() =>
     typeof window !== 'undefined' ? Math.max(900, window.innerWidth - 420) : 980);
   useEffect(() => {
@@ -361,7 +393,7 @@ export default function PdfReader({
     ro.observe(el);
     return () => ro.disconnect();
   }, [file.key]);
-  const pageW = Math.max(320, Math.min(900, stageW - 72)) * (zoom / 100);
+  const pageW = Math.max(320, Math.min(980, stageW - 72)) * (zoom / 100);
 
   const goFullscreen = useCallback(() => {
     const el = document.documentElement;
@@ -374,7 +406,7 @@ export default function PdfReader({
    *  stage when the stage is narrower than 900px. */
   const fitPage = useCallback(() => {
     const avail = stageW - 72;
-    const z = avail > 900 ? Math.min(200, Math.round((avail / 900) * 100)) : 100;
+    const z = avail > 980 ? Math.min(200, Math.round((avail / 980) * 100)) : 100;
     setZoom(z);
   }, [stageW]);
 
@@ -393,9 +425,9 @@ export default function PdfReader({
 
   const addHighlight = useCallback(() => {
     const label = hlDraft.trim() || `Page ${visiblePage}`;
-    setHighlights(prev => [...prev, { page: visiblePage, label, ts: Date.now() }]);
+    setHighlights(prev => [...prev, { page: visiblePage, label, color: hlColor, ts: Date.now() }]);
     setHlDraft('');
-  }, [hlDraft, visiblePage]);
+  }, [hlDraft, visiblePage, hlColor]);
 
   const saveNoteEdit = useCallback(() => {
     const text = editDraft.trim();
@@ -414,11 +446,15 @@ export default function PdfReader({
   return (
     <div className={`reader-shell kiA-v2${readingMode ? ' reading' : ''}`}
       style={{ ['--subject-accent' as any]: subjectAccent, ['--subj-color' as any]: v2SubjectColor(file.subj) }}>
-      {/* document header — title + subject/type/pages (68px, P2) */}
-      {!immersive && (
+      {/* document header — title + subject/type/pages (68px, P2).
+          ROUND A 2026-11-07: the header hides in reading mode —
+          the floating minimal toolbar takes over (see below). */}
+      {!immersive && !readingMode && (
         <div className="ke-reader-header">
           <div className="ke-reader-header-group">
-            <button onClick={onClose} className="ke-reader-btn" aria-label="Back to library">←</button>
+            {/* ROUND A 2026-11-07 (spec §P3.2): the back action is
+                labelled "← Library", not a bare arrow. */}
+            <button onClick={onClose} className="ke-reader-btn ke-reader-back" aria-label="Back to library">← Library</button>
             <button onClick={() => onPrev?.()} disabled={!onPrev} className="ke-reader-btn" aria-label="Previous document">‹</button>
             <button onClick={() => onNext?.()} disabled={!onNext} className="ke-reader-btn" aria-label="Next document">›</button>
           </div>
@@ -444,7 +480,7 @@ export default function PdfReader({
       )}
 
       {/* reading progress bar — floats under the compact header */}
-      {!immersive && (
+      {!immersive && !readingMode && (
         <div className="ke-reader-progress" aria-hidden="true">
           <div style={{ width: `${total ? (visiblePage / total) * 100 : 0}%` }} />
         </div>
@@ -487,6 +523,18 @@ export default function PdfReader({
             if ((e.target as HTMLElement).closest('button')) return;
             setImmersive(v => !v);
           }}>
+          {/* Document identity strip (Round C 2026-11-07 P1): 58px,
+              grid 1fr auto, centred. Left: primary line (subject /
+              type · document nn) over the document title. Right:
+              page x / y · zoom%. The three elements no longer share
+              one cramped flex band. */}
+          <div className="reader-identity">
+            <div className="reader-identity-lines">
+              <span className="reader-identity-primary">{SUBJECT_CODES[file.subj] || file.subj.toUpperCase()} / {sectionLabel} · Document {String(docNumber ?? docIndex + 1).padStart(2, '0')}</span>
+              <span className="reader-identity-title">{file.title}</span>
+            </div>
+            <span className="reader-identity-page">Page {visiblePage} / {total} · {total ? Math.round((visiblePage / total) * 100) : 0}%</span>
+          </div>
           <div className="flex flex-col items-center gap-8">
             {Array.from({ length: total }, (_, i) => i + 1).map(p => (
               <div key={p} id={`kl-page-${p}`} className="reader-doc-page">
@@ -505,7 +553,7 @@ export default function PdfReader({
           </div>
         </div>
 
-        <aside className="reader-panel reader-panel-right" aria-label="Study tools">
+        <aside className="reader-panel reader-panel-right" aria-label="Study console">
           {showRight && (
             <AnimatedContent
               trigger="mount"
@@ -515,14 +563,33 @@ export default function PdfReader({
               ease="power3.out"
               className="reader-panel-anim"
             >
-              <div className="reader-panel-head">
-                <span className="eyebrow">Study tools</span>
+                            <div className="reader-panel-head">
+                <div className="reader-console-head">
+                  <span className="eyebrow">Study console</span>
+                  <span className="reader-console-doc">Document / {SUBJECT_CODES[file.subj] || file.subj.toUpperCase()}</span>
+                  {/* ROUND A 2026-11-07 (spec §P3.3 DOCUMENT section):
+                      the console names the document it belongs to. */}
+                  <span className="reader-console-title">{file.title}</span>
+                </div>
                 <button onClick={toggleRight} className="reader-panel-toggle" aria-label="Hide study tools">›</button>
               </div>
-              {/* Find in document — real full-text matches (backend
+              {/* FIND IN DOCUMENT — real full-text matches (backend
                   text index), this document only; click a match to
-                  jump to its page. */}
-              <div className="reader-find">
+                  jump to its page. Round C: Find is the primary
+                  console module — its own spec-param entrance. */}
+              <AnimatedContent
+                trigger="mount"
+                distance={18}
+                duration={0.48}
+                ease="power3.out"
+                initialOpacity={0}
+                blur={0}
+                threshold={0.12}
+                once
+              >
+              <div className="reader-console-module">
+                <span className="reader-console-label">Find in document</span>
+<div className="reader-find">
                 <input
                   type="search"
                   value={findQ}
@@ -536,19 +603,8 @@ export default function PdfReader({
                   </button>
                 )}
               </div>
-              <div className="reader-tabs" role="tablist" aria-label="Study tools">
-                {(['bookmarks', 'notes', 'contents', 'highlights'] as const).map(t => {
-                  const active = tab === t;
-                  return (
-                    <button key={t} role="tab" aria-selected={active}
-                      className={active ? 'active' : ''}
-                      onClick={() => setTab(t)}>
-                      {t}
-                    </button>
-                  );
-                })}
               </div>
-
+              </AnimatedContent>
               {findQ.trim().length >= 2 ? (
                 <div className="reader-tab-body">
                   {findSearching ? (
@@ -574,10 +630,26 @@ export default function PdfReader({
                   )}
                 </div>
               ) : (
-              <>
-              {tab === 'bookmarks' && (
+              /* Round C P1: the console modules enter on spec params
+                 (distance 18, duration 0.48, stagger 0.06, once) —
+                 Bookmark, Notes, Highlights, Contents, page context,
+                 doc nav stagger in as one choreography. */
+              <AnimatedContent
+                trigger="mount"
+                distance={18}
+                duration={0.48}
+                ease="power3.out"
+                initialOpacity={0}
+                blur={0}
+                threshold={0.12}
+                stagger={0.06}
+                once
+              >
+              <div className="reader-console-module">
+                <span className="reader-console-label">Bookmark</span>
                 <div className="reader-tab-body">
-                  <button className="reader-tool-row" onClick={addPageBookmark}
+                  <GlareHover className="de-glare-block" glareColor="#e8aa48" glareOpacity={0.3}>
+<button className="reader-tool-row" onClick={addPageBookmark}
                     disabled={pageBms.some(b => b.page === visiblePage)}>
                     <span className="text-[16px]" style={{ color: '#F0B86B' }}>★</span>
                     <span className="min-w-0">
@@ -587,6 +659,7 @@ export default function PdfReader({
                       <span className="row-meta block">Saved on this device · persists</span>
                     </span>
                   </button>
+</GlareHover>
                   <button className="reader-tool-row" onClick={onToggleBookmark}
                     aria-pressed={bookmarked}>
                     <span className="text-[16px]" style={{ color: bookmarked ? '#F0B86B' : 'var(--muted)' }}>
@@ -631,9 +704,9 @@ export default function PdfReader({
                     </>
                   )}
                 </div>
-              )}
-
-              {tab === 'notes' && (
+              </div>
+              <div className="reader-console-module">
+                <span className="reader-console-label">Notes <span className="reader-console-count">· {notes.length}</span></span>
                 <div className="reader-tab-body">
                   <div className="reader-note-form">
                     <textarea
@@ -642,7 +715,8 @@ export default function PdfReader({
                       placeholder={`Note on page ${visiblePage}…`}
                       aria-label="Write a note for the current page"
                     />
-                    <button
+                    <GlareHover className="de-glare-block" glareColor="#59ded3" glareOpacity={0.3}>
+<button
                       onClick={addNote}
                       disabled={!noteDraft.trim()}
                       className="ke-cta-primary w-full justify-center mt-2 disabled:opacity-40"
@@ -650,6 +724,7 @@ export default function PdfReader({
                     >
                       Add note · p. {visiblePage}
                     </button>
+</GlareHover>
                   </div>
                   {notes.length === 0 ? (
                     <p className="reader-hint">
@@ -693,9 +768,70 @@ export default function PdfReader({
                     })
                   )}
                 </div>
-              )}
-
-              {tab === 'contents' && (
+              </div>
+              <div className="reader-console-module">
+                <span className="reader-console-label">Highlights <span className="reader-console-count">· {highlights.length}</span></span>
+                <div className="reader-tab-body">
+                  <div className="reader-note-form">
+                    <input
+                      className="reader-hl-input"
+                      value={hlDraft}
+                      onChange={e => setHlDraft(e.target.value)}
+                      placeholder={`Label for page ${visiblePage}…`}
+                      aria-label="Highlight label"
+                    />
+                    {/* ROUND A 2026-11-07 (spec §P3.3): pick the
+                        highlight colour — Yellow / Cyan / Pink. */}
+                    <div className="reader-hl-colors" role="group" aria-label="Highlight colour">
+                      {(Object.keys(HL_COLORS) as HlColor[]).map(c => (
+                        <button
+                          key={c}
+                          type="button"
+                          className={`reader-hl-swatch${hlColor === c ? ' reader-hl-swatch--on' : ''}`}
+                          style={{ ['--hl-dot' as string]: HL_COLORS[c].dot }}
+                          aria-pressed={hlColor === c}
+                          aria-label={`${HL_COLORS[c].label} highlight`}
+                          onClick={() => setHlColor(c)}
+                        />
+                      ))}
+                    </div>
+                    <button
+                      onClick={addHighlight}
+                      className="ke-cta-primary w-full justify-center mt-2"
+                      style={{ padding: '10px 16px', fontSize: 13 }}
+                    >
+                      Highlight page {visiblePage}
+                    </button>
+                  </div>
+                  {highlights.length === 0 ? (
+                    <p className="reader-hint">
+                      No highlights yet. A highlight marks a passage's page with your label — saved on this device.
+                    </p>
+                  ) : (
+                    <>
+                      <div className="reader-sec-label">Highlights · {highlights.length}</div>
+                      {[...highlights].reverse().map(h => (
+                        <div key={h.ts} className="reader-tool-row reader-tool-row--split">
+                          <button className="reader-tool-row-main" onClick={() => goToPage(h.page)}>
+                            <span className="min-w-0">
+                              <span className="row-title">
+                                <span className="reader-hl-dot" style={{ background: HL_COLORS[h.color ?? 'yellow'].dot }} aria-hidden="true" />
+                                {h.label}
+                              </span>
+                              <span className="row-meta block">Page {h.page} of {total} · {new Date(h.ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
+                            </span>
+                          </button>
+                          <button className="note-del" onClick={() => setHighlights(prev => prev.filter(x => x.ts !== h.ts))}>
+                            Delete
+                          </button>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="reader-console-module">
+                <span className="reader-console-label">Contents</span>
                 <div className="reader-tab-body">
                   {!tocLoaded ? (
                     <p className="reader-hint">Loading contents…</p>
@@ -748,59 +884,36 @@ export default function PdfReader({
                     ))
                   )}
                 </div>
-              )}
-
-              {tab === 'highlights' && (
-                <div className="reader-tab-body">
-                  <div className="reader-note-form">
-                    <input
-                      className="reader-hl-input"
-                      value={hlDraft}
-                      onChange={e => setHlDraft(e.target.value)}
-                      placeholder={`Label for page ${visiblePage}…`}
-                      aria-label="Highlight label"
-                    />
-                    <button
-                      onClick={addHighlight}
-                      className="ke-cta-primary w-full justify-center mt-2"
-                      style={{ padding: '10px 16px', fontSize: 13 }}
-                    >
-                      Highlight page {visiblePage}
-                    </button>
-                  </div>
-                  {highlights.length === 0 ? (
-                    <p className="reader-hint">
-                      No highlights yet. A highlight marks a passage's page with your label — saved on this device.
-                    </p>
-                  ) : (
-                    <>
-                      <div className="reader-sec-label">Highlights · {highlights.length}</div>
-                      {[...highlights].reverse().map(h => (
-                        <div key={h.ts} className="reader-tool-row reader-tool-row--split">
-                          <button className="reader-tool-row-main" onClick={() => goToPage(h.page)}>
-                            <span className="min-w-0">
-                              <span className="row-title">{h.label}</span>
-                              <span className="row-meta block">Page {h.page} of {total} · {new Date(h.ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
-                            </span>
-                          </button>
-                          <button className="note-del" onClick={() => setHighlights(prev => prev.filter(x => x.ts !== h.ts))}>
-                            Delete
-                          </button>
-                        </div>
-                      ))}
-                    </>
-                  )}
+              </div>
+              <hr className="reader-console-divider" />
+              <div className="reader-console-module">
+                <span className="reader-console-label">Page context</span>
+                <div className="reader-page-context">
+                  <span className="reader-page-context-nums">{visiblePage} <span>/ {total}</span></span>
+                  {/* ROUND A 2026-11-07 (spec §P3.3 PAGE INFORMATION):
+                      current page / total pages / zoom. */}
+                  <span className="reader-page-context-meta">{sectionLabel} / {subjectLabel} · <span className="reader-zoom">{zoom}% zoom</span></span>
                 </div>
-              )}
-              </>
+              </div>
+              <div className="reader-console-nav">
+                <button type="button" onClick={() => onPrev?.()} disabled={!onPrev}>← Previous</button>
+                <span className="reader-console-nav-pos">{docIndex + 1} / {docTotal}</span>
+                <button type="button" onClick={() => onNext?.()} disabled={!onNext}>Next →</button>
+              </div>
+              </AnimatedContent>
               )}
             </AnimatedContent>
           )}
         </aside>
       </div>
 
-      {/* 52px bottom bar: page · zoom · fit · fullscreen · panels · reading mode (P2) */}
-      {!immersive && (
+      {/* 52px bottom bar (Round C 2026-11-07 P1): primary controls only
+          — PAGE x/y, zoom %, FIT PAGE, PAGES, TOOLS. Secondary
+          (zoom −/+, FULLSCREEN, READING MODE) lives under the TOOLS
+          state: visible only while the study console is open.
+          ROUND A 2026-11-07: the bar hides in reading mode — the
+          floating minimal toolbar below takes over. */}
+      {!immersive && !readingMode && (
         <div className="reader-bottombar">
           <button onClick={() => goToPage(visiblePage - 1)} disabled={visiblePage <= 1}
             className="ke-reader-btn" aria-label="Previous page">‹</button>
@@ -825,25 +938,47 @@ export default function PdfReader({
           <button onClick={() => goToPage(visiblePage + 1)} disabled={visiblePage >= total}
             className="ke-reader-btn" aria-label="Next page">›</button>
           <span className="opacity-30">|</span>
-          <button onClick={() => setZoom(z => Math.max(50, z - 25))}
-            className="ke-reader-btn" aria-label="Zoom out">−</button>
           <span className="reader-zoom-label">{zoom}%</span>
-          <button onClick={() => setZoom(z => Math.min(200, z + 25))}
-            className="ke-reader-btn" aria-label="Zoom in">+</button>
           <button onClick={fitPage} className="ke-reader-btn" aria-label="Fit page to stage">FIT PAGE</button>
-          <span className="opacity-30">|</span>
-          <button onClick={goFullscreen} className="ke-reader-btn" aria-label="Fullscreen">⤢ FULLSCREEN</button>
           <span className="opacity-30">|</span>
           <button onClick={toggleLeft} className={`reader-panel-toggle${leftOpen && !readingMode ? ' on' : ''}`}
             aria-pressed={leftOpen && !readingMode} aria-label="Toggle pages panel">PAGES</button>
           <button onClick={toggleRight} className={`reader-panel-toggle${rightOpen && !readingMode ? ' on' : ''}`}
             aria-pressed={rightOpen && !readingMode} aria-label="Toggle study tools">TOOLS</button>
-          <span className="opacity-30">|</span>
-          <button onClick={() => setReadingMode(v => !v)}
-            className={`reader-mode-btn${readingMode ? ' active' : ''}`}
-            aria-pressed={readingMode} aria-label="Toggle reading mode">
-            {readingMode ? '● READING' : 'READING MODE'}
-          </button>
+          {showRight && (
+            <>
+              <span className="opacity-30">|</span>
+              <button onClick={() => setZoom(z => Math.max(50, z - 25))}
+                className="ke-reader-btn" aria-label="Zoom out">−</button>
+              <button onClick={() => setZoom(z => Math.min(200, z + 25))}
+                className="ke-reader-btn" aria-label="Zoom in">+</button>
+              <span className="opacity-30">|</span>
+              <button onClick={goFullscreen} className="ke-reader-btn" aria-label="Fullscreen">⤢ FULLSCREEN</button>
+              <span className="opacity-30">|</span>
+              <button onClick={() => setReadingMode(v => !v)}
+                className={`reader-mode-btn${readingMode ? ' active' : ''}`}
+                aria-pressed={readingMode} aria-label="Toggle reading mode">
+                {readingMode ? '● READING' : 'READING MODE'}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+      {/* ROUND A 2026-11-07 (spec §P3.5): reading mode's floating
+          minimal toolbar — hides the thumbnail rail + study console
+          (panelsHidden) and the header + bottom bar above, expands
+          the PDF workspace, preserves page/zoom/position. Escape
+          exits reading mode (keyboard handler above). */}
+      {readingMode && (
+        <div className="reader-floatbar" role="toolbar" aria-label="Reading controls">
+          <button onClick={() => goToPage(visiblePage - 1)} disabled={visiblePage <= 1} aria-label="Previous page">‹</button>
+          <span className="reader-floatbar-page">PAGE {visiblePage} / {total} · {zoom}%</span>
+          <button onClick={() => goToPage(visiblePage + 1)} disabled={visiblePage >= total} aria-label="Next page">›</button>
+          <span className="reader-floatbar-sep" aria-hidden="true" />
+          <button onClick={() => setZoom(z => Math.max(50, z - 25))} aria-label="Zoom out">−</button>
+          <button onClick={() => setZoom(z => Math.min(200, z + 25))} aria-label="Zoom in">+</button>
+          <span className="reader-floatbar-sep" aria-hidden="true" />
+          <button onClick={() => setReadingMode(false)}>EXIT READING</button>
         </div>
       )}
     </div>
