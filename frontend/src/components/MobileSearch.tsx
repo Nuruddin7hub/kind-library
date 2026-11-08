@@ -186,7 +186,7 @@ function SearchCard({ hit, index, query, bookmarked, onToggleBookmark, onOpenHit
         />
       </GlareHover>
 
-      {/* Round C re-score: grid 40px 1fr 40px — cover / title+micro+match+excerpt / bookmark */}
+      {/* Round B 2026-11-08 P0: grid 42px 1fr 40px — cover / title+micro+match+excerpt / right rail (bookmark + OPEN →) */}
       <div className="ms-card-main">
         {/* query fragment highlighted in the title (muted teal, original type) */}
         <h3 className="ms-title">{highlightTitle(hit.title, query)}</h3>
@@ -218,15 +218,21 @@ function SearchCard({ hit, index, query, bookmarked, onToggleBookmark, onOpenHit
         )}
       </div>
 
-      <button
-        type="button"
-        className={`ms-bookmark${bookmarked ? ' on' : ''}`}
-        aria-label={bookmarked ? `Remove bookmark for ${hit.title}` : `Bookmark ${hit.title}`}
-        aria-pressed={bookmarked}
-        onClick={(e) => { e.stopPropagation(); onToggleBookmark(hit.key); }}
-      >
-        {bookmarked ? '★' : '☆'}
-      </button>
+      {/* Round B 2026-11-08 P0: right rail — bookmark + faint OPEN →
+          affordance stacked (the whole row opens; the text is a quiet
+          hint, aria-hidden, never a button). */}
+      <span className="ms-result-rail">
+        <button
+          type="button"
+          className={`ms-bookmark${bookmarked ? ' on' : ''}`}
+          aria-label={bookmarked ? `Remove bookmark for ${hit.title}` : `Bookmark ${hit.title}`}
+          aria-pressed={bookmarked}
+          onClick={(e) => { e.stopPropagation(); onToggleBookmark(hit.key); }}
+        >
+          {bookmarked ? '★' : '☆'}
+        </button>
+        <span className="ms-open-afford" aria-hidden="true">OPEN →</span>
+      </span>
     </div>
   );
 }
@@ -302,7 +308,7 @@ export default function MobileSearch(props: MobileSearchProps) {
     const rail = railRef.current;
     if (!rail) return;
     const active = rail.querySelector('.ms-pill.active') as HTMLElement | null;
-    if (active) active.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+    if (active) active.scrollIntoView({ inline: 'center', block: 'nearest', behavior: reducedMotion ? 'auto' : 'smooth' }); // Round B 2026-11-08 P1: no smooth scroll under reduced motion.
   }, [searchSubject]);
 
   // Client-side scope filter over the parent-debounced results.

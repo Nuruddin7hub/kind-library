@@ -1,18 +1,18 @@
 // K/IND mobile engine — MOBILE HOME screen (ChatGPT Round B, 2026-11-04).
-// FIELD EDITION mobile rebuild per the Round B critique (kind.serve01 loop):
+// FIELD EDITION mobile rebuild per the Round B critique (morning loop):
 // page-specific field identity (field-atmosphere.css) · Aurora hero-only with
 // the critique's exact settings (NO mouse interaction) · restrained
 // teal/blue light field (CSS gradients — strongest behind the network
 // graphic, weaker behind the stats) · upgraded network art (~280×200,
 // pulsing nodes, halos, fixed labels, faint grid, travelling signal with
 // arrival pulse — real subject data only) · BlurText
-// headlines (words/top/90/0.4/7, once) · ShinyText eyebrow · CountUp stats
+// headlines (words/top/70-110/0.4/7, first open only per session) · ShinyText eyebrow · CountUp stats
 // (once, real values) · 54px search with SpecularButton GO · discipline
 // tiles as signature cards (SpotlightCard tap/focus + full-bleed per-subject
 // SVG artwork, subject bottom edge, art never behind text) · AnimatedContent
 // section entrances. Desktop untouched. Mobile only.
 
-import { useCallback, useState, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import type { LibFile } from '../shared';
 import { SUBJECTS, pageImageUrl, relTime, subjectOf } from '../shared';
 import Aurora from '../bits/Aurora';
@@ -133,10 +133,18 @@ function SubjectMotif({ id, color }: { id: string; color: string }) {
  *  one per real discipline (SUBJECTS = the only network data: no invented
  *  relationships), visible connecting lines, pulsing nodes, subject halos,
  *  faint grid, fixed node labels. Slow SMIL travelling signal along one
- *  connection (~4.5s: ~2.9s travel, ~1.6s pause) with a halo pulse on the
- *  destination node on arrival. Static when reduced-motion. */
-function NetworkField({ animate, onNodeTap }: {
+ *  connection (Round B 2026-11-08 P1: 5.5s — ~3.5s travel with a
+ *  cubic-bezier(.4,0,.2,1) ease, ~2.0s pause — one pulse at a time) with a
+ *  halo pulse on the destination node on arrival. Static when reduced-motion.
+ * Round B 2026-11-08 P2 (1420 loop): INTERACTIVE, no React Bits
+ *  background — tapping a node selects it: the node illuminates (brighter
+ *  halo + subject ring), the lines touching it brighten in the subject
+ *  color, and the parent shows the discipline label + preview card with
+ *  the real doc count. The 52px invisible tap circle per node (r=26)
+ *  already exceeds the 44px floor and is unchanged. */
+function NetworkField({ animate, selected, onNodeTap }: {
   animate: boolean;
+  selected: string | null;
   onNodeTap: (id: string) => void;
 }) {
   // Round C re-score: node spacing +8–10% — (64,64),(216,64),(64,236),(216,236)
@@ -150,6 +158,8 @@ function NetworkField({ animate, onNodeTap }: {
   for (let x = 0; x <= 280; x += 20) grid.push(`M${x},0 V300`);
   for (let y = 0; y <= 300; y += 20) grid.push(`M0,${y} H300`);
   const links: Array<[number, number]> = [[0, 1], [2, 3], [0, 2], [1, 3], [0, 3], [1, 2]];
+  const selIdx = selected ? nodes.findIndex(n => n.s.id === selected) : -1;
+  const selColor = selIdx >= 0 ? nodes[selIdx].s.color : null;
   const SIGNAL_PATH = 'M64,64 L216,236'; // EM2 → DIGITAL diagonal
   return (
     <svg className="mh-network" viewBox="0 0 280 300" preserveAspectRatio="xMidYMid meet" role="img"
@@ -161,11 +171,18 @@ function NetworkField({ animate, onNodeTap }: {
         </radialGradient>
       </defs>
       <path d={grid.join(' ')} stroke="rgba(150,180,215,.07)" strokeWidth="1" fill="none" />
-      {links.map(([a, b], i) => (
-        <line key={i}
-          x1={nodes[a].x} y1={nodes[a].y} x2={nodes[b].x} y2={nodes[b].y}
-          stroke="rgba(112,197,204,0.34)" strokeWidth="1.15" />
-      ))}
+      {links.map(([a, b], i) => {
+        // Round B 2026-11-08 P2: lines touching the selected node brighten
+        // in the subject color; the rest stay at the quiet default.
+        const lit = selIdx >= 0 && (a === selIdx || b === selIdx);
+        return (
+          <line key={i}
+            x1={nodes[a].x} y1={nodes[a].y} x2={nodes[b].x} y2={nodes[b].y}
+            stroke={lit && selColor ? selColor : 'rgba(112,197,204,0.34)'}
+            strokeOpacity={lit ? 0.85 : 1}
+            strokeWidth={lit ? 2 : 1.15} />
+        );
+      })}
       {nodes.map((n, i) => (
         <g key={i}
           className={animate ? 'mh-node' : 'mh-node-tap'}
@@ -177,6 +194,7 @@ function NetworkField({ animate, onNodeTap }: {
           tabIndex={0}
           role="button"
           aria-label={`${n.s.name} — tap to preview`}
+          aria-pressed={selected === n.s.id}
           cursor="pointer"
         >
           <title>{n.s.name}</title>
@@ -187,6 +205,14 @@ function NetworkField({ animate, onNodeTap }: {
           <circle cx={n.x} cy={n.y} r="26" fill={n.s.color} opacity="0.16" />
           <circle cx={n.x} cy={n.y} r="13" fill={n.s.color} opacity="0.22"
             className={animate ? 'mh-halo-pulse' : undefined} style={{ animationDelay: `${i * 0.7}s` }} />
+          {/* Round B 2026-11-08 P2: selected node illuminates — a
+              stronger halo + a subject-color ring around the core dot. */}
+          {selected === n.s.id && (
+            <>
+              <circle cx={n.x} cy={n.y} r="26" fill={n.s.color} opacity="0.3" />
+              <circle cx={n.x} cy={n.y} r="9.5" fill="none" stroke={n.s.color} strokeWidth="2" opacity="0.95" />
+            </>
+          )}
           <circle cx={n.x} cy={n.y} r="5.5" fill={n.s.color} opacity="0.95" />
           <circle cx={n.x} cy={n.y} r="5.5" fill="none" stroke="#fff" strokeWidth="1" opacity="0.5" />
           <text x={n.x} y={n.y + 28} textAnchor="middle" fontSize="8.5"
@@ -196,18 +222,22 @@ function NetworkField({ animate, onNodeTap }: {
       ))}
       {animate && (
         <g aria-hidden="true">
+          {/* Round B 2026-11-08 P1: one pulse at a time, 5.5s cycle,
+              cubic-bezier(.4,0,.2,1) ease on the travel (SMIL spline) —
+              travel ~3.5s, hold ~2.0s. */}
           <circle r="3" fill="#8FE8DA" opacity="0.9">
             <animateMotion
-              dur="4.5s"
+              dur="5.5s"
               repeatCount="indefinite"
-              keyTimes="0;0.65;1"
+              keyTimes="0;0.64;1"
               keyPoints="0;1;1"
-              calcMode="linear"
+              calcMode="spline"
+              keySplines="0.4 0 0.2 1; 0 0 1 1"
               path={SIGNAL_PATH}
             />
           </circle>
-          {/* arrival pulse on the destination node: same 4.5s period,
-              delayed by the travel time (~2.9s), one pulse per cycle */}
+          {/* arrival pulse on the destination node: same 5.5s period,
+              delayed by the travel time (~3.5s), one pulse per cycle */}
           <circle cx="216" cy="236" r="10" fill="none" stroke="#32D3BD"
             strokeWidth="1.5" className="mh-arrival-pulse" />
         </g>
@@ -243,6 +273,19 @@ export default function MobileHome(props: MobileHomeProps) {
     setHeroCounted(true);
   }, []);
   const showCountUp = !reducedMotion && !heroCounted;
+  // Round B 2026-11-08 P1: BlurText entrance plays on Home FIRST open
+  // only (per tab session). The flag is written on mount WITHOUT a
+  // re-render, so this mount still animates and the NEXT mount renders
+  // the static headline — marking it in state here would swap the
+  // headline mid-animation. New key, no existing kl:* schema touched.
+  const [heroBlurred] = useState(() => {
+    try { return sessionStorage.getItem('kl:hero-blur-done') === '1'; } catch { return false; }
+  });
+  useEffect(() => {
+    if (reducedMotion || heroBlurred) return;
+    try { sessionStorage.setItem('kl:hero-blur-done', '1'); } catch { /* ignore */ }
+  }, [reducedMotion, heroBlurred]);
+  const showBlur = !reducedMotion && !heroBlurred;
   // constellation node preview (Round B 2026-11-04, 1420 loop): tapping a
   // node shows a per-subject preview with the real document count
   const [preview, setPreview] = useState<string | null>(null);
@@ -302,12 +345,14 @@ export default function MobileHome(props: MobileHomeProps) {
               disabled={false}
             />
           )}
-          {!reducedMotion ? (
+          {/* Round B 2026-11-08 P1: BlurText delays 70/110 (were 90/130),
+              first open only — later Home visits render the static h1. */}
+          {showBlur ? (
             <>
               <BlurText className="mh-headline" text="Think deeper." animateBy="words"
-                direction="top" trigger="load" loop={false} delay={90} stepDuration={0.4} blur={7} distance={30} />
+                direction="top" trigger="load" loop={false} delay={70} stepDuration={0.4} blur={7} distance={30} />
               <BlurText className="mh-headline" text="Connect everything." animateBy="words"
-                direction="top" trigger="load" loop={false} delay={130} stepDuration={0.4} blur={7} distance={30} />
+                direction="top" trigger="load" loop={false} delay={110} stepDuration={0.4} blur={7} distance={30} />
             </>
           ) : (
             <h1 className="mh-headline">Think deeper.<br />Connect everything.</h1>
@@ -339,7 +384,10 @@ export default function MobileHome(props: MobileHomeProps) {
                 />
               </div>
             )}
-            <NetworkField animate={!reducedMotion} onNodeTap={(id) => setPreview(id)} />
+            <NetworkField animate={!reducedMotion} selected={preview}
+              // Round B 2026-11-08 P2: tapping the selected node again
+              // deselects it (closes the preview + label).
+              onNodeTap={(id) => setPreview(p => (p === id ? null : id))} />
             {preview && (() => {
               const s = SUBJECTS.find(x => x.id === preview);
               if (!s) return null;
@@ -370,6 +418,21 @@ export default function MobileHome(props: MobileHomeProps) {
               );
             })()}
           </div>
+
+          {/* Round B 2026-11-08 P2: small label under the graphic showing
+              the selected discipline + its real doc count. The preview
+              card above (code/name/count/OPEN COLLECTION) is unchanged. */}
+          {preview && (() => {
+            const s = SUBJECTS.find(x => x.id === preview);
+            if (!s) return null;
+            const count = subjectCounts[s.id] ?? 0;
+            return (
+              <p className="mh-net-label" aria-live="polite">
+                <span style={{ color: s.color }}>{s.code}</span>
+                {' — '}{s.name.toUpperCase()} · {count} DOCUMENTS
+              </p>
+            );
+          })()}
 
           <p className="mh-supporting">
             {totalDocs} documents. 4 disciplines. Your entire study world.

@@ -53,8 +53,14 @@ import Aurora from './bits/Aurora';
 import TopographyLayer from './components/TopographyLayer';
 // React Bits Web Threads (verified real 2026-11-07:
 // reactbits.dev/backgrounds/web-threads, registry WebThreads-TS-TW).
-// P2 TEST: the Overview ambient background INSTEAD OF Topography.
+// Search background identity (Round A 2026-11-08 spec §10).
 import WebThreads from './bits/WebThreads';
+// React Bits Flux Lines (verified real 2026-11-08:
+// reactbits.dev/backgrounds/flux-lines, registry FluxLines-TS-CSS,
+// vendored verbatim in bits/FluxLines.tsx). Overview background
+// identity (Round A 2026-11-08 spec §2/§10) — replaces the Round C
+// Web Threads test layer on Overview; Web Threads stays Search-only.
+import FluxLines from './bits/FluxLines';
 
 // (LibFile / SearchHit live in ./shared — imported above.)
 
@@ -106,6 +112,22 @@ export default function App() {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const openReader = useCallback((key: string, list: string[]) => {
+    // Round B 2026-11-08 P2 (1420 loop): preserve the list scroll position
+    // across the reader. Opening the reader UNMOUNTS the tab content, so
+    // #root's scrollHeight collapses to the fixed reader and scrollTop
+    // clamps to 0 — measured live: library 1214 → 0 on close. Save the
+    // offset here (only when NOT already reading — prev/next inside the
+    // reader must not overwrite the good value with 0) and restore it in
+    // the readerKey effect below when the reader closes. Mobile only
+    // (#kl-mobile-scroll exists only on the mobile branch — a live DOM
+    // check, so no stale-closure risk in this useCallback): desktop
+    // keeps its own reader behaviour untouched.
+    if (!document.querySelector('.mr-reader') && document.getElementById('kl-mobile-scroll')) {
+      try {
+        const el = document.getElementById('root');
+        if (el) sessionStorage.setItem('kl:reader-return-scroll', String(el.scrollTop));
+      } catch { /* ignore */ }
+    }
     setReaderList(list.length ? list : [key]);
     setReaderKey(key);
     setRecentOpened(prev => {
@@ -119,6 +141,41 @@ export default function App() {
       return next;
     });
   }, []);
+
+  // Round B 2026-11-08 P2: restore the list scroll position when the
+  // reader closes (see openReader above). Runs after the tab content
+  // remounts — 60ms lets layout settle. Clears the saved value so a
+  // stale offset never re-applies. The first run clears any value left
+  // by a reload-while-reading instead of scrolling on load. Search has
+  // its own kl:msearch:scroll restore; both write the same value.
+  const readerReturnMounted = useRef(false);
+  useEffect(() => {
+    if (!readerReturnMounted.current) {
+      readerReturnMounted.current = true;
+      try { sessionStorage.removeItem('kl:reader-return-scroll'); } catch { /* ignore */ }
+      return;
+    }
+    if (readerKey !== null) return;
+    // Mobile only — #kl-mobile-scroll exists solely on the mobile branch.
+    if (!document.getElementById('kl-mobile-scroll')) return;
+    let v = 0;
+    try { v = parseInt(sessionStorage.getItem('kl:reader-return-scroll') || '0', 10); } catch { /* ignore */ }
+    if (!Number.isFinite(v) || v <= 0) return;
+    // Two attempts: the list can still be settling (lazy thumbs/fonts)
+    // when the first fires, clamping scrollTop a few px short (measured
+    // 588 → 579). The second attempt only ever corrects an upward
+    // shortfall — it never pulls the user back down past where they are.
+    const attempt = () => {
+      const el = document.getElementById('root');
+      if (el && el.scrollTop < v - 4) el.scrollTop = v;
+    };
+    const t1 = window.setTimeout(attempt, 60);
+    const t2 = window.setTimeout(() => {
+      attempt();
+      try { sessionStorage.removeItem('kl:reader-return-scroll'); } catch { /* ignore */ }
+    }, 300);
+    return () => { window.clearTimeout(t1); window.clearTimeout(t2); };
+  }, [readerKey]);
 
   const toggleBookmark = useCallback((key: string) => {
     setBookmarks(prev => {
@@ -636,13 +693,9 @@ export default function App() {
           {...(view === 'library' && indexSubject !== 'all' ? { 'data-subject': indexSubject } : {})}
         >
           <GlobalBackdrop />
-          {/* LAYER 1 — React Bits Aurora, OVERVIEW ONLY, much quieter
-              (critiqueC 2026-11-07 §Overview: colorStops
-              #083d4b/#071724/#0d2937, amplitude 0.35, blend 0.92,
-              height 0.34, speed 0.16, scale 1.7, glow 0.22,
-              brightness 0.34, layers 2, direction top, opacity 0.22).
-              Round A ran it globally at 0.28 — the critique moves it
-              to Overview-only so Search/Library/Reader stay quiet. */}
+          {/* LAYER 1 — React Bits Aurora, OVERVIEW ONLY. Round A
+              2026-11-08 spec §2: opacity 0.16 (was 0.22), blur 40px
+              via .de-aurora-global CSS — depth, not lines. */}
           {view === 'overview' && (
             <div className="de-aurora-global" aria-hidden="true">
               <Aurora
@@ -657,57 +710,61 @@ export default function App() {
                 layers={2}
                 direction="top"
                 mouseInteraction
-                opacity={0.22}
+                opacity={0.16}
                 intro
               />
             </div>
           )}
-          {/* P2 TEST — Web Threads replaces Topography on the Overview
-              ONLY (critiqueC: use INSTEAD OF, not on top of, the
-              current background field). Other views keep the house
-              Topography contour field. Remove this layer + the
-              view-gate below to roll back to the old Overview field. */}
+          {/* LAYER 2 — React Bits Flux Lines, OVERVIEW ONLY (Round A
+              2026-11-08 spec §2/§10: Overview identity = Flux Lines;
+              color #38d9d0, opacity 0.11, speed 0.12). Replaces the
+              Round C Web Threads test layer here — one background
+              field per page; Web Threads stays Search-only. */}
           {view === 'overview' && (
-            <div className="de-webthreads" aria-hidden="true">
-              <WebThreads
-                colors={['#1d7f8c', '#2b6f8f', '#54e7df']}
-                coreColor="#bff3ee"
-                backgroundColor="transparent"
-                threadCount={8}
+            <div className="de-fluxlines" aria-hidden="true">
+              <FluxLines
+                colors={['#38d9d0', '#1d7f8c', '#54e7df']}
                 speed={0.12}
-                frequency={4}
-                spread={0.22}
-                glow={0.02}
-                thickness={0.9}
-                brightness={0.35}
-                opacity={0.55}
+                scale={1.6}
+                turbulence={1}
+                fluidity={0.1}
+                rimWidth={0.2}
+                sharpness={2.5}
+                shimmer={1.5}
+                glow={2}
+                lineWidth={1}
+                flowDirection="down"
+                opacity={0.11}
                 mouseInteraction
-                mouseStrength={0.4}
-                pulseOnClick
+                mouseStrength={0.6}
+                mouseRadius={0.35}
+                clickSwirl={false}
                 intro
+                transparent
               />
             </div>
           )}
-          {/* ROUND A 2026-11-07 (critiqueA-1420 §React Bits): Web
-              Threads is the SEARCH background too — verified real
-              (reactbits.dev/backgrounds/web-threads, registry
-              WebThreads-TS-TW). Quieter than the Overview layer
-              (fewer threads, slower, dimmer) and INSTEAD OF
-              Topography on search — one background field per page. */}
+          {/* ROUND A 2026-11-08 (spec §2/§10): Web Threads is the
+              SEARCH background identity — but much quieter than the
+              2026-11-07 build (opacity 0.35 → 0.15, brightness 0.25
+              → 0.12, threads 6 → 5). Round A 2026-11-08 (critiqueA
+              -1420 §B): opacity 0.15 -> 0.10, inside the spec's
+              0.07-0.11 range for background lines. One background
+              field per page — INSTEAD OF Topography. */}
           {view === 'search' && (
             <div className="de-webthreads de-webthreads--search" aria-hidden="true">
               <WebThreads
                 colors={['#1d7f8c', '#2b6f8f', '#54e7df']}
                 coreColor="#bff3ee"
                 backgroundColor="transparent"
-                threadCount={6}
+                threadCount={5}
                 speed={0.08}
                 frequency={3}
                 spread={0.18}
                 glow={0.02}
                 thickness={0.8}
-                brightness={0.25}
-                opacity={0.35}
+                brightness={0.12}
+                opacity={0.10}
                 mouseInteraction
                 mouseStrength={0.3}
                 pulseOnClick

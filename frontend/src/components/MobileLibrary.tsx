@@ -116,7 +116,8 @@ export default function MobileLibrary(props: MobileLibraryProps) {
     if (!rail) return;
     const active = rail.querySelector('.ml-pill.active') as HTMLElement | null;
     if (active) {
-      active.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+      // Round B 2026-11-08 P1: no smooth scroll under reduced motion.
+      active.scrollIntoView({ inline: 'center', block: 'nearest', behavior: reducedMotion ? 'auto' : 'smooth' });
     }
   }, [indexSubject]);
 

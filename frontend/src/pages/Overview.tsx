@@ -1,10 +1,10 @@
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import CountUp from '../bits/CountUp';
 import Particles from '../bits/Particles';
-import BlurText from '../bits/BlurText';
+import SplitText from '../components/SplitText';
 import Magnet from '../bits/Magnet';
 import AnimatedContent from '../bits/AnimatedContent';
-import MagicBento from '../bits/MagicBento';
+import SpotlightCard from '../bits/SpotlightCard';
 import GlareHover from '../bits/GlareHover';
 import {
   SUBJECTS,
@@ -65,12 +65,16 @@ function DisciplineField({
   const hoveredSubject = hovered ? SUBJECTS.find(s => s.id === hovered) : null;
   return (
     <div className="kiA-field" role="group" aria-label="Discipline field — four disciplines" data-hover={hovered ?? ''}>
-      {/* Orbital traces: three ellipses around the centre KIND mark.
-          Nodes sit on/near the outer trace. */}
+      {/* Orbital traces: four ellipses around the centre KIND mark.
+          Nodes sit on/near the outer trace. The fourth (outermost)
+          ring is the Round F addition — a subtler outer orbit
+          (opacity .6 over the .16 trace stroke, so ~.10 effective);
+          no new nodes or labels. */}
       <svg className="kiA-field-orbits" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
         <ellipse cx="50" cy="50" rx="40" ry="30" />
         <ellipse cx="50" cy="50" rx="30" ry="20" transform="rotate(35 50 50)" />
         <ellipse cx="50" cy="50" rx="20" ry="12" transform="rotate(-30 50 50)" />
+        <ellipse cx="50" cy="50" rx="46" ry="35" opacity="0.6" />
       </svg>
       {/* Connection lines: centre KIND mark → each node. The hovered
           discipline's line illuminates (field-edition.css, via
@@ -122,7 +126,11 @@ function DisciplineField({
       )}
       <div className="kiA-field-head">
         <span>DISCIPLINE FIELD</span>
-        <span><strong>04 active</strong> · {total} documents</span>
+        {/* ROUND C 2026-11-08: "docs" (not "documents") — at the new
+            75/25 hero ratio the field column is ~266px wide and the
+            full word wraps onto the EM2 node glyph; the nodes already
+            say "docs". Counts stay real. */}
+        <span><strong>04 active</strong> · {total} docs</span>
       </div>
       {SUBJECTS.map((s, i) => {
         const color = v2SubjectColor(s.id);
@@ -354,19 +362,18 @@ export default function Overview({ files, onOpenReader, onGoSubject, onGoSearch 
             the hero no longer carries its own Aurora. */}
         <div className="kiA-hero-copy">
           <p className="kiA-eyebrow">FIELD EDITION · 004 · YOUR PERSONAL KNOWLEDGE SYSTEM</p>
-          {/* BlurText (React Bits, verified) — hero headline, focus-to-
-              sharp reveal once on load; "connection." is italic + cyan
-              via the last-word rule in field-edition.css */}
+          {/* SplitText (React Bits, line reveal, once on entry —
+              Round A 2026-11-08 spec §React Bits): the editorial
+              headline reveals by line. "connection." is italic +
+              cyan via the last-line rule in field-edition.css.
+              Replaces BlurText (word blur) on this headline only;
+              Search/Library headings already use SplitText. */}
           <h1 className="kiA-display kiA-hero-title">
-            <BlurText
-              text="Your knowledge lives in connection."
-              trigger="load"
-              animateBy="words"
-              delay={90}
-              stepDuration={0.3}
-              blur={10}
-              distance={40}
-              className="de-blurline"
+            <SplitText
+              lines={[
+                { text: 'Your knowledge lives in' },
+                { text: 'connection.', italic: true },
+              ]}
             />
           </h1>
           <p className="kiA-hero-sub">
@@ -435,38 +442,43 @@ export default function Overview({ files, onOpenReader, onGoSubject, onGoSearch 
       <section className="kiA-section">
         <p className="kiA-eyebrow">Your disciplines</p>
         <h2 className="kiA-display kiA-section-title">Choose your discipline.</h2>
-        {/* Magic Bento (React Bits, verified) for the four discipline
-            cards: edge illumination, cursor spotlight, live per-subject
-            artwork, click wave, staggered entrance. No tilt, no stars,
-            no magnetism (props). The bento card carries the surface;
-            the plate inside goes transparent so the spotlight washes
-            the card (field-edition.css). */}
-        <MagicBento
-          className="de-bento-plates"
-          columns={4}
-          rowHeight={320}
-          gap={20}
-          radius={20}
-          theme="dark"
-          glowColor="#59ded3"
-          enableBorderGlow
-          enableSpotlight
-          spotlightRadius={220}
-          enableStars={false}
-          enableTilt={false}
-          enableMagnetism={false}
-          clickEffect
-          intro
-          items={SUBJECTS.map((s) => {
+        {/* Spotlight Card instruments (Round A 2026-11-08 spec §3):
+            the four discipline plates are React Bits Spotlight Cards
+            — pointer-following illumination, no tilt, no bento.
+            Each card: symbol, name, doc count, one-line description,
+            micro archive-share signal (real counts: n / 100).
+            Subject accent stays 5–8% of the card. The section keeps
+            its AnimatedContent entrance (stagger 0.06). */}
+        <div className="de-spot-plates" role="list">
+          {SUBJECTS.map((s) => {
             const color = v2SubjectColor(s.id);
-            return {
-              id: s.id,
-              title: `${s.name} — ${counts[s.id] ?? 0} documents`,
-              onClick: () => onGoSubject(s.id),
-              content: (
+            const n = counts[s.id] ?? 0;
+            return (
+              <SpotlightCard
+                key={s.id}
+                className={`de-spot-plate${fieldHover === s.id ? ' kiA-platecard--lit' : ''}`}
+                spotlightColor={color}
+                intensity={0.15}
+                spotlightSize={220}
+                softness={0.8}
+                borderGlow={0.3}
+                proximity={120}
+                flare={false}
+                grain={0}
+                theme="dark"
+                // The wrapper carries the surface (solid deep archive
+                // blue) so the pointer spotlight washes the card;
+                // the inner plate goes transparent (field-edition.css).
+                style={{ '--spotlight-card-surface': '#0d1c2b' } as CSSProperties}
+              >
                 <div
-                  className={`kiA-platecard-btn${fieldHover === s.id ? ' kiA-platecard--lit' : ''}`}
+                  role="button"
+                  className="kiA-platecard-btn"
                   style={{ '--subj': color } as CSSProperties}
+                  onClick={() => onGoSubject(s.id)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onGoSubject(s.id); } }}
+                  tabIndex={0}
+                  aria-label={`${s.name} — ${n} documents`}
                 >
                   <span className="de-plate-visual" aria-hidden="true">
                     <DisciplineVisual id={s.id} />
@@ -474,20 +486,20 @@ export default function Overview({ files, onOpenReader, onGoSubject, onGoSearch 
                   <span className="kiA-platecard-glyph" aria-hidden="true">{disciplineGlyph(s.id)}</span>
                   <h3 className="kiA-platecard-name">{s.name}</h3>
                   <p className="kiA-platecard-tag">{s.tagline}</p>
+                  <span className="kiA-platecard-share" aria-label={`${n} of ${totalDocs} documents in the archive`}>
+                    {String(n).padStart(2, '0')} / {String(totalDocs).padStart(3, '0')} ARCHIVE SHARE
+                  </span>
                   <span className="kiA-platecard-foot">
                     <span className="kiA-platecard-count">
-                      <strong>{loaded ? counts[s.id] ?? 0 : '—'}</strong> documents
+                      <strong>{loaded ? n : '—'}</strong> documents
                     </span>
-                    {/* ROUND A 2026-11-07 (critiqueA-1420 §P1.3):
-                        the bottom action is an explicit label, not a
-                        bare arrow — same slot, same hover slide. */}
                     <span className="kiA-platecard-arrow" aria-hidden="true">Explore discipline →</span>
                   </span>
                 </div>
-              ),
-            };
+              </SpotlightCard>
+            );
           })}
-        />
+        </div>
       </section>
       </AnimatedContent>
 

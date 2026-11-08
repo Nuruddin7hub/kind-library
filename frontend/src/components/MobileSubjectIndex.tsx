@@ -327,15 +327,16 @@ function SignalsArt({ accent }: { accent: string }) {
   );
 }
 
-function SubjectArtwork({ subject, accent, gateOn, onToggleGate }: {
+function SubjectArtwork({ subject, accent, gateOn, onToggleGate, reducedMotion }: {
   subject: string; accent: string;
   /** Digital only: tap-to-flow gate state (Round B 2026-11-06 P1). */
   gateOn: boolean; onToggleGate: () => void;
+  reducedMotion: boolean;
 }) {
   // Digital artwork is a real button: tap the logic gate to toggle the
   // signal flow. Other subjects keep the decorative (aria-hidden) band.
   if (subject === 'digital') {
-    return (
+    const gate = (
       <button
         type="button"
         className={`msi-art msi-art-gate${gateOn ? ' gate-on' : ''}`}
@@ -347,6 +348,28 @@ function SubjectArtwork({ subject, accent, gateOn, onToggleGate }: {
       >
         <DigitalArt gateOn={gateOn} />
       </button>
+    );
+    // Round B 2026-11-08 P2: SpotlightCard ONLY on the featured Digital
+    // logic-gate module (spec color rgba(77,231,223,.10) — nearly
+    // invisible until tap/focus; the wrapper is neutral at rest, see
+    // .msi-art-spot in MobileSubjectIndex.css). No SpotlightCard under
+    // reduced-motion, and never on the other subjects' artwork.
+    if (reducedMotion) return gate;
+    return (
+      <SpotlightCard
+        className="msi-art-spot"
+        spotlightColor="rgba(77,231,223,.10)"
+        intensity={0.3}
+        spotlightSize={170}
+        softness={0.75}
+        borderGlow={0.5}
+        proximity={70}
+        flare={false}
+        grain={0}
+        theme="dark"
+      >
+        {gate}
+      </SpotlightCard>
     );
   }
   return (
@@ -364,14 +387,17 @@ function SubjectArtwork({ subject, accent, gateOn, onToggleGate }: {
  *  explanation, an EXPLORE button that runs a real library search, and a
  *  bronze serif ? at ~42% width. No auto-rotation. */
 function BigQuestionsCard({
-  accent, onSearchQuery,
+  accent, onSearchQuery, spotlight,
 }: {
   accent: string;
   questions: string[];
   onSearchQuery?: (q: string) => void;
+  /** Round B 2026-11-08 P2: SpotlightCard on the FIS Big Question
+   * (false under reduced-motion — the card renders plain there). */
+  spotlight: boolean;
 }) {
   // Round C re-score: exact composition per the FIELD EDITION Round 2 audit.
-  return (
+  const card = (
     <div className="msi-bigq" aria-label="The big question">
       <div className="msi-bigq-left">
         <span className="msi-bigq-label">THE BIG QUESTION · 01</span>
@@ -393,6 +419,26 @@ function BigQuestionsCard({
       </div>
       <span className="msi-bigq-mark" style={{ color: accent }} aria-hidden="true">?</span>
     </div>
+  );
+  // Round B 2026-11-08 P2: SpotlightCard ONLY on the FIS Big Question
+  // (spec color rgba(225,169,83,.10) — nearly invisible until tap/focus;
+  // the wrapper is neutral at rest, see .msi-bigq-spot in CSS).
+  if (!spotlight) return card;
+  return (
+    <SpotlightCard
+      className="msi-bigq-spot"
+      spotlightColor="rgba(225,169,83,.10)"
+      intensity={0.3}
+      spotlightSize={170}
+      softness={0.75}
+      borderGlow={0.5}
+      proximity={70}
+      flare={false}
+      grain={0}
+      theme="dark"
+    >
+      {card}
+    </SpotlightCard>
   );
 }
 
@@ -545,7 +591,8 @@ export default function MobileSubjectIndex({
     if (!rail) return;
     const active = rail.querySelector('.msi-chip.on') as HTMLElement | null;
     if (active) {
-      active.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+      // Round B 2026-11-08 P1: no smooth scroll under reduced motion.
+      active.scrollIntoView({ inline: 'center', block: 'nearest', behavior: reducedMotion ? 'auto' : 'smooth' });
     }
   }, [activeSection]);
 
@@ -711,13 +758,13 @@ export default function MobileSubjectIndex({
           keep their signature artwork (digital: upgraded circuit). */}
       {subject === 'fis' && theme.questions ? (
         <MaybeAnimC active reducedMotion={reducedMotion}>
-          <BigQuestionsCard accent={accent} questions={theme.questions} onSearchQuery={onSearchQuery} />
+          <BigQuestionsCard accent={accent} questions={theme.questions} onSearchQuery={onSearchQuery} spotlight={!reducedMotion} />
         </MaybeAnimC>
       ) : reducedMotion ? (
-        <SubjectArtwork subject={subject} accent={accent} gateOn={gateOn} onToggleGate={toggleGate} />
+        <SubjectArtwork subject={subject} accent={accent} gateOn={gateOn} onToggleGate={toggleGate} reducedMotion={reducedMotion} />
       ) : (
         <AnimatedContent {...(subject === 'digital' ? ANIM_C : animProps)}>
-          <SubjectArtwork subject={subject} accent={accent} gateOn={gateOn} onToggleGate={toggleGate} />
+          <SubjectArtwork subject={subject} accent={accent} gateOn={gateOn} onToggleGate={toggleGate} reducedMotion={reducedMotion} />
         </AnimatedContent>
       )}
 

@@ -128,21 +128,34 @@
   box-shadow: inset 0 0 0 1px var(--border);
 }
 
-/* ---------- subject pills rail (visible edge fade both sides) ---------- */
+/* ---------- subject pills rail (visible edge fade both sides) ----------
+ * Round B 2026-11-08 P1 (1420 loop): smooth horizontal scrolling,
+ * hidden scrollbar (was already), 12px gaps (was 8px — reconciled with
+ * the spec's 12px prose; the spec CSS snippet said 10px, the live
+ * Library rail already used 12px, so 12px wins everywhere), subtle
+ * fade at the right edge (the existing both-edge mask is kept — the
+ * left fade is the same established treatment), scroll-snap on pills,
+ * overscroll contained. Auto scroll-positioning on select already
+ * lives in MobileSearch.tsx (rail effect, .ms-pill.active scrollIntoView). */
 .ms-rail {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   overflow-x: auto;
   margin: 12px -18px 0;
   padding: 2px 18px 6px;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  scroll-behavior: smooth;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
   -webkit-mask-image: linear-gradient(to right, transparent 0, black 28px, black calc(100% - 28px), transparent 100%);
   mask-image: linear-gradient(to right, transparent 0, black 28px, black calc(100% - 28px), transparent 100%);
 }
 .ms-rail::-webkit-scrollbar { display: none; }
 .ms-pill {
   flex-shrink: 0;
+  scroll-snap-align: start; /* Round B 2026-11-08 P1: rail snap */
   min-height: 44px;
   padding: 8px 16px;
   border-radius: 999px;
@@ -231,7 +244,7 @@
   margin-left: auto;
 }
 .ms-sort-btn {
-  min-height: 36px;
+  min-height: 44px; /* Round B 2026-11-08 P1: 44px touch target (was 36px) */
   padding: 6px 10px;
   border: none;
   border-radius: 999px;
@@ -254,18 +267,28 @@
 .ms-results-list {
   display: flex;
   flex-direction: column;
+  /* Round B 2026-11-08 P1: 12px vertical separation between rows (was
+   * 0 — rows touched with only a 1px divider). The divider stays on
+   * each row; the gap reads as air between minimal rows, not cards. */
+  gap: 12px;
 }
-/* Round C re-score: result layout grid 42px 1fr 32px (Round B 2026-11-07
- * P1: was 40px 1fr 40px) — cover / title+micro+match+excerpt / bookmark.
- * column-gap 12px. Whole row opens. */
+/* Round C re-score: result layout grid 42px 1fr 44px (Round B 2026-11-08:
+ * was 42px 1fr 32px — the right rail is now bookmark + faint OPEN →
+ * affordance stacked, so it needs 40px; Round B 2026-11-08 P1: 44px,
+ * so the bookmark button itself is a 44×44 touch target) — cover /
+ * title+micro+match+excerpt / right rail. column-gap 12px. Whole row opens. */
 .ms-card {
   position: relative;
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) 32px;
+  grid-template-columns: 42px minmax(0, 1fr) 44px;
   column-gap: 12px;
   align-items: center;
-  min-height: 96px;
-  padding: 12px 0 12px 10px;
+  /* Round B 2026-11-08 P0: rows genuinely taller — min-height 104px,
+   * padding 15px 8px. Measured live: content is ~60px, so the spec's
+   * 88px min-height would have SHRUNK rows 96 → 90px; 104px keeps them
+   * taller than the current 96px while the 15px padding adds air. */
+  min-height: 104px;
+  padding: 15px 8px;
   border-bottom: 1px solid rgba(150, 170, 195, 0.13); /* spec divider */
   /* Round C 2026-11-06 P1: the discipline accent is an inset ::before
    * bar (was a full-height 2px border-left at 55% — the critique still
@@ -353,11 +376,14 @@
   color: var(--digital);
 }
 
-/* honest match-kind label — TITLE MATCH / CONTENT MATCH / SUBJECT MATCH */
+/* honest match-kind label — TITLE MATCH / CONTENT MATCH / SUBJECT MATCH
+ * Round B 2026-11-08 P1: 10px, in the spec's 10–11px metadata band
+ * (was 9px); the title-vs-content distinction itself shipped earlier
+ * (matchLabel in MobileSearch.tsx) and is verified, not re-built here. */
 .ms-kindline {
   margin: 2px 0 0;
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -379,13 +405,39 @@
   overflow: hidden;
 }
 
-/* bookmark: Round B 2026-11-07 P1 — 32×32, align-self center (was
- * 44×44). The spec's explicit size: the 32px grid column fits it
- * exactly. Note: 32px is below the usual 44px tap-target floor — the
- * critique specified it, and the whole row stays a full-width open tap. */
+/* right rail: bookmark + faint OPEN → affordance, stacked and centred.
+ * Round B 2026-11-08 P0: the affordance is text-only, 8px, ~38% white —
+ * a quiet hint that the whole row opens, never a button.
+ * NOTE: named .ms-result-rail, NOT .ms-rail — .ms-rail is already the
+ * subject-pills rail above; reusing it stacked the pills vertically. */
+.ms-result-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+}
+.ms-open-afford {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  color: rgba(237, 239, 245, 0.38);
+  pointer-events: none; /* the whole row is the tap target */
+}
+/* bookmark: Round B 2026-11-08 P1 — 44×44 touch target (was 32×32).
+ * The visible star stays small (20px glyph, unchanged); only the
+ * interactive box grows to the 44px floor. The 2026-11-07 note below
+ * recorded the old 32px as "the critique specified it" — this loop's
+ * spec explicitly re-states 44×44 for the bookmark, so 44 wins. The
+ * grid's right rail is 44px to match (see .ms-card above). */
 .ms-bookmark {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
   justify-self: center;
   align-self: center;
   border: none;

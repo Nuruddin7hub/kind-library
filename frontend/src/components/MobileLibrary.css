@@ -21,7 +21,11 @@
   position: relative;
   overflow: hidden;
   margin: 0 -18px;
-  padding: 20px 18px 24px; /* 24px bottom spacing (Round B 2026-11-04) */
+  /* Round B 2026-11-08 P1: padding-bottom 24px → 8px — the stacked-list
+   * top compression (header −16px, filter −2px, first group head +6px
+   * margin-top = ~12px net above the fold; title keeps its 16px
+   * margin-bottom, so 24px still sits below the title text). */
+  padding: 20px 18px 8px; /* was 24px bottom spacing (Round B 2026-11-04) */
   background: linear-gradient(180deg, rgba(87, 157, 255, 0.08), transparent 70%);
 }
 .ml-header::after {
@@ -66,7 +70,7 @@
   position: sticky;
   top: 0;
   z-index: 20;
-  margin: 12px -18px 0;
+  margin: 10px -18px 0; /* Round B 2026-11-08 P1: was 12px */
   padding: 10px 18px;
   background: color-mix(in srgb, var(--bg) 90%, transparent);
   -webkit-backdrop-filter: blur(14px);
@@ -91,7 +95,11 @@
   box-shadow: 0 0 0 2px rgba(56, 213, 193, 0.25);
 }
 
-/* ---------- subject rail (visible edge fade both sides; spec: 12px gaps) ---------- */
+/* ---------- subject rail (visible edge fade both sides; spec: 12px gaps) ----------
+ * Round B 2026-11-08 P1 (1420 loop): smooth horizontal scrolling,
+ * scroll-snap on pills, overscroll contained; gap was already 12px.
+ * Auto scroll-positioning on select already lives in MobileLibrary.tsx
+ * (rail effect, .ml-pill.active scrollIntoView). */
 .ml-rail {
   display: flex;
   gap: 12px; /* spec hierarchy: 12px chip gaps */
@@ -100,13 +108,18 @@
   padding: 2px 18px 6px;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  scroll-behavior: smooth;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
   -webkit-mask-image: linear-gradient(to right, transparent 0, black 28px, black calc(100% - 28px), transparent 100%);
   mask-image: linear-gradient(to right, transparent 0, black 28px, black calc(100% - 28px), transparent 100%);
 }
 .ml-rail::-webkit-scrollbar { display: none; }
 .ml-pill {
   flex-shrink: 0;
-  min-height: 38px; /* spec: 38px tall chips */
+  scroll-snap-align: start; /* Round B 2026-11-08 P1: rail snap */
+  min-height: 44px; /* Round B 2026-11-08 P1: 44px touch target (was 38px) */
   padding: 6px 15px; /* spec: 15px pad */
   border-radius: 22px; /* spec: 22px radius */
   /* Round B 2026-11-06 P1: stronger active state; inactive pills recede. */
@@ -141,7 +154,7 @@
 }
 .ml-tools-btn {
   position: relative;
-  min-height: 40px; /* spec: 40px toolbar */
+  min-height: 44px; /* Round B 2026-11-08 P1: 44px touch target (was 40px) */
   padding: 6px 14px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
@@ -240,7 +253,9 @@
   align-items: center;
   gap: 8px;
   width: 100%;
-  margin: 8px 0 6px;
+  /* Round B 2026-11-08 P1: margin 14px 0 8px (was 8px 0 6px) — the
+   * section-header rhythm in the top-compression spec. */
+  margin: 14px 0 8px;
   /* Round B 2026-11-06 P1: more breathing room above the discipline line. */
   padding: 20px 4px 10px 14px;
   min-height: 44px;

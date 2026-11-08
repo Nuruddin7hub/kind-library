@@ -82,7 +82,13 @@
   align-items: flex-start;
   justify-content: center;
   min-height: 52px;
-  padding: 4px 6px;
+  /* Round B 2026-11-08 P2: padding-inline 6px → 8px — 4px more breathing
+   * room total (2px each side) between the title and the back/action
+   * controls. The spec's max-width calc(100% − 96px) was TESTED live and
+   * REJECTED: it truncates fitting titles (221px → 138px, "1.1 —
+   * Introduction to Diff…") and leaves a ~106px dead zone — the title
+   * already truncates gracefully with an ellipsis when it truly overflows. */
+  padding: 4px 8px;
   text-align: left;
 }
 
@@ -132,7 +138,8 @@
   flex: 1 1 auto; /* full width */
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  height: 44px; /* spec: min 40px */
+  height: 48px; /* Round B 2026-11-08 P2: 48px so the mode buttons are
+   * 44px tall (was 44px seg / 40px buttons) */
   padding: 2px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.05);
@@ -161,7 +168,7 @@
 .mr-modebtn {
   position: relative;
   z-index: 1;
-  min-height: 40px; /* spec: min 40px */
+  min-height: 44px; /* Round B 2026-11-08 P2: 44px touch target (was 40px) */
   padding: 0 12px;
   border-radius: 999px;
   color: rgba(255, 255, 255, 0.55);
@@ -195,13 +202,15 @@
 }
 
 /* ---------- contextual strip: PAGE n OF m (tap → PAGES) + fit/zoom status ----------
- * collapsible (1420 loop): the toggle folds the status line away */
+ * collapsible (1420 loop): the toggle folds the status line away.
+ * Round B 2026-11-08 P2: strip min-height 44px (was 38px) so the
+ * page button + collapse toggle are 44px tall (see below). */
 .mr-strip {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 38px;
+  min-height: 44px;
   padding: 4px 8px 4px 16px;
   background: #0A0E15;
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
@@ -218,7 +227,7 @@
   flex: 0 0 auto;
   margin-left: auto;
   width: 44px;
-  height: 34px;
+  height: 44px; /* Round B 2026-11-08 P2: 44px touch target (was 34px) */
   border-radius: 10px;
   color: rgba(255, 255, 255, 0.5);
   font-size: 16px;
@@ -234,7 +243,7 @@
   font-weight: 600;
   letter-spacing: 0.14em;
   color: rgba(255, 255, 255, 0.72);
-  min-height: 32px;
+  min-height: 44px; /* Round B 2026-11-08 P2: 44px touch target (was 32px) */
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -464,7 +473,7 @@
 .mr-stab {
   flex: 1 1 0;
   min-width: 0;
-  min-height: 40px;
+  min-height: 44px; /* Round B 2026-11-08 P2: 44px touch target (was 40px) */
   padding: 0 8px;
   border-radius: 10px;
   font-family: var(--font-mono);
@@ -627,10 +636,16 @@
 
 .mr-swatch {
   flex: 0 0 auto;
-  width: 30px;
-  height: 30px;
+  /* Round B 2026-11-08 P2: 44×44 touch target (was 30×30) — the visible
+   * color dot stays 30px: 7px padding + background-clip content-box
+   * paints the inline color only inside the content box. */
+  width: 44px;
+  height: 44px;
+  padding: 7px;
+  background-clip: content-box;
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.25);
+  box-sizing: border-box;
 }
 .mr-swatch.on {
   border-color: #fff;
@@ -639,7 +654,7 @@
 
 .mr-ctxbtn {
   flex: 0 0 auto;
-  min-height: 40px;
+  min-height: 44px; /* Round B 2026-11-08 P2: 44px touch target (was 40px) */
   padding: 0 14px;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -840,7 +855,7 @@
 .mr-pin-actions { display: flex; gap: 8px; }
 .mr-pin-jump, .mr-pin-del {
   flex: 1;
-  min-height: 36px;
+  min-height: 44px; /* Round B 2026-11-08 P2: 44px touch target (was 36px) */
   border-radius: 8px;
   font-family: var(--font-mono);
   font-size: 9px;
@@ -902,12 +917,13 @@
   color: #32D3BD; /* teal zoom % */
 }
 
-/* FIT WIDTH / FIT PAGE segmented — Round B 2026-11-06 P1: compressed to
- * the 36px secondary-toolbar height (was 40px). */
+/* FIT WIDTH / FIT PAGE segmented — Round B 2026-11-08 P2: 44px (was the
+ * 36px secondary-toolbar compression from 2026-11-06 — this loop's spec
+ * requires every toolbar control ≥ 44×44, so the compression is reversed). */
 .mr-fitseg {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  height: 36px;
+  height: 44px;
   padding: 0;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.05);
@@ -915,7 +931,7 @@
 }
 
 .mr-fitbtn {
-  min-height: 36px;
+  min-height: 44px; /* Round B 2026-11-08 P2: 44px (was 36px) */
   padding: 0 12px;
   border-radius: 999px;
   font-family: var(--font-mono);
@@ -932,9 +948,10 @@
   font-weight: 700;
 }
 
-/* CONTINUOUS toggle — Round B 2026-11-06 P1: 36px, 12px inline padding. */
+/* CONTINUOUS toggle — Round B 2026-11-08 P2: 44px (was the 36px
+ * secondary-toolbar compression from 2026-11-06). */
 .mr-contbtn {
-  min-height: 36px;
+  min-height: 44px;
   padding: 0 12px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.14);

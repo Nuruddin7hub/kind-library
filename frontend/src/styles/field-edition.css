@@ -2510,3 +2510,1391 @@
   margin-right: 7px;
   vertical-align: 1px;
 }
+
+/* ==================================================================
+ * ROUND A — 2026-11-08 (critiqueA-2026-11-08.md, desktop
+ * 9.33 → 9.17 per ChatGPT; targets 9.73–9.82). "Premium digital
+ * knowledge instrument" — the final art-direction pass. DESKTOP
+ * ONLY — every rule below lives under .desktop-app or
+ * .reader-shell.kiA-v2.kiA-v2. Mobile (.mobile-shell) never matches.
+ * Appended LAST in this file so these rules win at equal
+ * specificity over earlier layers.
+ *
+ * VERIFIED LIVE BEFORE WRITING (probe2b-before.json, 2026-11-08):
+ * sidebar 224px / header 68px / hero clamp(64px,5.4vw,88px) renders
+ * 77.76px, max-width 640px / stats 40px serif + 12px labels /
+ * search rows 142px settled opacity 1, grid 64px/1fr/120px,
+ * thumb 64x86 / reader 82px/1fr/244px + 980px PDF cap /
+ * FIS hero rendered ~231px, title 38px, cards 245px.
+ *
+ * VERIFIED React Bits (reactbits.dev + DavidHDev/react-bits main,
+ * 2026-11-08): Flux Lines IS real (2.0, registry FluxLines-TS-CSS,
+ * vendored VERBATIM in bits/FluxLines.tsx — sha256 in its header).
+ * Dark Veil, Glare Hover, Web Threads already vendored + verified
+ * in prior loops. Line Sidebar IS real (vendored 2026-11-03) but
+ * NOT swapped in — Round C's reason stands (single-list API cannot
+ * carry the sidebar's WORKSPACE / DISCIPLINES / ARCHIVE zones, no
+ * visual active state); the spec's active-state outcome (thin cyan
+ * line + soft glow, no rounded rect) is done in CSS below.
+ * AnimatedList stays UNUSED (620ms spring violates 160–220ms /
+ * no-spring) — AnimatedContent is the compliant equivalent.
+ *
+ * DEVIATIONS (spec number -> live decision, with reason):
+ * - Search Web Threads opacity literal 0.065 NOT applied — the
+ *   live prop is 0.35 (spec premise 0.20 mis-measures it) and
+ *   0.065 renders the layer invisible, killing the Search identity
+ *   the same spec assigns. Direction applied instead: 0.35 -> 0.15,
+ *   brightness 0.25 -> 0.12, threads 6 -> 5, + convergence glow.
+ * - Sidebar 248px APPLIED (spec grid) — was 224px.
+ * - Hero NOT shrunk to flat 64px: live clamp already floors at
+ *   64px; spec size applied instead: clamp(64px,5.8vw,92px)/0.88/
+ *   -0.045em/max-width 760px; accent clamp(68px,6.1vw,96px)/0.82
+ *   italic #4de7df + glow.
+ * - Search rows NOT shrunk to spec min-height 108px: live 142px
+ *   exceeds the minimum; padding 24x28 + grid 52px/1fr/auto
+ *   applied instead.
+ * - Reader 82px/244px + 980px cap KEPT (spec: do NOT rebuild;
+ *   density -25% applied to the console chrome only).
+ * - FIS card title 19px (spec L3) applied; card min-height raised
+ *   245 -> 280px so the 4-line excerpt never clips.
+ * - Base gradient shifted to the spec's black -> blue-black ->
+ *   cyan atmosphere -> black; --surface token kept at its live
+ *   value (rgba(9,20,31,.72) is within a few RGB steps of #08121a).
+ * - Header date cluster REMOVED (Topbar.tsx) — spec §15 two
+ *   clusters only. The ⌘K label is now "Search".
+ * ================================================================== */
+
+/* ---- §14 colour tokens + §7 grid tokens + §12 motion tokens ----
+   (desktop scope only; the reader shell gets --ease-premium too,
+   below). --surface keeps its live value (see deviations). */
+.desktop-app {
+  --ink: #05090d;
+  --surface-2: #0b1721;
+  --line: rgba(126, 198, 214, 0.14);
+  --line-strong: rgba(126, 198, 214, 0.28);
+  --text: rgba(246, 248, 245, 0.94);
+  --text-secondary: rgba(214, 225, 226, 0.66);
+  --text-muted: rgba(173, 190, 194, 0.42);
+  --cyan: #4de7df;
+  --sidebar: 248px;
+  --content-max: 1480px;
+  --gutter: 40px;
+  --ease-premium: cubic-bezier(0.16, 1, 0.3, 1);
+  --sidebar-width: 248px;
+  --de-sidebar: 248px;
+  --atlas-sidebar: 248px;
+}
+.reader-shell.kiA-v2 { --ease-premium: cubic-bezier(0.16, 1, 0.3, 1); }
+
+/* ---- §2/§10 background DEPTH (not lines): base gradient is now
+   black -> blue-black -> cyan atmosphere -> black. The top radial
+   tint per view/subject is preserved; only the linear base changes. */
+.desktop-app {
+  background:
+    radial-gradient(ellipse 75% 12% at 50% 0%, rgba(32, 113, 127, 0.17), transparent 40%),
+    radial-gradient(ellipse 12% 80% at 88% 100%, rgba(45, 75, 128, 0.13), transparent 43%),
+    linear-gradient(180deg, #05090d 0%, #081120 30%, #0a1e28 55%, #05090d 100%);
+}
+.desktop-app[data-view="search"] {
+  background:
+    radial-gradient(ellipse 75% 12% at 50% 0%, rgba(32, 113, 127, 0.22), transparent 40%),
+    radial-gradient(ellipse 12% 80% at 88% 100%, rgba(45, 75, 128, 0.13), transparent 43%),
+    linear-gradient(180deg, #05090d 0%, #081120 30%, #0a1e28 55%, #05090d 100%);
+}
+.desktop-app[data-subject="fis"] {
+  background:
+    radial-gradient(ellipse 75% 12% at 50% 0%, rgba(215, 157, 75, 0.14), transparent 40%),
+    radial-gradient(ellipse 12% 80% at 88% 100%, rgba(45, 75, 128, 0.10), transparent 43%),
+    linear-gradient(180deg, #05090d 0%, #081120 30%, #0a1e28 55%, #05090d 100%);
+}
+.desktop-app[data-subject="digital"] {
+  background:
+    radial-gradient(ellipse 75% 12% at 50% 0%, rgba(118, 214, 160, 0.13), transparent 40%),
+    radial-gradient(ellipse 12% 80% at 88% 100%, rgba(45, 75, 128, 0.10), transparent 43%),
+    linear-gradient(180deg, #05090d 0%, #081120 30%, #0a1e28 55%, #05090d 100%);
+}
+.desktop-app[data-subject="signals"] {
+  background:
+    radial-gradient(ellipse 75% 12% at 50% 0%, rgba(139, 170, 255, 0.15), transparent 40%),
+    radial-gradient(ellipse 12% 80% at 88% 100%, rgba(45, 75, 128, 0.13), transparent 43%),
+    linear-gradient(180deg, #05090d 0%, #081120 30%, #0a1e28 55%, #05090d 100%);
+}
+
+/* ---- §2 Aurora (Overview): opacity 0.16 + 40px blur (spec Z-1).
+   The blur softens the WebGL bands into atmosphere. ---- */
+.de-aurora-global { filter: blur(40px); }
+
+/* ---- §2/§10 Flux Lines (Overview identity, Z-2): same fixed z-0
+   slot as the Web Threads layer it replaces. ---- */
+.desktop-app .de-fluxlines {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.desktop-app .de-fluxlines > div {
+  width: 100%;
+  height: 100%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .desktop-app .de-fluxlines { display: none; }
+}
+
+/* ---- §7 layout grid: 248px sidebar (token above drives the
+   App.tsx inline marginLeft), 1480px content max, 40px gutters. ---- */
+.desktop-app .kiA-main {
+  max-width: 1480px;
+  padding: 0 40px 40px;
+}
+.desktop-app .kiA,
+.desktop-app .kiA-page {
+  max-width: 1480px;
+}
+
+/* ---- §9 sidebar as archive spine: active item = thin cyan
+   vertical line + soft local glow, NOT a chunky rounded rectangle.
+   The tinted pill background and 8px radius go; the inset 2px line
+   + glow + the extending ::after line (Round A) stay. ---- */
+.desktop-app .kiA-nav--active {
+  background: transparent;
+  border-radius: 0;
+  box-shadow:
+    inset 2px 0 0 var(--de-cyan),
+    inset 0 0 24px rgba(89, 222, 211, 0.05);
+}
+.desktop-app .kiA-subj--active { border-radius: 0; }
+
+/* ---- §7 typography system: L1 Editorial (hero), L2 Section,
+   L3 Content title, L4 UI label, L5 micro metadata. ---- */
+/* L1 — hero gains mass: 64–92px / 0.88 / -0.045em / max 760px. */
+.desktop-app .kiA-hero-title {
+  font-size: clamp(64px, 5.8vw, 92px);
+  line-height: 0.88;
+  letter-spacing: -0.045em;
+  max-width: 760px;
+}
+/* L1 accent "connection.": larger, tighter, cyan #4de7df + glow. */
+.desktop-app .kiA-hero-title .de-blurline > span:last-child {
+  font-size: clamp(68px, 6.1vw, 96px);
+  line-height: 0.82;
+  font-style: italic;
+  color: #4de7df;
+  text-shadow: 0 0 40px rgba(77, 231, 223, 0.12);
+}
+/* L2 Section 28–38px: section titles + library hero titles are
+   already 32px / 38px — in range, unchanged. */
+/* L3 Content title 16–19px: editorial card titles 22px -> 19px. */
+.desktop-app .kiA-ed-card-title {
+  font-size: 19px;
+  line-height: 1.15;
+}
+/* L4 UI label 10–11px sans / .12em: eyebrows, stat labels,
+   evidence line step down from 12px. */
+.desktop-app .kiA-eyebrow,
+.desktop-app .kiA-stat-label,
+.desktop-app .kiA-evidence {
+  font-size: 11px;
+}
+/* L5 micro metadata stays 8–9px ONLY where it is a signpost, never
+   where the user reads: the reader console metadata (below). */
+
+/* ---- §12 motion hierarchy: premium ease + 420/300/300/420ms
+   transitions; card hover translateY(-3px) ONLY. ---- */
+.desktop-app .kiA-platecard-btn,
+.desktop-app .kiA-hit,
+.desktop-app .kiA-ed-card,
+.desktop-app .kiA-card,
+.desktop-app .de-spot-plate {
+  transition:
+    transform 420ms var(--ease-premium),
+    opacity 300ms var(--ease-premium),
+    border-color 300ms var(--ease-premium),
+    background-color 300ms var(--ease-premium),
+    box-shadow 420ms var(--ease-premium);
+}
+.desktop-app .kiA-platecard-btn:hover { transform: translateY(-3px); }
+.desktop-app .kiA-hit-spot:hover .kiA-hit,
+.desktop-app .kiA-hit:hover { transform: translateY(-3px); }
+.desktop-app .kiA-card:hover { transform: translateY(-3px); }
+
+/* ---- §3 discipline cards as Spotlight Card instruments. The
+   wrapper carries the surface + frame; the inner plate goes
+   transparent so the pointer spotlight washes the card. The inner
+   lift is dropped (the wrapper lifts -3px); the field-hover lit
+   state lives on the wrapper now (Overview.tsx). ---- */
+.desktop-app .de-spot-plates {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 24px;
+}
+@media (max-width: 1100px) {
+  .desktop-app .de-spot-plates { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.desktop-app .de-spot-plate {
+  padding: 0;
+  border-radius: 20px;
+  box-shadow: none;
+}
+.desktop-app .de-spot-plate:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--subj, #59ded3) 55%, transparent);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.25),
+    0 0 40px color-mix(in srgb, var(--subj, #59ded3) 9%, transparent);
+}
+.desktop-app .de-spot-plate.kiA-platecard--lit {
+  border-color: color-mix(in srgb, var(--subj, #59ded3) 55%, transparent);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.25),
+    0 0 40px color-mix(in srgb, var(--subj, #59ded3) 9%, transparent);
+}
+.desktop-app .de-spot-plate .kiA-platecard-btn {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  cursor: pointer;
+}
+.desktop-app .de-spot-plate .kiA-platecard-btn:hover,
+.desktop-app .de-spot-plate .kiA-platecard-btn.kiA-platecard--lit {
+  transform: none;
+  box-shadow: none;
+}
+/* Subject accent stays 5–8%: the plate artwork quiets to 0.30. */
+.desktop-app .de-plate-visual { opacity: 0.30; }
+/* Micro archive-share signal (real counts, Overview.tsx). */
+.desktop-app .kiA-platecard-share {
+  display: block;
+  margin: 0 0 14px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: var(--de-muted);
+}
+
+/* ---- §4 Search: 3-zone composition is structural (already:
+   hero -> filter/intelligence -> results). Rows: padding 24x28,
+   grid 52px / 1fr / auto, thumb 52x70. Min-height stays 142px
+   (live, above the spec 108px minimum — do not shrink). ---- */
+.desktop-app .kiA-hit {
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  padding: 24px 28px;
+}
+.desktop-app .kiA-hit-thumb {
+  width: 52px;
+  height: 70px;
+}
+.desktop-app .kiA-skel {
+  grid-template-columns: 52px 1fr;
+  padding: 24px 28px;
+}
+.desktop-app .kiA-skel-thumb {
+  width: 52px;
+  height: 70px;
+}
+/* One localized brighter convergence point behind the heading
+   (spec §4) — the Web Threads field itself is now faint. */
+.desktop-app .kiA-page--search .kiA-head { position: relative; }
+.desktop-app .kiA-page--search .kiA-head::before {
+  content: '';
+  position: absolute;
+  inset: -40px -60px;
+  background: radial-gradient(ellipse 42% 62% at 30% 28%, rgba(77, 231, 223, 0.10), transparent 70%);
+  pointer-events: none;
+}
+/* §11 connection map: faint network in the 28px rail left of the
+   results; result cards connect to their subject node. */
+.desktop-app .kiA-hits-wrap {
+  position: relative;
+  padding-left: 28px;
+}
+.desktop-app .kiA-connmap {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+.desktop-app .kiA-connmap-spine {
+  stroke: rgba(126, 198, 214, 0.14);
+  stroke-width: 1;
+}
+.desktop-app .kiA-connmap-link {
+  stroke-width: 1;
+  opacity: 0.35;
+}
+.desktop-app .kiA-connmap-node {
+  opacity: 0.85;
+  animation: de-connmap-pulse 4s ease-in-out infinite;
+}
+@keyframes de-connmap-pulse {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 0.45; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .desktop-app .kiA-connmap-node { animation: none; }
+}
+
+/* ---- §6 FIS reading room: tighter hero, un-squeezed controls,
+   cards become the content (280px, 4-line excerpts). ---- */
+.desktop-app .kiA-head--surfaced {
+  padding: 16px 36px;
+}
+.desktop-app .kiA-head--surfaced .kiA-ed-title {
+  font-size: 34px;
+  line-height: 1.05;
+}
+.desktop-app .kiA-lib-field .kiA-controls-row {
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.desktop-app .kiA-lib-field .kiA-controls-row .kiA-search {
+  min-height: 44px;
+}
+.desktop-app .kiA-grid { gap: 24px; }
+.desktop-app[data-subject="fis"] .kiA-ed-card {
+  min-height: 280px;
+  padding: 28px;
+}
+.desktop-app[data-subject="fis"] .kiA-ed-card-desc {
+  -webkit-line-clamp: 4;
+}
+.desktop-app .kiA-grid--fis-featured { margin-bottom: 20px; }
+
+/* ---- §5 Reader: museum frame, density -25% on the console
+   chrome only — architecture untouched (82px/244px + 980px cap).
+   Panel padding 26x24; modules 16+16 = 32px apart; section titles
+   9px/.18em; controls min-height 44px; console title 14px/500/
+   -0.01em with 9px metadata above. ---- */
+.reader-shell.kiA-v2.kiA-v2 .reader-panel-right {
+  padding: 26px 24px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-module {
+  padding: 16px 0;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-label {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-title {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-head .reader-console-doc {
+  font-size: 9px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-tool-row {
+  min-height: 44px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-nav button {
+  min-height: 44px;
+}
+/* §10 Reader identity = Dark Veil: the veil sits behind the whole
+   shell; the PDF stage goes transparent so it shows around the
+   pages (panels keep their solid surfaces; vignette stays). */
+.reader-shell.kiA-v2.kiA-v2 .reader-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-veil > div {
+  width: 100%;
+  height: 100%;
+}
+.reader-shell.kiA-v2.kiA-v2 .ke-reader-header,
+.reader-shell.kiA-v2.kiA-v2 .reader-workspace,
+.reader-shell.kiA-v2.kiA-v2 .reader-bottombar {
+  position: relative;
+  z-index: 1;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-document {
+  background-color: transparent;
+  background-image: none;
+}
+/* Known nits, fixed: the identity strip is now fully opaque (no
+   white sliver showing through) with air at the right edge, and
+   pages carry scroll-margin-top 66px (strip 58px + 8px) so the
+   page top never hides under the sticky strip (the align loop in
+   PdfReader.tsx targets sr.top + 66 to match). */
+.reader-shell.kiA-v2.kiA-v2 .reader-identity {
+  background: #080f19;
+  padding: 0 12px 0 4px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-doc-page {
+  scroll-margin-top: 66px;
+}
+
+/* ==================================================================
+ * ROUND C — 2026-11-08 (critiqueC-2026-11-08.md, desktop 9.17 ->
+ * 9.48 per ChatGPT; Round D fix list, targets ~9.7-9.8). 15 small
+ * items, NO new components, NO new architecture, NO mobile changes.
+ * DESKTOP ONLY — every rule below lives under .desktop-app or
+ * .reader-shell.kiA-v2.kiA-v2. Mobile (.mobile-shell) never matches.
+ * Appended LAST in this file so these rules win at equal
+ * specificity over earlier layers.
+ *
+ * VERIFIED LIVE BEFORE WRITING (probe_pre.json / probe2_pre.json,
+ * 2026-11-08, bundle BFyxlP0y): hero 83.52px clamp(64,5.8vw,92) /
+ * nav labels 13px / section labels 9px/.12em / stats margin-top
+ * 36px / discipline section margin-top 40px / section-title
+ * margin-bottom 32px / plates 778-1136px (358px tall, 122px visible
+ * at 900px fold) / search subtitle 14px/1.65 rgba(230,235,238,.68)
+ * max-width none / hit grid 52px/1fr/auto, thumb 52x70, side ~140px,
+ * border rgba(137,167,190,.13) / FIS hero 222px, padding 16x36,
+ * stats margin-top 22px, stat num 36px, split margin-top 28px /
+ * FIS card title 19px serif/1.15, desc 14px/1.65 rgba(226,228,224,
+ * .56) / reader workspace 82px/1fr/244px, console title 14px/500,
+ * console doc 9px/.12em / --surface-1 #0d121c, --surface-2 #0b1721,
+ * --line rgba(126,198,214,.14), --line-strong .28 / crumb 11px/.12em,
+ * header meta 9px / fluxlines mask none.
+ *
+ * DEVIATIONS (spec number -> live decision, with reason):
+ * - Hero accent scales with the hero: clamp(72px,6.5vw,102px) so the
+ *   italic accent stays ~5% larger than line 1 (Round A ratio);
+ *   leaving it at 87.84px would make it SMALLER than the new 89.28px
+ *   hero. Line-height stays 0.82.
+ * - Overview "full discipline cards in viewport": NOT achievable at
+ *   a 900px viewport — 358px cards starting at ~756px after every
+ *   named cut still end ~1114px, 214px below the fold. The spec's
+ *   "~32px total" is applied exactly as named gaps (stats -2,
+ *   section -8, title margin-bottom -12, eyebrow margin-bottom -10
+ *   = -32) plus the hero-grid change; the plates move up ~22px net
+ *   (hero growth +8 offsets part of it). No content was cut to
+ *   chase the fold: hero/stats/cards are all locked. Flagged for
+ *   the next loop's critic.
+ * - FIS hero padding: spec literal "28px 32px" would GROW the hero
+ *   (live vertical padding is 16px, not ~36px as the spec assumes):
+ *   +24px padding against -4px stats margin = 242px, the opposite
+ *   of the stated -15%. Applied instead: padding 14px 32px
+ *   (horizontal 32px IS spec-literal) + eyebrow margin 18->8,
+ *   subline margin 20->8, stats margin 22->18, stat gap 6->3:
+ *   222 -> 189px, exactly -15%. Min-height 170px applied literally.
+ * - Search right column: the side already carries number + OPEN +
+ *   match count, and the MATCH plate stays in the main column (the
+ *   lock list keeps match explanations where they are). The fix is
+ *   the defined 48px/1fr/150px grid + a deliberate 150px column
+ *   (16px divider gap); no TSX move of the match plate.
+ * - FIS SpotlightCard colour rgba(218,166,76,.075) applied literally
+ *   (LibraryPage.tsx). Note the rendering math: the component
+ *   multiplies colour alpha by intensity x palette.fill (0.2x0.28),
+ *   so the hover wash peaks at ~0.004 and the rim at ~0.024 — a
+ *   whisper, effectively invisible at rest (it already was) and
+ *   barely-there on hover. That IS "more subtle"; if the next
+ *   critic wants the FIS glow back, raise intensity, not the colour.
+ * - Reader console: spec premise "~190-210px" mis-measures the live
+ *   244px console; the target grid 56px/1fr/250px is applied
+ *   literally (left rail 82->56, console 244->250).
+ * - Section labels: spec says they "stay 8px/.16em" but live they
+ *   are 9px/.12em; set to the spec's stated 8px/.16em.
+ * - Sidebar nav labels: live 13px (field-edition :2266), not the
+ *   12px the earlier comment claims; set to 11px per spec.
+ *   Discipline rows were already 11px (code/name); count stays 12px.
+ * ================================================================== */
+
+/* ---- P1 contrast tokens: card surfaces one tonal step up;
+   borders .14 -> .15, hover .28 -> .30 (spec rgba values). ---- */
+.desktop-app {
+  --surface-0: #05090d;
+  --surface-1: #09141d;
+  --surface-2: #0d1b25;
+  --line: rgba(140, 205, 220, 0.15);
+  --line-strong: rgba(140, 205, 220, 0.30);
+}
+
+/* ---- P0 typography: hero 75 / interface 25 (was ~56/44). ---- */
+.desktop-app .kiA-hero-title {
+  font-size: clamp(72px, 6.2vw, 104px);
+  line-height: 0.86;
+  letter-spacing: -0.055em;
+  max-width: 760px;
+}
+.desktop-app .kiA-hero-title .de-blurline > span:last-child {
+  font-size: clamp(72px, 6.5vw, 102px);
+  line-height: 0.82;
+}
+.desktop-app .kiA-hero {
+  grid-template-columns: minmax(0, 3fr) minmax(240px, 1fr);
+}
+/* ---- Field-head fit at 75/25: the field column is ~266px wide, so
+   the head (9px/.16em, 22px side padding) wrapped to two lines and
+   its 2nd line collided with the EM2 node glyph (verified in the
+   post-deploy screenshot). Tighten the head (8px/.12em, 16px sides,
+   8px gap) + shorten the count to "docs" (the nodes already say
+   "docs") so it fits on one line again. ---- */
+.desktop-app .kiA-field-head {
+  padding: 16px 16px 0;
+  gap: 8px;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+}
+
+/* ---- P0 typography: sidebar nav items ~11px; section labels
+   8px/.16em (see deviations — live was 13px / 9px/.12em). ---- */
+.desktop-app .kiA-nav-label { font-size: 11px; }
+.desktop-app .kiA-section-label {
+  font-size: 8px;
+  letter-spacing: 0.16em;
+}
+
+/* ---- P0 layout: Overview vertical gaps -32px total (stats -2,
+   discipline section -8, section-title margin-bottom -12,
+   section eyebrow margin-bottom -10). Plates stay substantial;
+   grid gap 24 -> 18px. ---- */
+.desktop-app .kiA-stats { margin-top: 34px; }
+.desktop-app .kiA .kiA-section { margin-top: 32px; }
+.desktop-app .kiA .kiA-section .kiA-section-title { margin-bottom: 20px; }
+.desktop-app .kiA .kiA-section .kiA-eyebrow { margin-bottom: 8px; }
+.desktop-app .de-spot-plates { gap: 18px; }
+
+/* ---- P0 typography: Search subtitle 13px/1.5, max-width 440px. ---- */
+.desktop-app .kiA-page--search .kiA-search-sub {
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(214, 225, 226, 0.62);
+  max-width: 440px;
+}
+
+/* ---- P1 search: defined 3-column result grid 48px / 1fr / 150px;
+   right 150px is the deliberate action/match column. Thumb 48x65
+   keeps the doc-cover ratio. Surface one tonal step up (solid
+   --surface-2), border to the .15 token. ---- */
+.desktop-app .kiA-hit {
+  grid-template-columns: 48px minmax(0, 1fr) 150px;
+}
+.desktop-app .kiA-hit-spot .kiA-hit {
+  background: var(--surface-2);
+  border-color: var(--line);
+}
+.desktop-app .kiA-hit-thumb {
+  width: 48px;
+  height: 65px;
+}
+.desktop-app .kiA-skel {
+  grid-template-columns: 48px 1fr;
+}
+.desktop-app .kiA-skel-thumb {
+  width: 48px;
+  height: 65px;
+}
+.desktop-app .kiA-hit-side {
+  padding-left: 16px;
+  border-left: 1px solid rgba(140, 205, 220, 0.12);
+}
+
+/* ---- P2 polish: background connections converge behind the hero
+   — radial mask on the Flux Lines layer, visible at the hero,
+   fading to nothing at the edges. ---- */
+.desktop-app .de-fluxlines {
+  -webkit-mask-image: radial-gradient(ellipse 62% 48% at 48% 38%, #000 0%, rgba(0, 0, 0, 0.75) 48%, transparent 100%);
+  mask-image: radial-gradient(ellipse 62% 48% at 48% 38%, #000 0%, rgba(0, 0, 0, 0.75) 48%, transparent 100%);
+}
+
+/* ---- P0 layout: FIS hero 222 -> 189px (-15%). See deviations for
+   the padding reconciliation. Header-to-library continuity: the
+   split (toolbar) moves up 28 -> 18px so documents arrive sooner. ---- */
+.desktop-app[data-subject="fis"] .kiA-head--surfaced {
+  min-height: 170px;
+  padding: 14px 32px;
+}
+.desktop-app[data-subject="fis"] .kiA-head--surfaced .kiA-eyebrow {
+  margin-bottom: 8px;
+}
+.desktop-app[data-subject="fis"] .kiA-head--surfaced .kiA-ed-subline {
+  margin-top: 8px;
+}
+.desktop-app[data-subject="fis"] .kiA-head--surfaced .kiA-ed-stats {
+  margin-top: 18px;
+}
+.desktop-app[data-subject="fis"] .kiA-head--surfaced .kiA-ed-stat {
+  gap: 3px;
+}
+.desktop-app[data-subject="fis"] .kiA-lib-split {
+  margin-top: 18px;
+}
+
+/* ---- P0 typography: FIS card titles 19px serif/1.05 (size and
+   family already live; line-height tightens); FIS descriptions
+   12px/1.55 rgba(214,225,226,.62). ---- */
+.desktop-app[data-subject="fis"] .kiA-ed-card-title {
+  line-height: 1.05;
+}
+.desktop-app[data-subject="fis"] .kiA-ed-card-desc {
+  font-size: 12px;
+  line-height: 1.55;
+  color: rgba(214, 225, 226, 0.62);
+}
+
+/* ---- Header breadcrumb slightly more readable: crumb 9px/.13em,
+   separators 9px, status metadata ~8px. ---- */
+.desktop-app .kiA-topbar-crumb {
+  font-size: 9px;
+  letter-spacing: 0.13em;
+}
+.desktop-app .kiA-topbar-sep { font-size: 9px; }
+.desktop-app .kiA-topbar-status { font-size: 8px; }
+
+/* ---- P0 layout: Reader Study Console ~250px — layout grid 56px /
+   minmax(0,1fr) / 250px (live was 82px/244px). Title more hierarchy:
+   13px/500/-0.01em; metadata 8px/.14em. ---- */
+.reader-shell.kiA-v2.kiA-v2 .reader-workspace {
+  grid-template-columns: 56px minmax(0, 1fr) 250px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-workspace.no-left {
+  grid-template-columns: 0 minmax(0, 1fr) 250px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-workspace.no-right {
+  grid-template-columns: 56px minmax(0, 1fr) 0;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-workspace.no-left.no-right {
+  grid-template-columns: 0 minmax(0, 1fr) 0;
+}
+.reader-shell.kiA-v2.kiA-v2.reading .reader-workspace {
+  grid-template-columns: 0 minmax(0, 1fr) 0;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-title {
+  font-size: 13px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-head .reader-console-doc {
+  font-size: 8px;
+  letter-spacing: 0.14em;
+}
+
+/* ==================================================================
+ * ROUND A — 2026-11-08 (critiqueA-2026-11-08-1420.md, desktop
+ * 9.48 -> 9.47 per ChatGPT; Round E fix list, targets 9.65-9.75).
+ * DESKTOP ONLY — every rule below lives under .desktop-app or
+ * .reader-shell.kiA-v2.kiA-v2. Mobile (.mobile-shell) never matches.
+ * Appended LAST in this file so these rules win at equal
+ * specificity over earlier layers.
+ *
+ * VERIFIED LIVE BEFORE WRITING (probe_pre.json / probe2_pre.json,
+ * 2026-11-08, bundle 16_TPAYv, 1440x900):
+ * sidebar 248px (var --sidebar-width 248px) / nav labels 11px /
+ * section labels 8px/.16em / hero 89.28px, max-width 760px, grid
+ * 792px/264px (75/25), field 264x300 top 155.5 centre 305.5,
+ * orbits svg 262px wide, headline centre y 246.1, hero sub 14px/
+ * 1.65 max-width 414px, stats margin-top 34px, 4 equal 254px cols,
+ * plates top 751 bottom 1109, section margin 32px (Round C) /
+ * search page 1112px, hits wrap 1112px max-width none, hit
+ * 1084x142px grid 48/784/150 padding 24px 28px, title 19px/25.65,
+ * meta 12px uppercase/.12em, mark 'Laplace' present x3, connmap
+ * 28x462 3 nodes, WebThreads wrapper opacity 0.9 (prop 0.15) /
+ * reader shell rows 68/780/52, header 68px, header title 15px,
+ * workspace 56/1134/250, rail 56px, console 250px, stage 1134px,
+ * page img 980px (86.4% of stage, 68.1% of shell), bottombar 52px,
+ * console label 9px, row-title 12.5px, row-meta 9.5px, hint 12.5px,
+ * identity 58px, collapse works (console 250 -> 49px, stage
+ * 1134 -> 1384, page stays 980 = cap), reading mode works
+ * (floatbar visible, header/bottom/panels hidden, doc 1440px) /
+ * FIS hero 188.7px padding 14px 32px min-height 170px, title 34px,
+ * card title 19px, desc 12px/1.55, cards 280/282/282/280,
+ * min-height 280px, featured card 872px wide (spans 2 cols:
+ * grid-column span 2), filter-to-grid gap 24px, grid gap 24px,
+ * Phi hero glyph 84px opacity 0.2, watermarks 56px opacity 0.08
+ * with NO overlap on descriptions (probe2 watermark_overlap) /
+ * tokens --bg #050b12, --surface #09141fb8, --surface-raised
+ * #101a2a, --text-primary #f0eee9, --text-secondary #d6e1e2a8,
+ * --text-muted #adbec26b, --cyan #4de7df, --border #97b2d321.
+ *
+ * DEVIATIONS (spec number -> live decision, with reason):
+ * - Sidebar 132-148px REJECTED. ChatGPT calls the live 248px
+ *   sidebar "very narrow... almost microscopic" yet specs 132-148px,
+ *   NARROWER than live — self-contradictory. Shrinking to 144px
+ *   would make nav text microscopic, the exact complaint. Sidebar
+ *   stays 248px; legibility is fixed by raising nav type instead
+ *   (nav labels 11 -> 12px, section labels 8 -> 9px, discipline
+ *   code/name 11 -> 12px, count stays 12px).
+ * - Constellation ~138px premise WRONG: live orbits svg is 262px
+ *   wide (field 264px), already above the 210-230px target. Field
+ *   is capped at 240px (orbits ~238px, ~3% over the 230 max — the
+ *   honest minimum that keeps the field-head on one line at 8px);
+ *   head tightened (12px sides, 6px gap, .10em) to fit. NOTE:
+ *   width:240px alone did NOT take effect — .kiA-desktop .kiA-field
+ *   sets flex:1 and the wrapper is display:flex, so the field grew
+ *   to the full 443px column (probe_post); flex:none is required.
+ *   At 240px the side nodes (10%/90%) clip their labels: code
+ *   11 -> 9px and the detail 10 -> 9px + nowrap + 12px sides
+ *   (post-desktop-hero.png after the cap showed "SIGNALS" touching
+ *   the field edge and the detail wrapping to two lines).
+ * - Hero 58/42: grid minmax(0,1.38fr) minmax(240px,1fr), gap 48px
+ *   -> 617/447px at 1440. Headline line 1 "Your knowledge lives in"
+ *   measures ~572px in the live screenshot, so it still fits the
+ *   617px column on 2 lines. Field is vertically centred on the
+ *   headline's visual centre (246.1px): align-self start +
+ *   margin-top -12px (field 300px tall -> top 96, centre 246).
+ * - Search card 104-116px: padding 24 -> 14px + title 19 -> 18px
+ *   alone did NOT shrink the card — the Round C rule min-height
+ *   142px ("rows breathe") binds it; probe_post still measured
+ *   142px with 16px padding. min-height:0 + 14px padding ->
+ *   85.3px content + 28px padding = ~113px. The 142px rule is
+ *   superseded by this spec's explicit P0 target; the dead space
+ *   was visible in post-desktop-search.png (~30% empty card bottom).
+ *   Excerpt cards grow naturally past it (2-line clamp) — the spec
+ *   height is for the standard 3-zone card, not a cap.
+ * - Search meta stays 12px uppercase (spec 10-11px): live EXCEEDS
+ *   the spec's readability floor; shrinking it would reduce
+ *   legibility, the opposite of the spec's intent.
+ * - FIS hero 188.7px already in the 170-190px range: NO CHANGE.
+ *   FIS featured card ALREADY full-width (first card spans 2 cols,
+ *   872px, probe + screenshot): NO restructure. FIS min card height
+ *   280px already set: NO CHANGE. FIS watermarks do NOT overlap
+ *   descriptions (probe2): opacity kept at 0.08; hero Phi 0.2 -> 0.12.
+ * - Reader header ALREADY 68px, console collapse ALREADY works
+ *   (toggle + TOOLS; stage +250px on collapse), reading mode
+ *   ALREADY works (floatbar, panels hidden). Only the collapse
+ *   affordance is made discoverable (visible "Hide" label on the
+ *   console toggle) and the page cap raised 980 -> 1100. NOTE: the
+ *   cap alone did NOT expand the page — probe_debug showed the img
+ *   style at 1100px after collapse but rendered 980px (inline
+ *   maxWidth:'100%' + shrink-to-fit wrapper), and after removing
+ *   that, probe_img2 showed it rendered 900px: TWO more old caps
+ *   bind it (obsidian-atlas caps the img at 900px, field-edition
+ *   :2009 caps the wrapper at 980px). Both are raised/removed here
+ *   (wrapper min(100%,1100px), img max-width:none); natural image
+ *   is 1500px wide so 1100px renders crisp. The bottombar ELEMENT
+ *   was 52px while its grid row was 48px (a later rule sets height
+ *   52px); forced to 48px here.
+ * - Page headline 48-54px vs FIS title 34px: NOT applied. Raising
+ *   the library title to 48px would push the FIS hero past its
+ *   170-190px cap (the spec's own panel constraint); the panel
+ *   constraint wins. Section headings 32 -> 28px per the scale.
+ * - Debounce stays 240ms (spec 180ms): the debounce lives in
+ *   App.tsx on the shared search path (mobile uses it too); 240ms
+ *   is within the usable range and keyboard nav + filters are
+ *   verified working. No shared-path change for a 60ms delta.
+ * - AnimatedList component NOT used for search results: it is a
+ *   self-contained listbox (own 420px frame, 440px maxHeight, tile
+ *   chrome, selection ring, keyboard model) that cannot wrap the
+ *   existing 3-zone SpotlightCard rows without a rebuild, and its
+ *   selection model conflicts with App-level keyboard nav. The
+ *   spec's stagger intent IS applied: AnimatedContent stagger
+ *   0.045 -> 0.2 (180-240ms range) on the search hits.
+ * - Background .main::before: the spec's opaque linear base
+ *   (#07111d -> #050a12 -> #091522) would hide the per-page
+ *   Flux Lines / Aurora / Topography identities behind the main.
+ *   Applied as the two radial ambient glows only (transparent
+ *   base); the 48px grid ::after is applied literally.
+ * - Colour tokens: applied as specced on .desktop-app. Note the
+ *   live --surface carried an alpha (#09141fb8); the spec solid
+ *   #091321 makes content surfaces opaque-enough per the spec.
+ * - Reader stage background #080E17 applied as background-color
+ *   (was transparent over DarkVeil). DarkVeil stays mounted; it
+ *   is now hidden behind the opaque stage. If the next critic
+ *   wants the veil atmosphere back, restore stage transparency.
+ * ================================================================== */
+
+/* ---- P1 global colour tokens (spec literal). ---- */
+.desktop-app {
+  --bg: #050A12;
+  --surface: #091321;
+  --surface-raised: #0D1B2B;
+  --surface-hover: #112337;
+  --border: rgba(139, 174, 202, 0.13);
+  --border-active: rgba(88, 230, 212, 0.48);
+  --text-primary: #F1F0EB;
+  --text-secondary: #A3AFBC;
+  --text-muted: #718193;
+  --cyan: #58E6D2;
+  --blue: #83A9FF;
+  --amber: #F0AC48;
+  --green: #70D8A0;
+  --shadow: 0 24px 70px rgba(0, 0, 0, 0.30);
+  --glow: 0 0 28px rgba(88, 230, 212, 0.10);
+}
+
+/* ---- P1 global background layers 01 + 03: ambient light + 48px
+   grid on .kiA-main (see deviations: no opaque linear base — it
+   would hide Flux Lines / Aurora / Topography). Content stays
+   above via the direct-child rule. ---- */
+.desktop-app .kiA-main::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(15% 12% at 15% 12%, rgba(31, 106, 151, 0.16), transparent 70%),
+    radial-gradient(15% 12% at 85% 75%, rgba(26, 112, 106, 0.10), transparent 70%);
+}
+.desktop-app .kiA-main::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.13;
+  background-image:
+    linear-gradient(rgba(115, 157, 190, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(115, 157, 190, 0.12) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+.desktop-app .kiA-main > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---- P0 sidebar + typography legibility (spec scale: navigation
+   12px, eyebrow 9px/.16em). Sidebar width stays 248px — see
+   deviations. ---- */
+.desktop-app .kiA-nav-label { font-size: 12px; }
+.desktop-app .kiA-section-label {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+}
+.desktop-app .kiA-subj-code { font-size: 12px; }
+.desktop-app .kiA-subj-name { font-size: 12px; }
+
+/* ---- P1 typography scale: section headings 28px. ---- */
+.desktop-app .kiA-section-title {
+  font-size: 28px;
+}
+
+/* ---- P1 Overview hero: true 58/42 two-column grid (gap 48px
+   stays -> 617/447px at 1440). Headline stays 89px / max-width
+   760px (unchanged rules above still apply). ---- */
+.desktop-app .kiA-hero {
+  grid-template-columns: minmax(0, 1.38fr) minmax(240px, 1fr);
+}
+/* Constellation vertically aligned with the headline's visual
+   centre (live 246.1px): field is 300px tall, so align-self start
+   + -12px puts its centre at ~246. Field capped at 240px wide
+   (orbits ~238px, see deviations) and centred in its column. */
+.desktop-app .kiA-hero-field {
+  align-self: start;
+  margin-top: -12px;
+}
+.desktop-app .kiA-field {
+  /* flex:none: .kiA-desktop .kiA-field sets flex:1, which makes the
+     item grow to the full 443px column and ignores width. Without
+     this the 240px cap below never took effect (probe_post: 443.7). */
+  flex: none;
+  width: 240px;
+  margin-inline: auto;
+}
+/* Field-head fit at 240px: tighter padding/gap/letter-spacing so
+   "DISCIPLINE FIELD" + "04 active · 100 docs" stays on one line;
+   nowrap guards the 2px slack (see deviations). */
+.desktop-app .kiA-field-head {
+  padding: 12px 12px 0;
+  gap: 6px;
+  font-size: 8px;
+  letter-spacing: 0.10em;
+}
+.desktop-app .kiA-field-head span {
+  white-space: nowrap;
+}
+/* 240px field: side nodes sit at 10%/90% of the field, so their
+   labels must fit inside it — at 11px "SIGNALS" (~55px) clips the
+   field edge (probe: post-desktop-hero.png after the 240px cap).
+   Code 11 -> 9px (~45px) clears it; glyphs and counts already fit.
+   Detail "04 disciplines · 100 documents" wraps at 10px/.16em in
+   the 196px content box: 9px + tighter side padding + nowrap. */
+.desktop-app .kiA-field-code {
+  font-size: 9px;
+}
+.desktop-app .kiA-field-detail {
+  font-size: 9px;
+  padding: 0 12px 18px;
+  white-space: nowrap;
+}
+/* Hero description 14px/1.7 (live was 14px/1.65). */
+.desktop-app .kiA-hero-sub {
+  line-height: 1.7;
+}
+/* SplitText accent line (replaces BlurText): same sizing as the
+   old .de-blurline last-span rule so "connection." stays ~5%
+   larger than line 1. */
+.desktop-app .kiA-hero-title .st-line:last-child {
+  font-size: clamp(72px, 6.5vw, 102px);
+  line-height: 0.82;
+}
+
+/* ---- P1 Overview stats + sections: stats margin-top 32px (was
+   34px), 4 equal columns already live; section spacing 52-64px
+   (was 32px); discipline cards min-height 250px (live 358px). ---- */
+.desktop-app .kiA-stats { margin-top: 32px; }
+.desktop-app .kiA .kiA-section { margin-top: 56px; }
+.desktop-app .de-spot-plate { min-height: 250px; }
+
+/* ---- P0 Search result hierarchy: cards 142 -> ~113px. The Round C
+   rule (.kiA-hit min-height 142px, "rows breathe") is the binder:
+   content is only ~85px (27 plate + 8 + 18 meta + 8 + 24.3 title),
+   so 142px left ~30% dead space at the card bottom (visible in
+   post-desktop-search.png). min-height 0 + 14px vertical padding ->
+   85.3 + 28 = ~113px, inside the spec 104-116px. Right 150px
+   column is already the dedicated match/action column; skeletons
+   match. ---- */
+.desktop-app .kiA-hit {
+  min-height: 0;
+  padding: 14px 28px;
+}
+.desktop-app .kiA-hit-title {
+  font-size: 18px;
+  line-height: 1.35;
+}
+.desktop-app .kiA-skel {
+  min-height: 0;
+  padding: 14px 28px;
+}
+/* Connection map responds to relevance: the selected row's
+   discipline node illuminates (r 5 + glow) and its link goes
+   full opacity. Driven by the `selected` prop (SearchPage.tsx). */
+.desktop-app .kiA-connmap-node--active {
+  filter: drop-shadow(0 0 6px currentColor);
+}
+.desktop-app .kiA-connmap-link--active {
+  opacity: 1;
+}
+/* BorderGlow wrapper on the selected search row: no margin of its
+   own — the inner .kiA-hit already carries the 12px row spacing,
+   which collapses through / sits inside the wrapper either way,
+   so selecting a row cannot shift the list. */
+.desktop-app .kiA-hit-glow {
+  display: block;
+  margin-bottom: 0;
+}
+
+/* ---- P1 FIS: card titles 16-18px, descriptions 13px readable;
+   hero already 188.7px in range (no change); featured card
+   already full-width (no change); min card height 280px already
+   set (no change); filter-to-card spacing 24 -> 32px; Phi hero
+   glyph 0.2 -> 0.12 (watermarks already 0.08, no overlap). ---- */
+.desktop-app[data-subject="fis"] .kiA-ed-card-title {
+  font-size: 18px;
+}
+.desktop-app[data-subject="fis"] .kiA-ed-card-desc {
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(214, 225, 226, 0.62);
+}
+.desktop-app[data-subject="fis"] .kiA-lib-field .kiA-controls-row {
+  margin-bottom: 32px;
+}
+.desktop-app[data-subject="fis"] .kiA-ed-hero-glyph {
+  opacity: 0.12;
+}
+
+/* ---- P0 Reader reconstruction: thumbnail rail 64px, study
+   console 300-320px (310px), canvas flexible with the page cap
+   raised to 1100px in PdfReader.tsx so collapse/reading mode
+   actually expand the PDF. Top toolbar already 68px; bottom
+   controls 52 -> 48px. Page background #080E17. ---- */
+.reader-shell.kiA-v2.kiA-v2 .reader-workspace {
+  grid-template-columns: 64px minmax(0, 1fr) 310px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-workspace.no-left {
+  grid-template-columns: 0 minmax(0, 1fr) 310px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-workspace.no-right {
+  grid-template-columns: 64px minmax(0, 1fr) 0;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-workspace.no-left.no-right {
+  grid-template-columns: 0 minmax(0, 1fr) 0;
+}
+.reader-shell.kiA-v2.kiA-v2.reading .reader-workspace {
+  grid-template-columns: 0 minmax(0, 1fr) 0;
+}
+.reader-shell.kiA-v2.kiA-v2 {
+  grid-template-rows: 68px minmax(0, 1fr) 48px;
+}
+.reader-shell.kiA-v2.kiA-v2.reading {
+  grid-template-rows: 68px minmax(0, 1fr) 48px;
+}
+/* Bottombar ELEMENT 48px: the grid row above is 48px but a later
+   rule sets .reader-bottombar height/min-height 52px, so the bar
+   measured 52px and overflowed its row by 4px (probe_post). The
+   36px buttons fit a 48px bar. */
+.reader-shell.kiA-v2.kiA-v2 .reader-bottombar {
+  height: 48px;
+  min-height: 48px;
+}
+/* Page width caps (Round A fix): the old 900/980px caps bound the
+   render even after the TSX cap went to 1100 — obsidian-atlas caps
+   the img at 900px and field-edition :2009 caps the wrapper at
+   980px (probe_img2: style 994/1100px, rendered 900px). Raise the
+   wrapper to 1100 and uncap the img; pageW (stageW-72, max 1100)
+   still bounds the size, so nothing can overflow the stage. */
+.reader-shell.kiA-v2.kiA-v2 .reader-doc-page {
+  max-width: min(100%, 1100px);
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-doc-page .ke-reader-page {
+  max-width: none;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-document {
+  background-color: #080E17;
+  background-image: none;
+}
+/* Console hierarchy: document title 15px (was 13px), section
+   headings 10px (was 9px), doc eyebrow 9px/.16em (was 8px/.14em),
+   row meta + section labels 10px (was 9.5px). Row titles already
+   12.5px, hints already 12.5px — in the 12-13px range. */
+.reader-shell.kiA-v2.kiA-v2 .reader-console-title {
+  font-size: 15px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-head .reader-console-doc {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-label {
+  font-size: 10px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-tool-row .row-meta {
+  font-size: 10px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-sec-label {
+  font-size: 10px;
+}
+/* Console collapse affordance: the head toggle gains a visible
+   "Hide" label (the collapse itself already worked — see
+   deviations). */
+.reader-shell.kiA-v2.kiA-v2 .reader-panel-toggle .reader-toggle-label {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* ==================================================================
+ * ROUND C — 2026-11-08 (critiqueC-2026-11-08-1420.md, desktop
+ * 9.47 -> 9.51 per ChatGPT; Round F fix list, targets 9.60+).
+ * DESKTOP ONLY — every rule below lives under .desktop-app or
+ * .reader-shell.kiA-v2.kiA-v2. Mobile (.mobile-shell) never matches.
+ * Appended LAST in this file so these rules win at equal
+ * specificity over earlier layers.
+ *
+ * VERIFIED LIVE BEFORE WRITING (probe_pre_*.json, 2026-11-08,
+ * bundle DUuB-lAj, 1440x900 unless noted):
+ * READER: shell rows 68/784/48, workspace 64/1066/310, stage
+ * 1066x784 block, padding 28/36/48, bg #080E17, scrollH 1024;
+ * page img 994x795.2 (natural 1500x1200), top gap 94, bottom
+ * -105 (taller than stage at 900px); TALL viewport 1440x1600:
+ * stage 1484, page 795 tall, top gap 94, bottom gap 594.8 —
+ * the unused dark region below the page. Console 310px,
+ * padding 26x24, title 15px/1.35, labels 10px, find input
+ * 12.5px/38px, notes textarea 13px/min-height 90px, hl input
+ * 12.5px/36px, row-title 12.5px, row-meta 10px. Page-to-console
+ * gap 36px (stage right edge 1094 -> console left 1130).
+ * IDENTITY OVERLAP — ROOT CAUSE FOUND (diag_identity.py):
+ * .reader-identity-page renders at y=206 INSIDE the page image
+ * (overlapsImg true, seen in pre-reader.png on the purple
+ * banner). The strip is a 58px grid (1fr auto) but
+ * .reader-identity-lines measures 237px tall: the title span
+ * carries `flex: 1 1 220px` from the old flex-band rule (:1700),
+ * and in the new flex-column lines div that 220px basis makes
+ * the grid row 237px tall, so the page span centres at y~206.
+ * Fix is flex:none on the title (below), NOT a strip rebuild.
+ * READING MODE IS BROKEN (pre-reader-reading.png): the stage is
+ * 76px tall and the PDF is invisible — only the veil + floatbar
+ * show. Root cause: the header/progress/bottombar unmount in
+ * reading mode, so the workspace auto-places into grid row 1
+ * (68px); the .reading grid-template-rows rules never collapse
+ * the rows. Round A measured only img width (1100) + floatbar
+ * text and called it working. Fix: .reading rows -> 1fr.
+ * Also in reading mode the side panels keep 13/49px slivers
+ * (aside padding survives the 0-width grid columns; the
+ * index.css .reading padding:0 rule loses to field-edition's
+ * 0,3,0 padding rules). Fixed here at 0,4,0.
+ * GLOBAL: sidebar 248px, brand-mark 28px, brand-sub 9px,
+ * brand-est 8.5px, nav-label 12px, subj code/name/count 12px,
+ * nav items 42px, subj rows 57px, sidebar flex gap 26px,
+ * section margin-top 40px (LEAK: .desktop-app .kiA-section
+ * 40px from :141 hits the sidebar's .kiA-section div, so
+ * nav->disciplines is 26+40=66px, not 28). Topbar 68px.
+ * Content boundary SHARED: .kiA-main 1192px / .kiA-page 1112px
+ * identical on overview, library AND search; max-width 1480.
+ * OVERVIEW: hero grid 612.3/443.7, gap 56px, hero padding 0
+ * (copy 40px 0), h1 89.28px/0.86/-.055em max-width 760,
+ * sub 14px/1.7 max-width 414 margin-top 20, CTA margin-top 36
+ * gap 14, field 240x300, orbits 238px, centre 62x62, plates
+ * 358.1px tall (content-bound: min-height 250 is NOT the
+ * binder), stats margin-top 32, sections 56.
+ * SEARCH (laplace): hits 1084x115.3, padding 14/28, grid
+ * 48/784/150, gap 22, title 18/1.35; evidence "3 documents
+ * found · 3 matches"; connmap links opacity [1, .35, .35],
+ * nodes r [5,3,3] — binary grading, NOT progressive; plates
+ * MATCH 'laplace' x3 (all title matches, so the breakdown
+ * reads "3 RESULTS · 3 TITLE MATCHES"); track gap 20px;
+ * top spacing: input->chips ~31, chips->filterbar ~15,
+ * filterbar->evidence 32, evidence->list 24 (evidence margin).
+ * FIS: featured order type -> title -> foot(pages + OPEN), NO
+ * description on ANY FIS card (excerpts empty) — desc clamp is
+ * moot; title 18px/1.05, type 12px; cards ALL exactly 280px =
+ * min-height binds (content ~150), padding 28, grid 2-col gap
+ * 24; Phi hero 0.12, watermarks 0.08; controls flex,
+ * align-items center, centres aligned at 318.7 (search 44px
+ * vs others 40px — tops differ 2px, centres match); hero
+ * 188.7px.
+ *
+ * DEVIATIONS (spec number -> live decision, with reason):
+ * - Sidebar 144px REJECTED (again — Round A + Round C both):
+ *   ChatGPT calls live 248px "reasonable" yet specs 144px.
+ *   Sidebar stays 248px; legibility is the typography.
+ * - Content-max 1320px / topbar 64px RECONCILED: the point is
+ *   ONE shared boundary, and it already exists — identical
+ *   1192/1112px widths on all three pages, max-width 1480.
+ *   1320 would narrow every page for no gain; topbar stays 68.
+ * - Search grid 64/1fr/112 + padding 18/20 REJECTED: the spec's
+ *   own numbers fight its 112px card target — a 64px thumb is
+ *   ~86px tall, so cards would grow to ~123px, and the 112px
+ *   right column risks wrapping "OPEN DOCUMENT →". Live cards
+ *   are 115.3px, already in the band. Applied instead: title
+ *   1.35 -> 1.4, preview 1.45 -> 1.6 (readability, +~1px).
+ * - Results gap 14px NOT applied: live AnimatedList track gap
+ *   is 20px — already roomier; tightening to 14 would reduce
+ *   breathing room, the opposite of the item's intent.
+ * - Search top spacing: measured in-band already (31 / 15 /
+ *   32 / 24) — no change.
+ * - FIS controls toolbar: centres already aligned (318.7) —
+ *   no change. FIS hero 188.7 already in 170-190 — no change.
+ *   Featured order already type -> title -> pages -> open.
+ * - Overview plates min-height 235 NOT applied: live 250,
+ *   cards are content-bound at 358px — min-height is not the
+ *   binder, and cutting content to chase the fold was already
+ *   rejected in Round C. Cards already show icon + name +
+ *   count + one-line description + exploration indicator.
+ * - Constellation 240-260px: live orbits 238px — 2px under,
+ *   the 240px field cap from Round A binds; essentially in
+ *   range. Centre 62 -> 68px + selected halo + one outer
+ *   orbital ring are applied (Overview.tsx ellipse).
+ * - Connmap "nonmatching disciplines subdued": N/A — the map
+ *   renders only result nodes; no nonmatching discipline is
+ *   drawn in it. Rank grading + selection highlight applied.
+ * - Brand 20px / nav height 36-40 / discipline labels 11px:
+ *   live EXCEEDS all three (28 / 42 / 12) — kept. Only the
+ *   sub-10px secondary texts move: brand-sub 9 -> 10px (with
+ *   tracking .30em -> .22em so it stays on one line in the
+ *   204px brand column: 24 chars x 8.2px = 197px) and
+ *   brand-est 8.5 -> 10px.
+ * - Reader console width 310px: inside the spec 300-320 range
+ *   — kept (spec's 320 is a value, not a mandate to grow).
+ * - Line Sidebar SKIPPED (not a prerequisite): the component
+ *   renders its own flat text list (indices + marker line +
+ *   proximity shift) and cannot carry the sidebar's sections,
+ *   discipline indicators, counts, or active-state model
+ *   without rebuilding primary navigation. No clean fit.
+ * - Aurora already Overview-only (App.tsx view==='overview'
+ *   conditional) — verified, no change.
+ * ================================================================== */
+
+/* ---- P1 global tokens (spec-literal surface levels). Deltas vs
+   live are <=2 units per channel — imperceptible, but the spec
+   values are now literally true. ---- */
+.desktop-app {
+  --surface: #091523;
+  --surface-raised: #0E1D2C;
+  --border: rgba(139, 174, 202, 0.14);
+  --border-elevated: rgba(139, 174, 202, 0.20);
+}
+/* ---- P1 surface contrast: rest borders are the neutral token.
+   Cyan is reserved for active/selected/focused. The search hit's
+   rest border was var(--line) — a cyan-tinted .15 on EVERY card.
+   Hover keeps its subject-colour border (interaction state);
+   the selected row keeps BorderGlow + the cyan focus ring. ---- */
+.desktop-app .kiA-hit-spot .kiA-hit {
+  border-color: rgba(139, 174, 202, 0.14);
+}
+
+/* ---- P1 sidebar typography: the sub-10px secondary texts move
+   to the 10px floor. Nav labels (12px), discipline code/name
+   (12px), brand mark (28px) already exceed the spec — kept. ---- */
+.desktop-app .kiA-brand-sub {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+}
+.desktop-app .kiA-brand-est {
+  font-size: 10px;
+}
+/* ---- P1 sidebar section spacing: the 40px page-section margin
+   leaked into the sidebar (.desktop-app .kiA-section :141), so
+   nav -> DISCIPLINES measured 66px (26 flex gap + 40 margin).
+   Zero the margin inside the sidebar and set the flex gap to
+   the spec 28px — both brand -> nav and nav -> disciplines
+   land on 28px. The ARCHIVE footer stays pinned by
+   margin-top:auto (112px is the pin, not spacing). ---- */
+.desktop-app .kiA-sidebar .kiA-section {
+  margin-top: 0;
+}
+.desktop-app .kiA-sidebar {
+  gap: 28px;
+}
+
+/* ---- P1 Overview hero vertical rhythm (spec set, applied as a
+   whole): grid 1.45fr/.85fr, gap 44; copy padding 52/64; h1
+   clamp(68,5.6vw,89)/.96 (live 89.28 already equals the spec's
+   89px ceiling, so the size only changes below ~1590px);
+   accent line rescales to stay ~5% larger than line 1;
+   description max-width 460, margin-top 22, 1.75; actions
+   margin-top 26, gap 12. ---- */
+.desktop-app .kiA-hero {
+  grid-template-columns: minmax(0, 1.45fr) minmax(240px, 0.85fr);
+  gap: 44px;
+}
+.desktop-app .kiA-hero-copy {
+  padding: 52px 0 64px;
+}
+.desktop-app .kiA-hero-title {
+  font-size: clamp(68px, 5.6vw, 89px);
+  line-height: 0.96;
+}
+.desktop-app .kiA-hero-title .st-line:last-child {
+  font-size: clamp(68px, 5.9vw, 94px);
+  line-height: 0.82;
+}
+.desktop-app .kiA-hero-sub {
+  max-width: 460px;
+  margin-top: 22px;
+  line-height: 1.75;
+}
+.desktop-app .kiA-hero-cta {
+  margin-top: 26px;
+  gap: 12px;
+}
+/* ---- P1 Overview constellation authority: the copy padding
+   grows +12px, so the headline centre moves +12px — the field
+   margin goes -12 -> 0 to stay centred on it (was 246.1, now
+   ~258). Centre marker 62 -> 68px. The three orbit ellipses
+   already exist; the fourth (outer) ring is in Overview.tsx. ---- */
+.desktop-app .kiA-hero-field {
+  margin-top: 0;
+}
+.desktop-app .kiA-field-centre {
+  width: 68px;
+  height: 68px;
+}
+/* Stronger selected halo: when a discipline is hovered/focused
+   (data-hover), the centre marker takes that subject's colour
+   as border + glow instead of the static cyan whisper. ---- */
+.desktop-app .kiA-field[data-hover="em2"] .kiA-field-centre {
+  border-color: rgba(89, 222, 211, 0.55);
+  box-shadow: 0 0 48px rgba(89, 222, 211, 0.30), 0 0 40px rgba(89, 222, 211, 0.12);
+}
+.desktop-app .kiA-field[data-hover="signals"] .kiA-field-centre {
+  border-color: rgba(139, 170, 255, 0.55);
+  box-shadow: 0 0 48px rgba(139, 170, 255, 0.30), 0 0 40px rgba(139, 170, 255, 0.12);
+}
+.desktop-app .kiA-field[data-hover="fis"] .kiA-field-centre {
+  border-color: rgba(230, 170, 83, 0.55);
+  box-shadow: 0 0 48px rgba(230, 170, 83, 0.30), 0 0 40px rgba(230, 170, 83, 0.12);
+}
+.desktop-app .kiA-field[data-hover="digital"] .kiA-field-centre {
+  border-color: rgba(118, 214, 160, 0.55);
+  box-shadow: 0 0 48px rgba(118, 214, 160, 0.30), 0 0 40px rgba(118, 214, 160, 0.12);
+}
+
+/* ---- P2 Search result breathing room (the two readability
+   numbers that fit the live 115px card; grid/padding rejected
+   — see deviations). ---- */
+.desktop-app .kiA-hit-title {
+  line-height: 1.4;
+}
+.desktop-app .kiA-hit-preview {
+  line-height: 1.6;
+}
+
+/* ---- P2 FIS: Phi hero glyph 0.12 -> 0.07 (watermark, not a
+   heading; card watermarks already 0.08). Featured (first,
+   full-width) card title 18 -> 20px for prominence over the
+   12px type line. Secondary set, FIS-scoped only: grid gap
+   24 -> 16, card min-height 280 -> 220, padding 28 -> 22,
+   description clamp 4 -> 3. Live cards are min-height-bound
+   at 280 (no FIS descriptions exist, so clamp is inert) —
+   expect all four at 220px after this. ---- */
+.desktop-app[data-subject="fis"] .kiA-ed-hero-glyph {
+  opacity: 0.07;
+}
+.desktop-app[data-subject="fis"] .kiA-grid--fis-featured > .spotlight-card:first-child .kiA-ed-card-title {
+  font-size: 20px;
+}
+.desktop-app[data-subject="fis"] .kiA-grid {
+  gap: 16px;
+}
+.desktop-app[data-subject="fis"] .kiA-ed-card {
+  min-height: 220px;
+  padding: 22px;
+}
+.desktop-app[data-subject="fis"] .kiA-ed-card-desc {
+  -webkit-line-clamp: 3;
+}
+
+/* ---- P0 Reader: Fit Page vertical centring. The stage
+   (.reader-document) is the scroller: identity strip (sticky)
+   + pages column. Making the stage a flex column and giving
+   the pages column margin-block:auto centres the pages when
+   the content is SHORTER than the stage (tall viewport /
+   1-page doc: the 594.8px dead region splits top/bottom) and
+   collapses to 0 — plain top-aligned scroll — when the content
+   is taller (continuous mode, multi-page docs). The identity
+   strip stays pinned at the top; continuous flow is untouched.
+   Stage padding 32px (spec); page shadow restrained to the
+   spec 0 12px 48px (the 1px hairline ring stays so the white
+   page keeps an edge on the dark stage). ---- */
+.reader-shell.kiA-v2.kiA-v2 .reader-document {
+  display: flex;
+  flex-direction: column;
+  padding: 32px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-document > div.flex {
+  margin-block: auto;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-doc-page .ke-reader-page {
+  box-shadow:
+    0 12px 48px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+/* ---- P0 Reader: the identity-page overlap. Root cause (see
+   header): the title's `flex: 1 1 220px` makes the lines div
+   237px tall, so the grid row overflows the 58px strip and the
+   page span centres ~110px too low, on the purple banner.
+   flex:none restores the strip to two text lines and puts the
+   page label back at the strip's right end. ---- */
+.reader-shell.kiA-v2.kiA-v2 .reader-identity-title {
+  flex: none;
+}
+/* ---- P0 Reader: study console hierarchy (spec sizes).
+   Width stays 310px (inside the 300-320 range); padding
+   26x24 -> 20px. ---- */
+.reader-shell.kiA-v2.kiA-v2 .reader-panel-right {
+  padding: 20px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-title {
+  font-size: 15px;
+  line-height: 1.45;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-label {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-find input {
+  height: 42px;
+  font-size: 13px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-note-form textarea {
+  min-height: 112px;
+  font-size: 13px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-hl-input {
+  height: 42px;
+  font-size: 13px;
+}
+/* ---- P0 Reader: Reading Mode genuinely immersive. Root cause
+   (see header): with the header/progress/bottombar unmounted,
+   the workspace auto-placed into grid row 1 (68px) — the stage
+   measured 76px tall and the PDF was invisible. Collapsing the
+   shell rows to a single 1fr row lets the workspace (the only
+   in-flow child; veil is absolute, floatbar is fixed) fill the
+   viewport. The side panels also lose their padding slivers
+   (13/49px) in reading mode. Page + zoom state is untouched,
+   so current page and zoom are preserved; EXIT READING + Escape
+   remain the exit. ---- */
+.reader-shell.kiA-v2.kiA-v2.reading {
+  grid-template-rows: minmax(0, 1fr);
+}
+.reader-shell.kiA-v2.kiA-v2.reading .reader-panel-left,
+.reader-shell.kiA-v2.kiA-v2.reading .reader-panel-right {
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+}

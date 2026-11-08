@@ -371,7 +371,16 @@ export default function MobileReader(props: Props) {
 
   const [page, setPage] = useState(1);
   const [zoom, setZoom] = useState(100);
-  const [mode, setMode] = useState<ReaderMode>('read');
+  // Round B 2026-11-08 P2: remember the last reading mode per device
+  // (kl:reader-mode, localStorage — read/find only; STUDY is a bottom
+  // sheet, not a mode, so it is never stored). Zoom already persists
+  // per document via kl:posx (z field) and is restored on open.
+  const [mode, setMode] = useState<ReaderMode>(() => {
+    try {
+      const m = localStorage.getItem('kl:reader-mode');
+      return m === 'find' || m === 'read' ? m : 'read';
+    } catch { return 'read'; }
+  });
   const [tool, setTool] = useState<StudyTool>(null);
   const [sheet, setSheet] = useState<Sheet>(null);
   const [notes, setNotes] = useState<Note[]>(() => loadNotes(file.key));
@@ -488,8 +497,14 @@ export default function MobileReader(props: Props) {
   }, []);
 
   // reset per document
+  // Round B 2026-11-08 P2: mode is NOT reset here — it is per-device
+  // (kl:reader-mode, restored by the useState initializer above), not
+  // per-document. The old setMode('read') ran AFTER the initializer on
+  // every mount and silently discarded the remembered mode (measured:
+  // FIND saved, reopen showed READ). Zoom IS reset to 100 here because
+  // the kl:posx restore effect below re-applies the saved zoom per doc.
   useEffect(() => {
-    setPage(1); setZoom(100); setMode('read'); setTool(null); setSheet(null);
+    setPage(1); setZoom(100); setTool(null); setSheet(null);
     setFit('page'); setContinuous(false);
     setNoteDraft(''); setMarkDraft(''); setPinDraft(''); setPinAt(null); setPinPop(null);
     setPageInput(''); setFtQuery(''); setFtHits([]); setFtLoading(false); setFtIdx(0);
@@ -680,6 +695,8 @@ export default function MobileReader(props: Props) {
   const switchMode = useCallback((m: ReaderMode) => {
     setSheet(null);
     setTool(null);
+    // Round B 2026-11-08 P2: persist the mode for the next open.
+    try { localStorage.setItem('kl:reader-mode', m); } catch { /* ignore */ }
     // continuous scroll is a read-mode layout — leaving read resets it
     if (m !== 'read' && continuousRef.current) {
       setContinuous(false);
@@ -1053,7 +1070,11 @@ export default function MobileReader(props: Props) {
               type="button"
               key={o.label}
               className={`mr-swatch${hlColor === o.c ? ' on' : ''}`}
-              style={{ background: o.c }}
+              // Round B 2026-11-08 P2: backgroundColor (NOT the background
+              // shorthand — the shorthand resets background-clip to
+              // border-box and would paint the whole 44px button; the CSS
+              // clips the color to the 30px content box instead).
+              style={{ backgroundColor: o.c }}
               onClick={() => setHlColor(o.c)}
               aria-label={o.label}
               aria-pressed={hlColor === o.c}

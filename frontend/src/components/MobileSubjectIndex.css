@@ -122,14 +122,17 @@ p.msi-headline { margin: 12px 0 0; }
 
 /* ---------- FIS editorial feature: "THE BIG QUESTION" ----------
  * Static, single feature: bronze edge highlight, restrained radial glow,
- * oversized serif ? at ~42% width on the right. 190–220px tall (1420 loop). */
+ * oversized serif ? at ~42% width on the right. 190–220px tall (1420 loop).
+ * Round B 2026-11-08 P2: ~10% shorter — padding 18px → 12px, left-column
+ * gap 10px → 8px, question 24px → 22px (was ~268px tall live, target
+ * ~241px). Question text + amber ? untouched. */
 .msi-bigq {
   position: relative;
   display: flex;
   align-items: stretch;
   min-height: 200px; /* spec: 190–220px */
   margin-top: 18px;
-  padding: 18px;
+  padding: 12px;
   border-radius: 16px;
   border: 1px solid rgba(185, 138, 78, 0.5); /* bronze edge highlight */
   background:
@@ -146,7 +149,7 @@ p.msi-headline { margin: 12px 0 0; }
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 10px;
+  gap: 8px; /* Round B 2026-11-08 P2: was 10px (Big Question −10% height) */
 }
 .msi-bigq-label {
   font-family: var(--font-mono);
@@ -162,7 +165,9 @@ p.msi-headline { margin: 12px 0 0; }
 .msi-bigq-q-big {
   margin: 0;
   font-family: var(--font-display, 'Instrument Serif', Georgia, serif);
-  font-size: 24px;
+  /* Round B 2026-11-08 P2: 24px → 22px (Big Question −10% height;
+   * same question, same amber ?). */
+  font-size: 22px;
   line-height: 1.2;
   /* Round B 2026-11-07 P1: same question-title contrast as the qcards
    * (was #F4EDE0). */
@@ -215,7 +220,11 @@ p.msi-headline { margin: 12px 0 0; }
 /* ---------- meta: one mono line, no big stat blocks ----------
  * Round B 2026-11-07 P2: Digital gets +8px breathing room — the section
  * gap above the "N DOCUMENTS · M TYPES" line is 24px on Digital
- * (was 14px). Other subjects keep 14px. */
+ * (was 14px). Other subjects keep 14px.
+ * Round B 2026-11-08 P2: REVERSED — the art→meta gap measured 18px live
+ * and the spec trims it ~10px. Margin-top 24px → 14px only moved the gap
+ * 18px → 14px (the rest is absorbed by the AnimatedContent wrapper), so
+ * it goes to 8px to land the gap at ~8px. */
 .msi-meta {
   margin: 14px 0 0;
   font-family: var(--font-mono);
@@ -224,7 +233,38 @@ p.msi-headline { margin: 12px 0 0; }
   color: var(--muted);
   text-transform: uppercase;
 }
-.msi[data-subject="digital"] .msi-meta { margin-top: 24px; }
+.msi[data-subject="digital"] .msi-meta { margin-top: 8px; }
+
+/* ---------- SpotlightCard on the two featured modules (Round B 2026-11-08) ----------
+ * The wrapper must be visually NEUTRAL at rest: SpotlightCard's defaults
+ * (2rem padding, #111111 surface, shadow, 1.5rem radius) would reframe
+ * the module, so they are zeroed here — the module keeps its own
+ * background/border/shadow and the card only adds its interactive light
+ * (hidden behind the module's opaque background) + border-glow edge on
+ * tap/focus. The static __border ring is hidden too (it would draw a
+ * faint white 1px line outside the module's own border at rest).
+ * The module's margin-top moves onto the wrapper: SpotlightCard sets
+ * overflow:hidden, which stops the margin collapsing through — without
+ * this the wrapper would sit 18px too high and the glow rim would
+ * misalign with the module's own border. Reduced-motion renders no
+ * SpotlightCard at all (spotlight=false at the call site). */
+.msi-art-spot.spotlight-card,
+.msi-bigq-spot.spotlight-card {
+  display: block;
+  padding: 0;
+  background-color: transparent;
+  box-shadow: none;
+  border: none;
+  border-radius: 16px;
+}
+.msi-art-spot .spotlight-card__border,
+.msi-bigq-spot .spotlight-card__border {
+  background: transparent;
+}
+.msi-art-spot.spotlight-card { margin-top: 18px; }
+.msi-art-spot > .msi-art { margin-top: 0; }
+.msi-bigq-spot.spotlight-card { margin-top: 18px; }
+.msi-bigq-spot > .msi-bigq { margin-top: 0; }
 
 /* ---------- BROWSE BY TYPE category chips (40px, subject-tinted active) ----------
  * Round B 2026-11-06 (deferred 2026-11-05 P1): Digital gets ~12px more
@@ -243,11 +283,15 @@ p.msi-headline { margin: 12px 0 0; }
 }
 .msi-chips {
   display: flex;
-  gap: 8px;
+  gap: 12px; /* Round B 2026-11-08 P1: 12px (was 8px — reconciled with the
+   * spec's 12px prose; same rail treatment as List/Search) */
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   padding-bottom: 2px;
+  scroll-behavior: smooth;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
   /* visible edge fade: every type is reachable, the rail reads as scrollable */
   -webkit-mask-image: linear-gradient(to right, transparent 0, black 24px, black calc(100% - 24px), transparent 100%);
   mask-image: linear-gradient(to right, transparent 0, black 24px, black calc(100% - 24px), transparent 100%);
@@ -255,7 +299,8 @@ p.msi-headline { margin: 12px 0 0; }
 .msi-chips::-webkit-scrollbar { display: none; }
 .msi-chip {
   flex-shrink: 0;
-  min-height: 40px; /* spec: 40px type filters */
+  scroll-snap-align: start; /* Round B 2026-11-08 P1: rail snap */
+  min-height: 44px; /* Round B 2026-11-08 P1: 44px touch target (was 40px) */
   padding: 0 16px;
   display: inline-flex;
   align-items: center;

@@ -3,6 +3,7 @@ import { consumeReaderStartPage } from '../readerStart';
 import { v2SubjectColor } from '../shared';
 import AnimatedContent from '../bits/AnimatedContent';
 import GlareHover from '../bits/GlareHover';
+import DarkVeil from '../bits/DarkVeil';
 import '../styles/reader-env.css';
 
 interface ReaderFile {
@@ -300,7 +301,10 @@ export default function PdfReader({
       if (!el || !scroller) return false;
       const r = el.getBoundingClientRect();
       const sr = scroller.getBoundingClientRect();
-      if (Math.abs(r.top - sr.top) > 30) {
+      // Round A 2026-11-08: pages carry scroll-margin-top 66px
+      // (identity strip 58px + 8px air) so the page top never hides
+      // under the sticky strip — align to sr.top + 66, not sr.top.
+      if (Math.abs(r.top - sr.top - 66) > 30) {
         lastAlignAt.current = Date.now();
         el.scrollIntoView({ block: 'start' });
         setVisiblePage(target);
@@ -381,8 +385,14 @@ export default function PdfReader({
   // is the dominant surface) — preserves the PDF's natural aspect ratio.
   // Round C 2026-11-07: cap 900 → 980 (spec: .reader-document
   // max-width 980px); the stage itself grew too (82px/244px rails).
+  // ROUND A 2026-11-08 (critiqueA-2026-11-08-1420 §C): cap 980 →
+  // 1100 — with the console collapsed or in reading mode the stage
+  // is 1384-1440px wide, and the old cap froze the page at 980px
+  // (verified live: collapse grew the stage +250px, page stayed
+  // 980). At the normal 1066px stage the page is 994px (+14px);
+  // collapsed/reading it expands to 1100px.
   const [stageW, setStageW] = useState(() =>
-    typeof window !== 'undefined' ? Math.max(900, window.innerWidth - 420) : 980);
+    typeof window !== 'undefined' ? Math.max(900, window.innerWidth - 420) : 1100);
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -393,7 +403,7 @@ export default function PdfReader({
     ro.observe(el);
     return () => ro.disconnect();
   }, [file.key]);
-  const pageW = Math.max(320, Math.min(980, stageW - 72)) * (zoom / 100);
+  const pageW = Math.max(320, Math.min(1100, stageW - 72)) * (zoom / 100);
 
   const goFullscreen = useCallback(() => {
     const el = document.documentElement;
@@ -403,10 +413,10 @@ export default function PdfReader({
 
   /** Fit page: zoom so the page fills the stage width (spec: bottom
    *  controls include FIT PAGE). At 100% the page already fills the
-   *  stage when the stage is narrower than 900px. */
+   *  stage when the stage is narrower than 1100px. */
   const fitPage = useCallback(() => {
     const avail = stageW - 72;
-    const z = avail > 980 ? Math.min(200, Math.round((avail / 980) * 100)) : 100;
+    const z = avail > 1100 ? Math.min(200, Math.round((avail / 1100) * 100)) : 100;
     setZoom(z);
   }, [stageW]);
 
@@ -446,6 +456,25 @@ export default function PdfReader({
   return (
     <div className={`reader-shell kiA-v2${readingMode ? ' reading' : ''}`}
       style={{ ['--subject-accent' as any]: subjectAccent, ['--subj-color' as any]: v2SubjectColor(file.subj) }}>
+      {/* Round A 2026-11-08 spec §10: Reader background identity =
+          React Bits Dark Veil (vendored, verified real). A slow dark
+          veil behind the whole shell; the PDF stage is transparent
+          so it shows around the pages (field-edition.css). The
+          panels keep their solid surfaces; the veil never takes
+          the pointer. */}
+      <div className="reader-veil" aria-hidden="true">
+        <DarkVeil
+          color="#123a4d"
+          speed={0.25}
+          scale={1}
+          brightness={0.5}
+          glow={0.3}
+          grain={0.03}
+          opacity={0.55}
+          mouseInteraction={false}
+          intro
+        />
+      </div>
       {/* document header — title + subject/type/pages (68px, P2).
           ROUND A 2026-11-07: the header hides in reading mode —
           the floating minimal toolbar takes over (see below). */}
@@ -460,8 +489,14 @@ export default function PdfReader({
           </div>
           <div className="ke-reader-header-title">
             <div className="ke-reader-title-text">{file.title}</div>
+            {/* ROUND C 2026-11-08 (critiqueC-2026-11-08-1420 Round F
+                §C Fix 4): the header keeps document identity only
+                (subject / type / DOC n/N). Page + zoom already live
+                in the identity strip, the page-context module and
+                the bottom bar — repeating them here was the fourth
+                copy of the same page info. */}
             <div className="ke-reader-submeta">
-              {subjectLabel} · {sectionLabel} · DOC {docIndex + 1}/{docTotal} · PAGE {visiblePage}/{total} · {total ? Math.round((visiblePage / total) * 100) : 0}%
+              {subjectLabel} · {sectionLabel} · DOC {docIndex + 1}/{docTotal}
             </div>
           </div>
           <div className="ke-reader-header-group">
@@ -538,12 +573,19 @@ export default function PdfReader({
           <div className="flex flex-col items-center gap-8">
             {Array.from({ length: total }, (_, i) => i + 1).map(p => (
               <div key={p} id={`kl-page-${p}`} className="reader-doc-page">
+                {/* No maxWidth on the img: pageW is already clamped
+                    to stageW-72 so the image can never overflow the
+                    stage; maxWidth:'100%' + the shrink-to-fit
+                    .reader-doc-page wrapper pinned the rendered width
+                    to the pre-collapse 980px even after the cap went
+                    to 1100 (probe_debug: style 1100px, rect 980px;
+                    natural image is 1500px wide). */}
                 <img
                   src={pageImageUrl(file.subj, file.file, p, total)}
                   alt={`Page ${p}`}
                   loading={p <= 3 ? 'eager' : 'lazy'}
                   className="ke-reader-page"
-                  style={{ width: `${pageW}px`, maxWidth: '100%' }}
+                  style={{ width: `${pageW}px` }}
                   draggable={false}
                 />
                 <div className="reader-doc-num">{p}</div>
@@ -571,7 +613,13 @@ export default function PdfReader({
                       the console names the document it belongs to. */}
                   <span className="reader-console-title">{file.title}</span>
                 </div>
-                <button onClick={toggleRight} className="reader-panel-toggle" aria-label="Hide study tools">›</button>
+                {/* ROUND A 2026-11-08 (critiqueA-2026-11-08-1420 §C):
+                    console collapse is a labelled button now, not a
+                    bare › glyph — the collapse itself already worked
+                    (toggle + TOOLS; the PDF expands into freed space
+                    with the 1100px cap), but the critic asked for it
+                    as if it did not exist, so it was not discoverable. */}
+                <button onClick={toggleRight} className="reader-panel-toggle" aria-label="Hide study tools">› <span className="reader-toggle-label">Hide</span></button>
               </div>
               {/* FIND IN DOCUMENT — real full-text matches (backend
                   text index), this document only; click a match to
@@ -795,13 +843,18 @@ export default function PdfReader({
                         />
                       ))}
                     </div>
-                    <button
+                    {/* Round A 2026-11-08 spec §5: Glare Hover on
+                        the highlight interaction too (bookmark
+                        already has it above). */}
+                    <GlareHover className="de-glare-block" glareColor="#59ded3" glareOpacity={0.3}>
+<button
                       onClick={addHighlight}
                       className="ke-cta-primary w-full justify-center mt-2"
                       style={{ padding: '10px 16px', fontSize: 13 }}
                     >
                       Highlight page {visiblePage}
                     </button>
+</GlareHover>
                   </div>
                   {highlights.length === 0 ? (
                     <p className="reader-hint">

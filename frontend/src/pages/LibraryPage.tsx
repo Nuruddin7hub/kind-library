@@ -496,18 +496,44 @@ export default function LibraryPage(props: LibraryPageProps) {
           staggerFrom="start"
           once
         >
-          {/* Magic Bento — first 4 documents only (critiqueA 2026-11-07
-              P1; critiqueC 2026-11-07 P0 FIS: rowHeight 210, gap 16,
-              radius 16, textAutoHide false, glowColor #d9a84c for the
-              FIS featured records). No tilt, no stars, no magnetism.
-              rowHeight is a floor — MagicBento uses
-              minmax(rowHeight, auto), so the 245px archival cards
-              still fit without clipping. The "featured FIS records
-              only" wording is read as the FIS screen's featured set
-              (all 4 FIS docs); the first-4 bento stays on the other
-              subjects — removing it there would regress Round A's
-              verified state and the critique never asks for that. */}
-          {featured.length > 0 && (
+          {/* Round A 2026-11-08 spec §6 (FIS reading room): on the
+              FIS view the featured records are Spotlight Cards, not
+              Magic Bento — scholarly instruments, not gaming tiles.
+              The bento stays on the other subjects (verified Round A
+              state, untouched). FIS cards are bigger (min-height
+              280px, field-edition.css) and the excerpt gets 4 lines. */}
+          {featured.length > 0 && subject === 'fis' && (
+            <div className="kiA-grid kiA-grid--fis-featured">
+              {featured.map((f) => {
+                const color = v2SubjectColor(f.subj);
+                return (
+                  <SpotlightCard
+                    key={f.key}
+                    className="kiA-card"
+                    // ROUND C 2026-11-08 (critiqueC): FIS spotlight more
+                    // subtle — rgba(218,166,76,.075). The --subj var
+                    // stays the hex so the amber card identity (border,
+                    // meta) is untouched; only the pointer light dims.
+                    // Rendering note: the component multiplies colour
+                    // alpha by intensity x palette.fill, so the hover
+                    // wash peaks at ~0.004 — a whisper by design.
+                    spotlightColor="rgba(218, 166, 76, 0.075)"
+                    intensity={0.2}
+                    softness={0.7}
+                    spotlightSize={230}
+                    borderGlow={0.45}
+                    proximity={130}
+                    flare={false}
+                    theme="dark"
+                    style={{ ['--subj' as string]: color } as CSSProperties}
+                  >
+                    {renderEdCard(f, true)}
+                  </SpotlightCard>
+                );
+              })}
+            </div>
+          )}
+          {featured.length > 0 && subject !== 'fis' && (
             <MagicBento
               className="de-bento-featured"
               columns={2}
@@ -541,7 +567,9 @@ export default function LibraryPage(props: LibraryPageProps) {
                   <SpotlightCard
                     key={f.key}
                     className="kiA-card"
-                    spotlightColor={color}
+                    // ROUND C 2026-11-08: FIS spotlight more subtle —
+                    // see the featured-block comment above.
+                    spotlightColor={f.subj === 'fis' ? 'rgba(218, 166, 76, 0.075)' : color}
                     intensity={0.2}
                     softness={0.7}
                     spotlightSize={230}

@@ -183,6 +183,18 @@ p.mh-eyebrow {
 .mh-node {
   outline: none;
 }
+/* Round B 2026-11-08 P2: selected-discipline label under the constellation —
+ * one small mono line; -12px top margin pulls it to 8px under the graphic
+ * (it collapses against the wrap's 20px bottom margin: 20 − 12 = 8px). */
+.mh-net-label {
+  margin: -12px 0 0;
+  text-align: center;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: rgba(242, 244, 248, 0.55);
+}
 .mh-node-tap:focus-visible,
 .mh-node:focus-visible {
   outline: 2px solid #32d3bd;
@@ -279,15 +291,16 @@ p.mh-eyebrow {
 @media (prefers-reduced-motion: reduce) {
   .mh-node, .mh-halo-pulse { animation: none; }
 }
-/* arrival pulse on the signal's destination node: same 4.5s period as the
- * SMIL travelling signal, delayed by the travel time (~2.9s) — one pulse
- * per cycle (scale 1→1.6, opacity .5→0), then silent until the next arrival.
+/* arrival pulse on the signal's destination node: same 5.5s period as the
+ * SMIL travelling signal (Round B 2026-11-08 P1: was 4.5s / 2.9s),
+ * delayed by the travel time (~3.5s) — one pulse per cycle (scale 1→1.6,
+ * opacity .5→0), then silent until the next arrival.
  * Only rendered when animate=true (reduced-motion → static, no signal). */
 .mh-arrival-pulse {
   transform-box: fill-box;
   transform-origin: center;
-  animation: mh-arrival-pulse 4.5s linear infinite;
-  animation-delay: 2.9s;
+  animation: mh-arrival-pulse 5.5s linear infinite;
+  animation-delay: 3.5s;
   opacity: 0;
 }
 @keyframes mh-arrival-pulse {

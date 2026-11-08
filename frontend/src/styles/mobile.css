@@ -48,6 +48,24 @@ input[type="search"]::-webkit-search-cancel-button {
   padding-bottom: calc(80px + env(safe-area-inset-bottom));
 }
 
+/* Round B 2026-11-08 P0 (1420 loop): bottom-nav safe-area, MEASURED live
+ * at 390px, bundle kKLvXr5B — the dock renders exactly 68px tall,
+ * bottom 8px, so it occupies 76px from the viewport bottom (the
+ * afternoon spec's suggested 58px is stale — never use it). The
+ * clearance formula is nav-height + gap + safe-area, with the gap an
+ * explicit token: 68 + 28 = 96px floor, the same value index.css has
+ * always set — this rule (imported after index.css) only names the
+ * parts. At max scroll the last content clears the dock top by 20px
+ * (home), 32px (library .ml-list 108px), 24px (Digital/FIS index
+ * wrapper 100px), 247px (search, 3 results). 68 + 16 would also pass
+ * but leave only 8px of air, so the 28px gap is KEPT. */
+:root {
+  --mobile-nav-gap: 28px; /* air above the dock — measured, see above */
+}
+.mobile-page {
+  padding-bottom: calc(var(--mobile-nav-height, 68px) + var(--mobile-nav-gap) + env(safe-area-inset-bottom));
+}
+
 /* stagger-once entrance (AnimatedList behaviour): subtle fade + rise,
  * applied per row via JS-driven delays; .is-in is set once by the
  * IntersectionObserver and never removed — no repeat on scroll-back. */
@@ -63,17 +81,25 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 
 /* Round B P0: prefers-reduced-motion kills ALL mobile motion — entrances,
- * transitions, shimmers, spins. Desktop is untouched by these selectors. */
+ * transitions, shimmers, spins. Desktop is untouched by these selectors.
+ * Round B 2026-11-08 P0 (1420 loop): .msi * added — the subject-index
+ * chips/cards/rows carry 150–160ms transitions that the old list missed
+ * (its FIS entry + gate pulses already had their own local media
+ * queries); scroll-behavior auto so smooth-scrollIntoView calls in the
+ * filter rails don't fight the setting (the rails also gate on the
+ * reducedMotion prop in tsx). */
 @media (prefers-reduced-motion: reduce) {
   .ki-screen-pad *,
   .ml-root *,
   .mh *,
   .ms-root *,
+  .msi *,
   .mr-reader *,
   .md-dock,
   .ki-stagger {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
   .ki-stagger {
     opacity: 1;

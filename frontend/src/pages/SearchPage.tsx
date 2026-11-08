@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, Fragment } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import SplitText from '../components/SplitText';
 import AnimatedContent from '../bits/AnimatedContent';
 import SpotlightCard from '../bits/SpotlightCard';
+import BorderGlow from '../bits/BorderGlow';
 import {
   SUBJECTS,
   subjectOf,
@@ -97,9 +98,96 @@ function matchPlateClass(hit: SearchHit, query: string): string {
   return 'kiA-match kiA-match--subject';
 }
 
+/** Search connection map (Round A 2026-11-08 spec §11): the one
+ *  ambitious feature — a faint animated network in the 28px rail
+ *  left of the results. Each result card connects to its subject
+ *  node (a dot in the subject colour) on a shared vertical spine.
+ *  Faint by design (spine 0.14 alpha, links 0.35) so it reads as
+ *  structure, not decoration. Row centres are measured from the
+ *  live DOM after the entrance settles; nothing is fabricated —
+ *  a node exists only for a real rendered row.
+ *  ROUND A 2026-11-08 (critiqueA-2026-11-08-1420 §B): the map
+ *  RESPONDS to search relevance — the selected row's discipline
+ *  node illuminates (r 5 + subject-coloured glow) and its link
+ *  goes full opacity. `selected` tracks hover as well as keyboard
+ *  nav (App sets it on mouse-enter too). */
+function ConnectionMap({ wrapRef, results, selected }: {
+  wrapRef: React.RefObject<HTMLDivElement | null>;
+  results: SearchHit[];
+  selected: number;
+}) {
+  const [nodes, setNodes] = useState<Array<{ y: number; color: string }>>([]);
+  const [height, setHeight] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    let tries = 0;
+    const measure = () => {
+      const wrap = wrapRef.current;
+      if (!wrap || cancelled) return;
+      const wr = wrap.getBoundingClientRect();
+      const spots = [...wrap.querySelectorAll('.kiA-hit-spot')];
+      if (!spots.length) return;
+      const next = spots.map((el, i) => {
+        const r = (el as HTMLElement).getBoundingClientRect();
+        return { y: r.top - wr.top + r.height / 2, color: v2SubjectColor(results[i]?.subj ?? 'em2') };
+      });
+      setNodes(next);
+      setHeight(wr.height);
+    };
+    measure();
+    const t1 = window.setTimeout(measure, 700); // after entrance
+    const t2 = window.setTimeout(measure, 1600); // settled
+    const iv = window.setInterval(() => { tries += 1; if (tries > 6) window.clearInterval(iv); else measure(); }, 800);
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+    if (ro && wrapRef.current) ro.observe(wrapRef.current);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      window.clearInterval(iv);
+      ro?.disconnect();
+    };
+  }, [wrapRef, results]);
+  if (nodes.length === 0 || height === 0) return null;
+  const firstY = nodes[0].y;
+  const lastY = nodes[nodes.length - 1].y;
+  // ROUND C 2026-11-08 (critiqueC-2026-11-08-1420 Round F §B):
+  // relevance-graded connections — the top-ranked result is the
+  // brightest; lower ranks fade progressively (1 / .6 / .35).
+  // Live before this: binary grading only (selected 1, rest .35),
+  // so ranks 2 and 3 read identically. Selection still highlights
+  // its node (r 5 + glow + full opacity). Nodes grade via
+  // fillOpacity (the CSS pulse animates `opacity`, which would
+  // override an inline opacity on the circle).
+  const rankOpacity = (i: number) => (i === 0 ? 1 : i === 1 ? 0.6 : 0.35);
+  return (
+    <svg
+      className="kiA-connmap"
+      width={28}
+      height={height}
+      viewBox={`0 0 28 ${height}`}
+      aria-hidden="true"
+    >
+      {nodes.length > 1 && (
+        <line x1={14} y1={firstY} x2={14} y2={lastY} className="kiA-connmap-spine" />
+      )}
+      {nodes.map((n, i) => (
+        <g key={i}>
+          <line x1={17} y1={n.y} x2={28} y2={n.y}
+            className={'kiA-connmap-link' + (i === selected ? ' kiA-connmap-link--active' : '')}
+            style={{ stroke: n.color, opacity: i === selected ? 1 : rankOpacity(i) }} />
+          <circle cx={14} cy={n.y} r={i === selected ? 5 : 3}
+            className={'kiA-connmap-node' + (i === selected ? ' kiA-connmap-node--active' : '')}
+            style={{ fill: n.color, fillOpacity: i === selected ? 1 : rankOpacity(i), ...(i === selected ? { filter: `drop-shadow(0 0 6px ${n.color})` } : {}) }} />
+        </g>
+      ))}
+    </svg>
+  );
+}
+
 export default function SearchPage(props: SearchPageProps) {
   const {
-    query, onQueryChange, results, searching, totalMatches,
+    query, onQueryChange, results, searching,
     counts, total, searchSubject, onSubjectChange,
     typeFilter, onTypeFilterChange, resultSections,
     sortMode, onSortModeChange,
@@ -108,6 +196,7 @@ export default function SearchPage(props: SearchPageProps) {
   } = props;
 
   const [recent, setRecent] = useState<string[]>(readRecent);
+  const hitsWrapRef = useRef<HTMLDivElement | null>(null);
   // One-shot scan line: increments (debounced) each time the query
   // settles — the line element re-mounts on the new key and sweeps
   // once across the input. Never continuous.
@@ -175,9 +264,13 @@ export default function SearchPage(props: SearchPageProps) {
     // P4 result row: thumbnail | subject/result + match type, title,
     // subject name · type · pages · match page, real excerpt |
     // right-aligned number + OPEN DOCUMENT + match count.
-    return (
+    // ROUND A 2026-11-08 (spec §React Bits): the keyboard/hover
+    // selected row is wrapped in BorderGlow (subject colour) —
+    // selected states only, never decoration. The wrapper adds no
+    // margin: the inner .kiA-hit already carries the 12px row
+    // spacing, so selecting a row cannot shift the list.
+    const spot = (
       <SpotlightCard
-        key={hit.key}
         className="kiA-hit-spot"
         spotlightColor="rgba(78,242,232,0.07)"
         intensity={0.12}
@@ -247,7 +340,35 @@ export default function SearchPage(props: SearchPageProps) {
       </div>
       </SpotlightCard>
     );
+    if (isSel) {
+      return (
+        <BorderGlow key={hit.key} className="kiA-hit-glow" glowColor={color} intensity={0.85} radius="24px">
+          {spot}
+        </BorderGlow>
+      );
+    }
+    return <Fragment key={hit.key}>{spot}</Fragment>;
   };
+
+  // ROUND C 2026-11-08 (critiqueC-2026-11-08-1420 Round F §B):
+  // honest match breakdown — each result counts once, title first
+  // (a hit matching both title and text counts as a title match,
+  // so the parts always sum to the result count). Backed by
+  // matchKindsOf (backend match_kinds, or the derived kind).
+  // Zero-count parts are omitted, so laplace reads
+  // "3 results · 3 title matches", never a fabricated zero.
+  const titleMatches = results.filter(h => matchKindsOf(h).includes('title')).length;
+  const contentMatches = results.filter(h => {
+    const kinds = matchKindsOf(h);
+    return !kinds.includes('title') && kinds.includes('text');
+  }).length;
+  const subjectMatches = results.length - titleMatches - contentMatches;
+  const matchBreakdown = [
+    `${results.length} result${results.length === 1 ? '' : 's'}`,
+    `${titleMatches} title match${titleMatches === 1 ? '' : 'es'}`,
+    ...(contentMatches > 0 ? [`${contentMatches} content match${contentMatches === 1 ? '' : 'es'}`] : []),
+    ...(subjectMatches > 0 ? [`${subjectMatches} subject match${subjectMatches === 1 ? '' : 'es'}`] : []),
+  ].join(' · ');
 
   return (
     <div className="kiA-page kiA-page--search">
@@ -387,7 +508,7 @@ export default function SearchPage(props: SearchPageProps) {
           : searching
             ? 'Searching…'
             : !qEmpty
-              ? `${results.length} document${results.length === 1 ? '' : 's'} found · ${totalMatches} match${totalMatches === 1 ? '' : 'es'}${searchSubject !== 'all' ? ` · ${subjectOf(searchSubject)?.code ?? searchSubject}` : ''}${typeFilter !== 'all' ? ` · ${sectionLabel(typeFilter)}` : ''}`
+              ? `${matchBreakdown}${searchSubject !== 'all' ? ` · ${subjectOf(searchSubject)?.code ?? searchSubject}` : ''}${typeFilter !== 'all' ? ` · ${sectionLabel(typeFilter)}` : ''}`
               : `${total} documents · 4 disciplines`}
       </p>
 
@@ -449,27 +570,32 @@ export default function SearchPage(props: SearchPageProps) {
       )}
 
       {!searching && !searchError && !qEmpty && results.length > 0 && (
-        // Round C P1: search-result entrances on the spec motion
-        // language (distance 18, duration 0.48, threshold 0.12,
-        // stagger 0.045, once) — Round A 2026-11-07 sets the spec's
-        // 35-50ms stagger (was 0.06). AnimatedList is NOT used: its
-        // vendored 620ms spring violates the 160-220ms/no-spring
-        // rules; AnimatedContent is the compliant equivalent.
-        <AnimatedContent
-          key={query + searchSubject + typeFilter + sortMode}
-          className="kiA-hits"
-          trigger="mount"
-          distance={18}
-          duration={0.48}
-          ease="power3.out"
-          initialOpacity={0}
-          blur={0}
-          threshold={0.12}
-          stagger={0.045}
-          once
-        >
-          {results.map((hit, i) => renderHit(hit, i))}
-        </AnimatedContent>
+        // Round A 2026-11-08 spec §11: the results live in a wrap
+        // with the faint connection map in its 28px left rail —
+        // each card connects to its subject node. The map takes the
+        // selected index so the selected discipline node illuminates.
+        // Entrance stagger 0.2 (spec: AnimatedList 180-240ms stagger
+        // intent, applied via the existing entrance — the AnimatedList
+        // component itself is a self-contained listbox and cannot
+        // wrap these rows; see the Round A CSS header).
+        <div className="kiA-hits-wrap" ref={hitsWrapRef}>
+          <ConnectionMap wrapRef={hitsWrapRef} results={results} selected={selected} />
+          <AnimatedContent
+            key={query + searchSubject + typeFilter + sortMode}
+            className="kiA-hits"
+            trigger="mount"
+            distance={18}
+            duration={0.48}
+            ease="power3.out"
+            initialOpacity={0}
+            blur={0}
+            threshold={0.12}
+            stagger={0.2}
+            once
+          >
+            {results.map((hit, i) => renderHit(hit, i))}
+          </AnimatedContent>
+        </div>
       )}
 
       {!searching && qEmpty && (

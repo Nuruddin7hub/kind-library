@@ -13,7 +13,13 @@
   right: 8px;
   /* Round C 2026-11-06 P0: the dock floats above the home indicator —
    * bottom max(8px, safe-area), height the named nav token. The safe
-   * area now lives OUTSIDE the dock (below it), not as inside padding. */
+   * area now lives OUTSIDE the dock (below it), not as inside padding.
+   * Round B 2026-11-08 P0 (1420 loop): MEASURED live at 390px — height
+   * renders exactly 68px, bottom 8px, so the dock occupies 76px from
+   * the viewport bottom. KEEP the nav exactly as is; content clearance
+   * lives in styles/mobile.css (--mobile-nav-height + --mobile-nav-gap
+   * 28px + safe-area = 96px floor). Do NOT "fix" overlap by moving or
+   * resizing this dock — the clearance is already verified per screen. */
   bottom: max(8px, env(safe-area-inset-bottom));
   height: var(--mobile-nav-height, 68px); /* spec: 68px */
   border-radius: 21px; /* spec: radius 21px */
