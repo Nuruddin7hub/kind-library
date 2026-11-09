@@ -234,6 +234,12 @@ p.msi-headline { margin: 12px 0 0; }
   text-transform: uppercase;
 }
 .msi[data-subject="digital"] .msi-meta { margin-top: 8px; }
+/* Round B 2026-11-09: Digital metadata contrast — live token measured
+ * #818A9B (var(--muted)); ChatGPT's ~#738695 is the DESKTOP token
+ * (--la-text-muted), not mobile. Brightened to #9AAAB5, Digital index
+ * metadata labels only — other subjects keep --muted. */
+.msi[data-subject="digital"] .msi-meta,
+.msi[data-subject="digital"] .msi-feat-meta { color: #9AAAB5; }
 
 /* ---------- SpotlightCard on the two featured modules (Round B 2026-11-08) ----------
  * The wrapper must be visually NEUTRAL at rest: SpotlightCard's defaults
@@ -697,10 +703,12 @@ p.msi-headline { margin: 12px 0 0; }
  * when the card is opened (tap runs the search for that question). */
 .msi-qcard-desc {
   /* Round B 1420 P1: spec descriptive-text contrast — #B5AA98, 12px/1.55
-   * (was rgba(236,225,204,.58) at 1.45). Serif questions untouched. */
+   * (was rgba(236,225,204,.58) at 1.45). Serif questions untouched.
+   * Round B 2026-11-09: brightened #B5AA98 → #C9B99F (live token
+   * measured; ChatGPT's ~#B5A58F is approximate). Gold palette kept. */
   font-size: 12px;
   line-height: 1.55;
-  color: #B5AA98;
+  color: #C9B99F;
   max-width: 30ch;
   display: -webkit-box;
   -webkit-line-clamp: 2;

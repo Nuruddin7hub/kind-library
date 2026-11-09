@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import type { ReactNode } from 'react';
 import { consumeReaderStartPage } from '../readerStart';
 import { v2SubjectColor } from '../shared';
 import AnimatedContent from '../bits/AnimatedContent';
-import GlareHover from '../bits/GlareHover';
 import DarkVeil from '../bits/DarkVeil';
 import '../styles/reader-env.css';
 
@@ -178,6 +178,30 @@ export default function PdfReader({
   const [findQ, setFindQ] = useState('');
   const [findResults, setFindResults] = useState<Array<{ page_number: number; snippet: string; match_count: number }>>([]);
   const [findSearching, setFindSearching] = useState(false);
+
+  /* ROUND H 2026-11-09 (critiqueC H-02): console context-aware
+     defaults — Find collapsed (it is a tool, not the reading
+     surface), Bookmarks + Notes expanded (the annotation controls
+     a study session opens with), Highlights / Contents / Page
+     context collapsed. Typing a find query auto-expands Find (see
+     the findQ effect below); adding a bookmark / note / highlight
+     auto-expands its section. In-memory only, per document open. */
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
+    find: true, highlights: true, contents: true, context: true,
+  });
+  const toggleSection = (id: string) =>
+    setCollapsed(prev => ({ ...prev, [id]: !prev[id] }));
+  const sectionHead = (id: string, label: ReactNode) => (
+    <button
+      type="button"
+      className="reader-console-head-btn"
+      onClick={() => toggleSection(id)}
+      aria-expanded={!collapsed[id]}
+    >
+      <span className="reader-console-label">{label}</span>
+      <span className="reader-console-chevron" aria-hidden="true">{collapsed[id] ? '▸' : '▾'}</span>
+    </button>
+  );
   const scrollRef = useRef<HTMLDivElement>(null);
   const total = file.pages || 1;
   const restored = useRef(false);
@@ -260,6 +284,12 @@ export default function PdfReader({
   }, [file.key]);
 
   // find in document — debounced /api/search, this document only
+  // ROUND H 2026-11-09 (critiqueC H-02): Find defaults collapsed,
+  // so typing a query expands it — otherwise the matches would
+  // render into a hidden section.
+  useEffect(() => {
+    if (findQ.trim().length >= 2) setCollapsed(prev => ({ ...prev, find: false }));
+  }, [findQ]);
   useEffect(() => {
     const q = findQ.trim();
     if (q.length < 2) { setFindResults([]); setFindSearching(false); return; }
@@ -403,7 +433,36 @@ export default function PdfReader({
     ro.observe(el);
     return () => ro.disconnect();
   }, [file.key]);
-  const pageW = Math.max(320, Math.min(1100, stageW - 72)) * (zoom / 100);
+  /* ROUND A 2026-11-09 (critiqueA G2): the page is a book page —
+     max 760px wide at 100% (min 560), so it sits whole in the
+     stage; in tall viewports (innerHeight >= 1200) the cap is
+     900px (the spec's full-height page). Collapsing the console
+     or entering reading mode no longer grows the page past the
+     cap — the Round E behaviour is traded for the G2 cap. */
+  const [viewportH, setViewportH] = useState(() =>
+    typeof window !== 'undefined' ? window.innerHeight : 900);
+  useEffect(() => {
+    const onResize = () => setViewportH(window.innerHeight);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  const pageCap = viewportH >= 1200 ? 900 : 760;
+  const pageW = Math.max(560, Math.min(pageCap, stageW - 72)) * (zoom / 100);
+
+  /* ROUND H 2026-11-09 (critiqueC H-01): entering/leaving the
+     full-height layout — the viewport crossing 1200px (e.g. the
+     fullscreen toggle) — flips the page cap 760 <-> 900 and
+     re-flows every page. Re-assert the current page at the stage
+     top after the re-flow so the reading position survives the
+     switch; a no-op when the cap did not change. */
+  const prevPageCap = useRef(pageCap);
+  useEffect(() => {
+    if (prevPageCap.current === pageCap) return;
+    prevPageCap.current = pageCap;
+    if (!restored.current) return;
+    const t = window.setTimeout(() => goToPage(visiblePage), 120);
+    return () => window.clearTimeout(t);
+  }, [pageCap, visiblePage, goToPage]);
 
   const goFullscreen = useCallback(() => {
     const el = document.documentElement;
@@ -413,30 +472,39 @@ export default function PdfReader({
 
   /** Fit page: zoom so the page fills the stage width (spec: bottom
    *  controls include FIT PAGE). At 100% the page already fills the
-   *  stage when the stage is narrower than 1100px. */
+   *  stage when the stage is narrower than the cap. */
   const fitPage = useCallback(() => {
     const avail = stageW - 72;
-    const z = avail > 1100 ? Math.min(200, Math.round((avail / 1100) * 100)) : 100;
+    const z = avail > pageCap ? Math.min(200, Math.round((avail / pageCap) * 100)) : 100;
     setZoom(z);
-  }, [stageW]);
+  }, [stageW, pageCap]);
 
   const addNote = useCallback(() => {
     const text = noteDraft.trim();
     if (!text) return;
     setNotes(prev => [...prev, { page: visiblePage, text, ts: Date.now() }]);
     setNoteDraft('');
+    // ROUND H (H-02): adding a note reveals the Notes section if
+    // the reader had collapsed it.
+    setCollapsed(prev => ({ ...prev, notes: false }));
   }, [noteDraft, visiblePage]);
 
   const addPageBookmark = useCallback(() => {
     setPageBms(prev => prev.some(b => b.page === visiblePage)
       ? prev
       : [...prev, { page: visiblePage, ts: Date.now() }].sort((a, b) => a.page - b.page));
+    // ROUND H (H-02): adding a page bookmark reveals the Bookmark
+    // section if the reader had collapsed it.
+    setCollapsed(prev => ({ ...prev, bookmark: false }));
   }, [visiblePage]);
 
   const addHighlight = useCallback(() => {
     const label = hlDraft.trim() || `Page ${visiblePage}`;
     setHighlights(prev => [...prev, { page: visiblePage, label, color: hlColor, ts: Date.now() }]);
     setHlDraft('');
+    // ROUND H (H-02): Highlights defaults collapsed — adding one
+    // reveals the section so the new highlight is visible.
+    setCollapsed(prev => ({ ...prev, highlights: false }));
   }, [hlDraft, visiblePage, hlColor]);
 
   const saveNoteEdit = useCallback(() => {
@@ -574,8 +642,9 @@ export default function PdfReader({
             {Array.from({ length: total }, (_, i) => i + 1).map(p => (
               <div key={p} id={`kl-page-${p}`} className="reader-doc-page">
                 {/* No maxWidth on the img: pageW is already clamped
-                    to stageW-72 so the image can never overflow the
-                    stage; maxWidth:'100%' + the shrink-to-fit
+                    to stageW-72 (cap 760, 900 in tall viewports) so
+                    the image can never overflow the stage;
+                    maxWidth:'100%' + the shrink-to-fit
                     .reader-doc-page wrapper pinned the rendered width
                     to the pre-collapse 980px even after the cap went
                     to 1100 (probe_debug: style 1100px, rect 980px;
@@ -636,7 +705,8 @@ export default function PdfReader({
                 once
               >
               <div className="reader-console-module">
-                <span className="reader-console-label">Find in document</span>
+                {sectionHead('find', 'Find in document')}
+                {!collapsed.find && (
 <div className="reader-find">
                 <input
                   type="search"
@@ -651,9 +721,11 @@ export default function PdfReader({
                   </button>
                 )}
               </div>
+                )}
               </div>
               </AnimatedContent>
               {findQ.trim().length >= 2 ? (
+                !collapsed.find && (
                 <div className="reader-tab-body">
                   {findSearching ? (
                     <p className="reader-hint">Searching…</p>
@@ -677,6 +749,7 @@ export default function PdfReader({
                     </>
                   )}
                 </div>
+                )
               ) : (
               /* Round C P1: the console modules enter on spec params
                  (distance 18, duration 0.48, stagger 0.06, once) —
@@ -694,10 +767,10 @@ export default function PdfReader({
                 once
               >
               <div className="reader-console-module">
-                <span className="reader-console-label">Bookmark</span>
+                {sectionHead('bookmark', 'Bookmark')}
+                {!collapsed.bookmark && (
                 <div className="reader-tab-body">
-                  <GlareHover className="de-glare-block" glareColor="#e8aa48" glareOpacity={0.3}>
-<button className="reader-tool-row" onClick={addPageBookmark}
+                  <button className="reader-tool-row" onClick={addPageBookmark}
                     disabled={pageBms.some(b => b.page === visiblePage)}>
                     <span className="text-[16px]" style={{ color: '#F0B86B' }}>★</span>
                     <span className="min-w-0">
@@ -707,7 +780,6 @@ export default function PdfReader({
                       <span className="row-meta block">Saved on this device · persists</span>
                     </span>
                   </button>
-</GlareHover>
                   <button className="reader-tool-row" onClick={onToggleBookmark}
                     aria-pressed={bookmarked}>
                     <span className="text-[16px]" style={{ color: bookmarked ? '#F0B86B' : 'var(--muted)' }}>
@@ -752,9 +824,11 @@ export default function PdfReader({
                     </>
                   )}
                 </div>
+                )}
               </div>
               <div className="reader-console-module">
-                <span className="reader-console-label">Notes <span className="reader-console-count">· {notes.length}</span></span>
+                {sectionHead('notes', <>Notes <span className="reader-console-count">· {notes.length}</span></>)}
+                {!collapsed.notes && (
                 <div className="reader-tab-body">
                   <div className="reader-note-form">
                     <textarea
@@ -763,8 +837,7 @@ export default function PdfReader({
                       placeholder={`Note on page ${visiblePage}…`}
                       aria-label="Write a note for the current page"
                     />
-                    <GlareHover className="de-glare-block" glareColor="#59ded3" glareOpacity={0.3}>
-<button
+                    <button
                       onClick={addNote}
                       disabled={!noteDraft.trim()}
                       className="ke-cta-primary w-full justify-center mt-2 disabled:opacity-40"
@@ -772,7 +845,6 @@ export default function PdfReader({
                     >
                       Add note · p. {visiblePage}
                     </button>
-</GlareHover>
                   </div>
                   {notes.length === 0 ? (
                     <p className="reader-hint">
@@ -816,9 +888,11 @@ export default function PdfReader({
                     })
                   )}
                 </div>
+                )}
               </div>
               <div className="reader-console-module">
-                <span className="reader-console-label">Highlights <span className="reader-console-count">· {highlights.length}</span></span>
+                {sectionHead('highlights', <>Highlights <span className="reader-console-count">· {highlights.length}</span></>)}
+                {!collapsed.highlights && (
                 <div className="reader-tab-body">
                   <div className="reader-note-form">
                     <input
@@ -843,18 +917,13 @@ export default function PdfReader({
                         />
                       ))}
                     </div>
-                    {/* Round A 2026-11-08 spec §5: Glare Hover on
-                        the highlight interaction too (bookmark
-                        already has it above). */}
-                    <GlareHover className="de-glare-block" glareColor="#59ded3" glareOpacity={0.3}>
-<button
+                    <button
                       onClick={addHighlight}
                       className="ke-cta-primary w-full justify-center mt-2"
                       style={{ padding: '10px 16px', fontSize: 13 }}
                     >
                       Highlight page {visiblePage}
                     </button>
-</GlareHover>
                   </div>
                   {highlights.length === 0 ? (
                     <p className="reader-hint">
@@ -882,9 +951,11 @@ export default function PdfReader({
                     </>
                   )}
                 </div>
+                )}
               </div>
               <div className="reader-console-module">
-                <span className="reader-console-label">Contents</span>
+                {sectionHead('contents', 'Contents')}
+                {!collapsed.contents && (
                 <div className="reader-tab-body">
                   {!tocLoaded ? (
                     <p className="reader-hint">Loading contents…</p>
@@ -937,16 +1008,19 @@ export default function PdfReader({
                     ))
                   )}
                 </div>
+                )}
               </div>
               <hr className="reader-console-divider" />
               <div className="reader-console-module">
-                <span className="reader-console-label">Page context</span>
+                {sectionHead('context', 'Page context')}
+                {!collapsed.context && (
                 <div className="reader-page-context">
                   <span className="reader-page-context-nums">{visiblePage} <span>/ {total}</span></span>
                   {/* ROUND A 2026-11-07 (spec §P3.3 PAGE INFORMATION):
                       current page / total pages / zoom. */}
                   <span className="reader-page-context-meta">{sectionLabel} / {subjectLabel} · <span className="reader-zoom">{zoom}% zoom</span></span>
                 </div>
+                )}
               </div>
               <div className="reader-console-nav">
                 <button type="button" onClick={() => onPrev?.()} disabled={!onPrev}>← Previous</button>

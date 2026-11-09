@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties, type HTMLAttributes }
 import SpotlightCard from '../bits/SpotlightCard';
 import MagicBento from '../bits/MagicBento';
 import CountUp from '../bits/CountUp';
+import DotGrid from '../bits/DotGrid';
 import SplitText from '../components/SplitText';
 import AnimatedContent from '../bits/AnimatedContent';
 import type { LibFile } from '../shared';
@@ -90,6 +91,13 @@ export default function LibraryPage(props: LibraryPageProps) {
   } = props;
 
   const activeSubject = subjectOf(subject);
+
+  /* ROUND A 2026-11-09 (spec §G5): reduced-motion users get no
+     DotGrid at all (the FIS hero art skips rendering it). */
+  const reduceMotion = useMemo(
+    () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    []
+  );
 
   const subjOrder = useMemo(() => {
     const perSubj = new Map<string, number>();
@@ -336,6 +344,37 @@ export default function LibraryPage(props: LibraryPageProps) {
         </div>
         {subject !== 'all' && activeSubject && (
           <div className={`kiA-ed-hero-art kiA-ed-hero-art--${subject}`} aria-hidden="true">
+            {/* ROUND A 2026-11-09 (spec §G5): DotGrid in the FIS
+                hero art only — gold dots, ~5% opacity, radial fade,
+                no mouse interaction, no click shock, intro wave
+                once. The Phi glyph stays above it (z-index in
+                living-archive.css). */}
+            {subject === 'fis' && !reduceMotion && (
+              <div className="de-dotgrid-fis" aria-hidden="true">
+                <DotGrid
+                  dotSize={3}
+                  gap={16}
+                  baseColor="#d8ab69"
+                  activeColor="#f0ac48"
+                  proximity={120}
+                  strength={0.35}
+                  bounce={0.6}
+                  tension={0.4}
+                  returnDuration={0.8}
+                  shockRadius={240}
+                  shockStrength={3}
+                  swell={0.6}
+                  stretch={0.4}
+                  glow={0.4}
+                  shape="circle"
+                  fade={0.55}
+                  opacity={0.05}
+                  intro
+                  mouseInteraction={false}
+                  clickShock={false}
+                />
+              </div>
+            )}
             <span className="kiA-ed-hero-glyph">{disciplineGlyph(subject)}</span>
             {subject === 'fis' && <span className="kiA-ed-hero-motif kiA-ed-hero-motif--fis" />}
             {subject === 'digital' && <span className="kiA-ed-hero-motif kiA-ed-hero-motif--digital" />}

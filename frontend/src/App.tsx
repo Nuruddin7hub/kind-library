@@ -40,6 +40,11 @@ import './styles/knowledge-instrument.css';
 // critiqueA-1420 spec: P0 foundation + P1 Overview) — imported LAST
 // so its rules win. Every rule lives under `.desktop-app`.
 import './styles/field-edition.css';
+// LIVING ARCHIVE (ChatGPT Round A desktop, 2026-11-09, critiqueA
+// spec: G1 foundation + G2 Reader + G3 Search three-zone + G4
+// Overview/FIS + G5 React Bits restraint) — imported LAST so its
+// rules win. Desktop-only; mobile (.mobile-shell) never matches.
+import './styles/living-archive.css';
 // React Bits Noise — global film grain, opacity 0.025 (critiqueA
 // 2026-11-07 §Global: 4-layer background, mix-blend screen).
 // Desktop only; the component is position:fixed + pointer-events:none.
@@ -176,6 +181,55 @@ export default function App() {
     }, 300);
     return () => { window.clearTimeout(t1); window.clearTimeout(t2); };
   }, [readerKey]);
+
+  // Round B 2026-11-09 P1: preserve each tab's scroll position across
+  // DOCK tab switches (Library <-> Search <-> Home <-> Saved). The
+  // reader-return effect above covers Reader -> list; this covers the
+  // tab-switch gap the pre-probe measured live (Library 600 -> Search ->
+  // Library reset to 0). Only the dock sets the flag — Home tiles and
+  // search-submit navigations are FRESH navigations and must land at the
+  // top, so when the tab changes without the flag this effect resets
+  // #root scrollTop to 0 (the window.scrollTo({top:0}) in those handlers
+  // cannot do it: #root is the scroller, window never scrolls — measured
+  // live: a tile tap landed at 539 without this reset). The flag is
+  // consumed on every mobileTab change, so a same-tab re-tap can never
+  // arm a stale restore for a later tile navigation. Mobile only
+  // (#kl-mobile-scroll exists solely on the mobile branch); desktop
+  // keeps its own nav.
+  const tabScrollKey = (tab: string) => `kl:tab-scroll:${tab}`;
+  const tabSwitchRef = useRef(false);
+  const prevTabRef = useRef(mobileTab);
+  useEffect(() => {
+    const prev = prevTabRef.current;
+    prevTabRef.current = mobileTab;
+    const fromDock = tabSwitchRef.current;
+    tabSwitchRef.current = false; // consume exactly once per tab change
+    if (readerKey !== null) return;
+    if (!document.getElementById('kl-mobile-scroll')) return;
+    if (mobileTab === prev) return; // readerKey-only run: never touch scroll
+    const el = document.getElementById('root');
+    if (!el) return;
+    if (!fromDock) {
+      // Fresh navigation (tile / search-submit / back): land at the top.
+      el.scrollTop = 0;
+      return;
+    }
+    let v = 0;
+    try { v = parseInt(sessionStorage.getItem(tabScrollKey(mobileTab)) || '0', 10); } catch { /* ignore */ }
+    if (!Number.isFinite(v) || v <= 0) return;
+    // Same shape as the reader-return restore, plus a 1200ms attempt:
+    // a remounted Search list can still be rendering results at 300ms
+    // and clamp the restore short (measured 400 -> 381 without it).
+    // Attempts only ever correct an upward shortfall, never pull down.
+    const attempt = () => {
+      const el2 = document.getElementById('root');
+      if (el2 && el2.scrollTop < v - 4) el2.scrollTop = v;
+    };
+    const t1 = window.setTimeout(attempt, 60);
+    const t2 = window.setTimeout(attempt, 300);
+    const t3 = window.setTimeout(attempt, 1200);
+    return () => { window.clearTimeout(t1); window.clearTimeout(t2); window.clearTimeout(t3); };
+  }, [mobileTab, readerKey]);
 
   const toggleBookmark = useCallback((key: string) => {
     setBookmarks(prev => {
@@ -683,7 +737,19 @@ export default function App() {
                 { id: 'saved', label: 'SAVED', icon: <HugeiconsIcon icon={Bookmark01Icon} size={20} strokeWidth={1.8} /> },
               ]}
               active={mobileTab}
-              onSelect={(id) => { setMobileTab(id); window.scrollTo({ top: 0 }); }}
+              onSelect={(id) => {
+                // Round B 2026-11-09: save this tab's scroll before
+                // switching so the dock-switch restore effect can bring
+                // it back. Mobile only; desktop has no #kl-mobile-scroll.
+                try {
+                  const el = document.getElementById('root');
+                  if (el && document.getElementById('kl-mobile-scroll')) {
+                    sessionStorage.setItem(tabScrollKey(mobileTab), String(el.scrollTop));
+                  }
+                } catch { /* ignore */ }
+                tabSwitchRef.current = true;
+                setMobileTab(id); window.scrollTo({ top: 0 });
+              }}
             />
           </>
         )

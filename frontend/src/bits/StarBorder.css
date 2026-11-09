@@ -1,0 +1,57 @@
+/* vendored VERBATIM from React Bits, registry StarBorder-TS-CSS, 2026-11-09.
+   sha256 StarBorder.tsx f0237c4c1c9bd25669570b53ea05f6aecbe1e128810fd19c275a5d4b913adda1
+   sha256 StarBorder.css  128fe0068b2d7964c28488d24465626ff34f3143a66082a6548a1a1f57c987d2 */
+.star-border {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.875rem 1.5rem;
+  border: 0;
+  border-radius: var(--star-border-radius);
+  background: var(--star-border-surface);
+  color: var(--star-border-text);
+  font: inherit;
+  font-weight: 500;
+  line-height: 1.25;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.star-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 var(--star-border-thickness) var(--star-border-track);
+  pointer-events: none;
+}
+
+.star-border__light {
+  position: absolute;
+  top: -48px;
+  left: -48px;
+  z-index: -1;
+  width: calc(100% + 96px);
+  height: calc(100% + 96px);
+  pointer-events: none;
+}
+
+button.star-border,
+a.star-border {
+  cursor: pointer;
+}
+
+.star-border:focus-visible {
+  outline: 2px solid var(--star-border-track);
+  outline-offset: 3px;
+}
+
+.star-border:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

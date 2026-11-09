@@ -1,8 +1,8 @@
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import CountUp from '../bits/CountUp';
 import Particles from '../bits/Particles';
-import SplitText from '../components/SplitText';
-import Magnet from '../bits/Magnet';
+import BlurText from '../bits/BlurText';
+import StarBorder from '../bits/StarBorder';
 import AnimatedContent from '../bits/AnimatedContent';
 import SpotlightCard from '../bits/SpotlightCard';
 import GlareHover from '../bits/GlareHover';
@@ -140,6 +140,7 @@ function DisciplineField({
             key={s.id}
             type="button"
             className="kiA-field-node"
+            data-subj={s.id}
             style={{ left: `${pos.x}%`, top: `${pos.y}%`, '--node': color } as CSSProperties}
             onClick={() => onGoSubject(s.id)}
             onMouseEnter={() => onHover(s.id)}
@@ -362,42 +363,53 @@ export default function Overview({ files, onOpenReader, onGoSubject, onGoSearch 
             the hero no longer carries its own Aurora. */}
         <div className="kiA-hero-copy">
           <p className="kiA-eyebrow">FIELD EDITION · 004 · YOUR PERSONAL KNOWLEDGE SYSTEM</p>
-          {/* SplitText (React Bits, line reveal, once on entry —
-              Round A 2026-11-08 spec §React Bits): the editorial
-              headline reveals by line. "connection." is italic +
-              cyan via the last-line rule in field-edition.css.
-              Replaces BlurText (word blur) on this headline only;
-              Search/Library headings already use SplitText. */}
+          {/* BlurText (React Bits, word blur, once on entry —
+              Round A 2026-11-09 spec §G5): the editorial headline
+              blurs in by word, two lines. "connection." is italic +
+              cyan, larger, via the .de-blurline--accent rule in
+              living-archive.css. Replaces SplitText (line reveal)
+              on this headline only. */}
           <h1 className="kiA-display kiA-hero-title">
-            <SplitText
-              lines={[
-                { text: 'Your knowledge lives in' },
-                { text: 'connection.', italic: true },
-              ]}
-            />
+            <span className="de-blurline">
+              <BlurText text="Your knowledge lives in" animateBy="words" direction="top" trigger="load" delay={100} stepDuration={0.35} />
+            </span>
+            <span className="de-blurline de-blurline--accent">
+              <BlurText text="connection." animateBy="words" direction="top" trigger="load" delay={400} stepDuration={0.35} />
+            </span>
           </h1>
           <p className="kiA-hero-sub">
             Four disciplines. One connected archive. Every page within reach.
           </p>
           <div className="kiA-hero-cta">
-            {/* Magnet on the primary CTA only, very slight; GlareHover
-                (React Bits) on both hero CTAs — critical buttons only. */}
-            <Magnet magnetStrength={0.6} maxOffset={6}>
-              <GlareHover glareColor="#59ded3" glareOpacity={0.3}>
-                <button
-                  type="button"
-                  className="de-btn-primary"
-                  onClick={() => onGoSubject('all')}
-                >
-                  Explore the archive&nbsp;&nbsp;→
-                </button>
-              </GlareHover>
-            </Magnet>
-            <GlareHover glareColor="#ffffff" glareOpacity={0.18}>
-              <button type="button" className="de-btn-secondary" onClick={onGoSearch}>
-                Search the archive
-              </button>
-            </GlareHover>
+            {/* StarBorder (React Bits) on the primary CTA only —
+                Round A 2026-11-09 spec §G5: replaces Magnet +
+                GlareHover here. The secondary CTA is plain —
+                GlareHover is reserved for selected search results
+                + doc covers. */}
+            <StarBorder
+              as="button"
+              type="button"
+              className="de-star-cta"
+              color="#ffffff"
+              trailColor="#ffffff"
+              backgroundColor="#65e5d2"
+              textColor="#050911"
+              borderColor="rgba(101, 229, 210, 0.5)"
+              radius={12}
+              duration={5}
+              thickness={1.5}
+              stars={1}
+              glow={0.6}
+              sparkle={false}
+              hover="lap"
+              clickPulse
+              onClick={() => onGoSubject('all')}
+            >
+              Explore the archive&nbsp;&nbsp;→
+            </StarBorder>
+            <button type="button" className="de-btn-secondary" onClick={onGoSearch}>
+              Search the archive
+            </button>
           </div>
         </div>
         <div className="kiA-hero-field">
@@ -478,6 +490,15 @@ export default function Overview({ files, onOpenReader, onGoSubject, onGoSearch 
                   onClick={() => onGoSubject(s.id)}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onGoSubject(s.id); } }}
                   tabIndex={0}
+                  /* ROUND H 2026-11-09 (critiqueC H-07): the field
+                     responds to discipline selection both ways —
+                     hovering/focusing a plate lights its field node
+                     (and subdues the others) via the shared
+                     fieldHover state, mirroring node -> plate. */
+                  onMouseEnter={() => setFieldHover(s.id)}
+                  onMouseLeave={() => setFieldHover(null)}
+                  onFocus={() => setFieldHover(s.id)}
+                  onBlur={() => setFieldHover(null)}
                   aria-label={`${s.name} — ${n} documents`}
                 >
                   <span className="de-plate-visual" aria-hidden="true">
@@ -655,6 +676,10 @@ function RecentCard({
   const subjColor = v2SubjectColor(file.subj);
   return (
     <div role="listitem" className="kiA-strip-card">
+      {/* ROUND A 2026-11-09 (spec §G5): GlareHover on doc covers —
+          the Recent shelf covers are the only real cover images on
+          Overview. */}
+      <GlareHover className="de-glare-block" glareColor="#ffffff" glareOpacity={0.18}>
       <button type="button" className="kiA-strip-btn" onClick={onOpen} aria-label={`Open ${file.title}`}>
         <span className="kiA-strip-cover">
           <img
@@ -672,6 +697,7 @@ function RecentCard({
           </span>
         </span>
       </button>
+      </GlareHover>
     </div>
   );
 }

@@ -4,13 +4,16 @@ import SplitText from '../components/SplitText';
 import AnimatedContent from '../bits/AnimatedContent';
 import SpotlightCard from '../bits/SpotlightCard';
 import BorderGlow from '../bits/BorderGlow';
+import GlareHover from '../bits/GlareHover';
 import {
   SUBJECTS,
   subjectOf,
   pageImageUrl,
   sectionLabel,
   matchKindLabel,
+  matchReason,
   matchKindsOf,
+  hitOpenPage,
   v2SubjectColor,
 } from '../shared';
 import type { SearchHit } from '../shared';
@@ -185,6 +188,67 @@ function ConnectionMap({ wrapRef, results, selected }: {
   );
 }
 
+/** ROUND A 2026-11-09 (critiqueA G3): live PDF preview pane —
+ *  the selected hit's match page as a real server-rendered page
+ *  image, title, meta, matched passage (only when the backend
+ *  provides one — title matches show an honest note instead),
+ *  match-strength explanation (matchReason — never a fabricated
+ *  %) and an open action. When nothing is selected, a quiet
+ *  placeholder. */
+function SearchPreview({ hit, query, onOpen }: {
+  hit: SearchHit | null;
+  query: string;
+  onOpen: (h: SearchHit) => void;
+}) {
+  if (!hit) {
+    return (
+      <aside className="kiA-search-preview" aria-label="Document preview">
+        <p className="kiA-preview-eyebrow">LIVE PREVIEW</p>
+        <p className="kiA-preview-empty">Select a result to preview its matching page — the real page image, the matched passage, and why it matched.</p>
+      </aside>
+    );
+  }
+  const subj = subjectOf(hit.subj);
+  const file = hit.file || hit.key.split('::')[2] || '';
+  const pg = hitOpenPage(hit);
+  const img = file ? pageImageUrl(hit.subj, file, pg, hit.pages) : '';
+  const passage = hit.excerpt || hit.passages?.[0]?.snippet || '';
+  return (
+    <aside className="kiA-search-preview" aria-label="Document preview">
+      <p className="kiA-preview-eyebrow">LIVE PREVIEW · MATCHING PAGE</p>
+      {img && (
+        <div className="kiA-preview-img">
+          <img
+            src={img}
+            alt={`Page ${pg} of ${hit.title}`}
+            loading="lazy"
+            onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+          />
+        </div>
+      )}
+      <p className="kiA-preview-title">{hit.title}</p>
+      <p className="kiA-preview-meta">
+        {subj?.name ?? hit.subj} · {sectionLabel(hit.section)} · {hit.pages} page{hit.pages === 1 ? '' : 's'} · match on p. {pg}
+      </p>
+      {passage ? (
+        <>
+          {/* ROUND H 2026-11-09 (critiqueC H-05): the matched passage
+              is the preview's dominant element — labelled, on a
+              tinted block (living-archive.css). */}
+          <p className="kiA-preview-passage-label">MATCHED PASSAGE</p>
+          <p className="kiA-preview-passage">{highlightQuery(passage, query)}</p>
+        </>
+      ) : (
+        <p className="kiA-preview-passage">Title match — the query appears in the document title, so there is no text passage to show.</p>
+      )}
+      <p className="kiA-preview-strength">{matchReason(hit, query)}</p>
+      <button type="button" className="de-btn-primary kiA-preview-open" onClick={() => onOpen(hit)}>
+        Open document · p. {pg} →
+      </button>
+    </aside>
+  );
+}
+
 export default function SearchPage(props: SearchPageProps) {
   const {
     query, onQueryChange, results, searching,
@@ -243,8 +307,10 @@ export default function SearchPage(props: SearchPageProps) {
   // real results): Laplace 3, Fourier 1, Metaphysics 2, Logic 15.
   const SUGGESTED_TERMS = ['Laplace', 'Fourier', 'Metaphysics', 'Logic'];
 
-  /** One full-width result row (P4 spec): 76px thumbnail |
-   *  title + meta + real excerpt | right-aligned action. Wrapped in
+  /** ROUND A 2026-11-09 (critiqueA G3): three-zone restack — the
+   *  hit is thumb 48 | main, with a footer row inside the main
+   *  (number, OPEN, match count, honest match-strength via
+   *  matchReason). The old 150px side column is gone. Wrapped in
    *  a restrained SpotlightCard (critiqueA 2026-11-07 P1: spotlight
    *  rgba(78,242,232,0.07), no tilt, NOT Magic Bento) — the card
    *  carries the frame, the row keeps the border + geometry. */
@@ -261,9 +327,9 @@ export default function SearchPage(props: SearchPageProps) {
     const preview = hit.excerpt || hit.passages?.[0]?.snippet || '';
     const pg = hitPage(hit);
     const matchCount = typeof hit.match_count === 'number' ? hit.match_count : null;
-    // P4 result row: thumbnail | subject/result + match type, title,
-    // subject name · type · pages · match page, real excerpt |
-    // right-aligned number + OPEN DOCUMENT + match count.
+    // Restacked row (Round A 2026-11-09 G3): thumbnail | subject/
+    // result + match type, meta, title, real excerpt, footer
+    // (number + OPEN DOCUMENT + match count + match-strength).
     // ROUND A 2026-11-08 (spec §React Bits): the keyboard/hover
     // selected row is wrapped in BorderGlow (subject colour) —
     // selected states only, never decoration. The wrapper adds no
@@ -327,23 +393,28 @@ export default function SearchPage(props: SearchPageProps) {
           {preview && (
             <span className="kiA-hit-preview">{highlightQuery(preview, query)}</span>
           )}
-        </span>
-        <span className="kiA-hit-side">
-          <span className="kiA-hit-num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
-          <span className="kiA-hit-open">OPEN DOCUMENT →</span>
-          {matchCount !== null && (
-            <span className="kiA-hit-matches">
-              {matchCount} match{matchCount === 1 ? '' : 'es'}
-            </span>
-          )}
+          <span className="kiA-hit-foot">
+            <span className="kiA-hit-num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+            <span className="kiA-hit-open">OPEN DOCUMENT →</span>
+            {matchCount !== null && (
+              <span className="kiA-hit-matches">
+                {matchCount} match{matchCount === 1 ? '' : 'es'}
+              </span>
+            )}
+            <span className="kiA-hit-strength">{matchReason(hit, query)}</span>
+          </span>
         </span>
       </div>
       </SpotlightCard>
     );
     if (isSel) {
+      // ROUND A 2026-11-09 (critiqueA G5): the selected row also
+      // gets GlareHover (selected cards only) inside its BorderGlow.
       return (
         <BorderGlow key={hit.key} className="kiA-hit-glow" glowColor={color} intensity={0.85} radius="24px">
-          {spot}
+          <GlareHover className="de-glare-block" glareColor="#59ded3" glareOpacity={0.25}>
+            {spot}
+          </GlareHover>
         </BorderGlow>
       );
     }
@@ -369,6 +440,13 @@ export default function SearchPage(props: SearchPageProps) {
     ...(contentMatches > 0 ? [`${contentMatches} content match${contentMatches === 1 ? '' : 'es'}`] : []),
     ...(subjectMatches > 0 ? [`${subjectMatches} subject match${subjectMatches === 1 ? '' : 'es'}`] : []),
   ].join(' · ');
+
+  // ROUND A 2026-11-09 (critiqueA G3): the preview pane follows
+  // the selected result (keyboard or hover); falls back to the
+  // first result. Null while searching / error / empty.
+  const previewHit = !searching && !searchError && !qEmpty && results.length > 0
+    ? (results[selected] ?? results[0] ?? null)
+    : null;
 
   return (
     <div className="kiA-page kiA-page--search">
@@ -423,6 +501,14 @@ export default function SearchPage(props: SearchPageProps) {
         </button>
       </div>
 
+      {/* ROUND A 2026-11-09 (critiqueA G3): three-zone search —
+          filters 220 | results 510 | live PDF preview. The
+          filterbar moves into a sticky left rail (vertical chips);
+          the evidence + states live in the results column; the
+          preview pane shows the selected hit's match page. */}
+      <div className="kiA-search-zones">
+      <aside className="kiA-search-filters" aria-label="Search filters">
+        <p className="kiA-search-filters-eyebrow">FILTERS</p>
       <div className="kiA-filterbar" role="toolbar" aria-label="Search filters">
         <div className="kiA-chips" role="tablist" aria-label="Filter by subject">
           <button
@@ -501,7 +587,8 @@ export default function SearchPage(props: SearchPageProps) {
           </label>
         </div>
       </div>
-
+      </aside>
+      <div className="kiA-search-results">
       <p className="kiA-evidence" aria-live="polite">
         {searchError
           ? 'Search unavailable — your query and filters are kept'
@@ -578,6 +665,7 @@ export default function SearchPage(props: SearchPageProps) {
         // intent, applied via the existing entrance — the AnimatedList
         // component itself is a self-contained listbox and cannot
         // wrap these rows; see the Round A CSS header).
+        <>
         <div className="kiA-hits-wrap" ref={hitsWrapRef}>
           <ConnectionMap wrapRef={hitsWrapRef} results={results} selected={selected} />
           <AnimatedContent
@@ -596,6 +684,11 @@ export default function SearchPage(props: SearchPageProps) {
             {results.map((hit, i) => renderHit(hit, i))}
           </AnimatedContent>
         </div>
+        {/* ROUND H 2026-11-09 (critiqueC H-12): a quiet end-of-list
+            marker so the space below a short result list reads
+            finished, not abandoned. Honest count only. */}
+        <p className="kiA-hits-end">END OF RESULTS · {results.length} SHOWN</p>
+        </>
       )}
 
       {!searching && qEmpty && (
@@ -635,6 +728,9 @@ export default function SearchPage(props: SearchPageProps) {
           </p>
         </div>
       )}
+      </div>
+      <SearchPreview hit={previewHit} query={query} onOpen={onOpen} />
+      </div>
     </div>
   );
 }

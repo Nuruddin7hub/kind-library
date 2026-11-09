@@ -1,0 +1,775 @@
+/* ==================================================================
+ * ROUND A — 2026-11-09 (critiqueA-2026-11-09.md, desktop 9.03/10).
+ * "THE LIVING ARCHIVE" — DESKTOP ONLY. Every rule lives under
+ * .desktop-app or .reader-shell.kiA-v2.kiA-v2. Mobile (.mobile-shell)
+ * never matches. Imported LAST in App.tsx so these rules win at
+ * equal specificity; page-level CSS (SearchPage/LibraryPage/
+ * Overview.css, single-class selectors) is beaten by the
+ * .desktop-app prefix regardless of bundle order.
+ *
+ * VERIFIED LIVE BEFORE WRITING (probe-pre.json, 2026-11-09, bundle
+ * index-DAi0lm5g.js, 1440x900): sidebar 248 / topbar 68 / main pad
+ * 0 40px / page max-width 1480 / hero title 80.64px
+ * (clamp(68,5.6vw,89)), hero grid 673/395, field 240x300, orbits
+ * 238x298, centre 68 / stats 40px + 11px labels / plates 258x358
+ * (min-height 250, content-bound) / sections margin-top 56 /
+ * nav labels 12px, nav rows 42px, section labels 9px/.16em /
+ * btnPrimary 48px tall, padding 14px 22px / search engine 48px,
+ * input 58px, hits grid 64/1fr/auto, thumb 48x65, connmap renders
+ * ~2s after results (3 nodes) / reader shell rows 68/784/48,
+ * workspace 64/1066/310, page img 994x795 (natural 1500),
+ * identity strip 37.5px rendered (CSS 58px — flex-shrink bug, see
+ * G2 fix below), bottombar 48px / FIS hero 188.7px, padding
+ * 14px 32px, title 34px, stats 53.5px, cards rest 428x255 title
+ * 18px (featured 872x237 title 20px), grid gap 16, glyph Phi
+ * 84px, lib split grid 208/872.
+ *
+ * DEVIATIONS FROM THE SPEC (evidence in probe-pre.json):
+ * - Hero headline 64px: NOT applied — live 80.64px already exceeds
+ *   it; shrinking would be a downgrade.
+ * - Stats 36px: NOT applied — live 40px already exceeds it.
+ * - Sidebar 248px: kept — the spec's own global measurement says
+ *   248 (the 240 in the Reader section is "close").
+ * - Reader page cap 760px (min 560): applied as specced, in
+ *   PdfReader.tsx. In tall viewports (innerHeight >= 1200) the cap
+ *   is 900px (the spec's full-height "page min(100%, 900px)").
+ *   Collapsing the console / reading mode no longer grows the page
+ *   past the cap — the Round E behaviour is traded for the G2 cap.
+ * - FIS abstracts: NOT added — /api/excerpts returns empty for FIS
+ *   docs (backend data gap; backfill needs Kind's call). Larger
+ *   cards (260px) + title 21px ship instead.
+ * - AnimatedList: NOT vendored — the component is a self-contained
+ *   listbox (own 420px frame, tile chrome, selection ring) that
+ *   cannot wrap the existing SpotlightCard rows without a rebuild;
+ *   its selection model conflicts with App-level keyboard nav.
+ *   The stagger intent stays via AnimatedContent stagger 0.2.
+ * - Full-height "page min(100%, 900px)": implemented as the
+ *   tall-viewport cap (see above), not a separate mode.
+ * - Button 42px: applied as padding 12px 22px (was 14px 22px, 48px
+ *   tall) — lands ~42px.
+ * ================================================================== */
+
+/* ------------------------------------------------------------------
+ * G1 — DESIGN FOUNDATION: tokens (spec §1, literal).
+ * Deltas vs the live palette are small (amber #D8AB69 vs #E6AA53,
+ * teal #65E5D2 vs #59DED3, bg #07111D vs #050B12); many rules use
+ * hardcoded hex, so the visible change is limited to token-driven
+ * surfaces. The layered background (base gradient, top radial,
+ * 64px grid, Noise 0.018) is already live and consumes --bg, so
+ * re-pointing the tokens re-points the base.
+ * ------------------------------------------------------------------ */
+.desktop-app {
+  --la-bg: #07111d;
+  --la-bg-secondary: #0a1723;
+  --la-elevated: #101f2c;
+  --la-raised: #142635;
+  --la-text: #f1f0ea;
+  --la-text-secondary: #b0bec8;
+  --la-text-muted: #8496a5;
+  --la-teal: #65e5d2;
+  --la-amber: #d8ab69;
+  --la-border: rgba(151, 190, 204, 0.14);
+  --la-radius: 14px;
+  --la-radius-sm: 8px;
+  /* Re-point the live tokens at the spec palette. */
+  --bg: #07111d;
+  --bg-2: #0a1723;
+  --de-void: #07111d;
+  --de-deep: #0a1723;
+  --de-raised: #142635;
+  --de-elevated: #101f2c;
+  --de-ivory: #f1f0ea;
+  --de-muted: #b0bec8;
+  --de-cyan: #65e5d2;
+  --de-amber: #d8ab69;
+  --de-hairline: rgba(151, 190, 204, 0.14);
+}
+
+/* ------------------------------------------------------------------
+ * G1 — SHELL: topbar 68 -> 64, main padding 40 -> 48, page
+ * max-width 1480 -> 1600 (inert at 1440; binds only on wide
+ * screens), section gap 56 -> 40, card gap 24 -> 16, card
+ * padding 28 -> 22, card heading 19 -> 21, nav label 12 -> 13,
+ * nav row 42 -> 36, section label 9 -> 10.
+ * ------------------------------------------------------------------ */
+.desktop-app .kiA-topbar { height: 64px; }
+.desktop-app .kiA-main { padding: 0 48px 48px; }
+.desktop-app .kiA-page { max-width: 1600px; }
+.desktop-app .kiA .kiA-section { margin-top: 40px; }
+.desktop-app .kiA-grid { gap: 16px; }
+.desktop-app .kiA-nav-label { font-size: 13px; }
+.desktop-app .kiA-nav { height: 36px; }
+.desktop-app .kiA-section-label { font-size: 10px; font-weight: 600; }
+.desktop-app .kiA-lib-rail { top: 88px; }
+
+/* Buttons: 48px -> ~42px tall via padding (spec button 42px). */
+.desktop-app .de-btn-primary,
+.desktop-app .de-btn-secondary { padding: 12px 22px; }
+
+/* Discipline plates: padding 28 -> 22 (G1 card padding token).
+   The plate NAME stays at its live 32px Instrument Serif — the
+   spec's 21px card heading was measured on document titles
+   (library cards, 19px); the plate name is a discipline display
+   name, and 21px inverts its hierarchy against the 58px glyph. */
+.desktop-app .kiA-platecard-btn { padding: 22px; }
+
+/* Library document cards (shared template, all subjects): padding
+   24 -> 22, title 19 -> 21. FIS overrides below (260px / 21px). */
+.desktop-app .kiA-ed-card { padding: 22px; }
+.desktop-app .kiA-ed-card-title { font-size: 21px; }
+
+/* ------------------------------------------------------------------
+ * G4 — OVERVIEW: hero grid 65/35, constellation field 240 -> 360
+ * wide (300 tall). The field column keeps a 240px floor so the
+ * grid never overflows at 1100px viewports (field shrinks to
+ * min(360px, 100%) there). Orbits/nodes are % positioned, so they
+ * scale with the field. Field head/detail restored a touch from
+ * the 240px tightening (still fits at 249px wide).
+ * ------------------------------------------------------------------ */
+.desktop-app .kiA-hero {
+  grid-template-columns: minmax(0, 1.3fr) minmax(240px, 0.7fr);
+}
+.desktop-app .kiA-field {
+  width: min(360px, 100%);
+}
+.desktop-app .kiA-field-head {
+  padding: 16px 16px 0;
+  gap: 8px;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+}
+.desktop-app .kiA-field-detail {
+  font-size: 10px;
+  padding: 0 16px 18px;
+}
+
+/* ------------------------------------------------------------------
+ * G4 — FIS: hero 188.7 -> ~230px (title 34 -> 52, padding
+ * 14/32 -> 24/32, min-height 170 -> 200, stats margin-top 18 ->
+ * 24). The title ("FIS — The study of thought.") at 52px serif
+ * fits one line in the 666px column (~590px); if it ever wraps,
+ * the hero lands ~285px — re-measure after deploy.
+ * Cards: min-height 220 -> 260, title 18 -> 21 (featured 20 ->
+ * 21). No abstracts — excerpts are empty for FIS (backend gap).
+ * ------------------------------------------------------------------ */
+.desktop-app[data-subject="fis"] .kiA-head--surfaced {
+  padding: 24px 32px;
+  min-height: 200px;
+}
+.desktop-app[data-subject="fis"] .kiA-head--surfaced .kiA-ed-title {
+  font-size: 52px;
+  line-height: 1.05;
+}
+.desktop-app[data-subject="fis"] .kiA-ed-stats {
+  margin-top: 24px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(216, 171, 105, 0.25);
+}
+.desktop-app[data-subject="fis"] .kiA-ed-stat-num {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 30px;
+  color: #f1f0ea;
+}
+.desktop-app[data-subject="fis"] .kiA-ed-stat-label {
+  font-size: 10px;
+  color: #d8ab69;
+}
+.desktop-app[data-subject="fis"] .kiA-ed-card { min-height: 260px; }
+.desktop-app[data-subject="fis"] .kiA-ed-card-title { font-size: 21px; }
+.desktop-app[data-subject="fis"] .kiA-grid--fis-featured > .spotlight-card:first-child .kiA-ed-card-title {
+  font-size: 21px;
+}
+
+/* ------------------------------------------------------------------
+ * G2 — READER: toolbar 68 -> 58 (shell rows, header, progress),
+ * workspace rail 64 -> 76 / console 310 -> 320 in every variant,
+ * console padding 20 -> 18, page wrapper max-width 1100 -> 900
+ * (the JS cap is 760 / 900 tall — the CSS cap never binds below
+ * it), identity strip flex:none (it was flex-shrinking to 37.5px
+ * in the 784px stage; the align loop targets 58px + 8px).
+ * ------------------------------------------------------------------ */
+.reader-shell.kiA-v2.kiA-v2 { grid-template-rows: 58px minmax(0, 1fr) 48px; }
+.reader-shell.kiA-v2.kiA-v2 .ke-reader-header {
+  min-height: 58px;
+  height: 58px;
+}
+.reader-shell.kiA-v2.kiA-v2 .ke-reader-progress { top: 58px; }
+.reader-shell.kiA-v2.kiA-v2 .reader-workspace {
+  grid-template-columns: 76px minmax(0, 1fr) 320px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-workspace.no-left {
+  grid-template-columns: 0 minmax(0, 1fr) 320px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-workspace.no-right {
+  grid-template-columns: 76px minmax(0, 1fr) 0;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-workspace.no-left.no-right {
+  grid-template-columns: 0 minmax(0, 1fr) 0;
+}
+.reader-shell.kiA-v2.kiA-v2.reading .reader-workspace {
+  grid-template-columns: 0 minmax(0, 1fr) 0;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-panel-right { padding: 18px; }
+.reader-shell.kiA-v2.kiA-v2 .reader-identity { flex: none; }
+.reader-shell.kiA-v2.kiA-v2 .reader-doc-page { max-width: min(100%, 900px); }
+
+/* Console collapsible sections (PdfReader.tsx): the label row
+   becomes a toggle button; the chevron flips; the body hides. */
+.reader-shell.kiA-v2.kiA-v2 .reader-console-head-btn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0;
+  margin-bottom: 10px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-head-btn .reader-console-label {
+  margin-bottom: 0;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-head-btn:hover .reader-console-label {
+  color: #f1f0ea;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-chevron {
+  font-size: 11px;
+  line-height: 1;
+  color: #8496a5;
+}
+
+/* ------------------------------------------------------------------
+ * G3 — SEARCH THREE-ZONE: filters 220 | results 510 | live PDF
+ * preview 1fr. Sticky search bar (top 64 = topbar) and sticky
+ * filter rail + preview (top 88). Below 1320px the preview drops
+ * below the results as a horizontal panel. Hit cards restack:
+ * thumb 48 | main, with a footer row (number, OPEN, match count,
+ * honest match-strength) inside the main — the 150px side column
+ * is removed from the markup.
+ * ------------------------------------------------------------------ */
+.desktop-app .kiA-page--search { max-width: none; }
+.desktop-app .kiA-page--search .kiA-searchwrap {
+  position: sticky;
+  top: 64px;
+  z-index: 6;
+  background: #07111d;
+  padding: 12px 0;
+  margin: -12px 0 12px;
+}
+/* ROUND H 2026-11-09 (critiqueC H-04): proportions 190 / 430–460 /
+   min-380 at ≥1280px — filters narrow to 190, results cap at 460
+   (was 510), preview keeps a 380px minimum (was 318px cramped).
+   Results flex below 460 on narrower three-zone widths so the
+   preview minimum never overflows. */
+.desktop-app .kiA-search-zones {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 460px) minmax(380px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.desktop-app .kiA-search-filters {
+  position: sticky;
+  top: 88px;
+  min-width: 0;
+}
+.desktop-app .kiA-search-filters-eyebrow {
+  margin: 0 0 14px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: #8496a5;
+}
+.desktop-app .kiA-search-filters .kiA-filterbar {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.desktop-app .kiA-search-filters .kiA-chips {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+.desktop-app .kiA-search-filters .kiA-chip {
+  justify-content: flex-start;
+  text-align: left;
+}
+.desktop-app .kiA-search-filters .kiA-filterbar-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+}
+.desktop-app .kiA-search-filters .kiA-type-chips {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+.desktop-app .kiA-search-filters .kiA-type-chips .kiA-chip {
+  justify-content: flex-start;
+}
+.desktop-app .kiA-search-filters .kiA-sort {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+.desktop-app .kiA-search-results { min-width: 0; }
+.desktop-app .kiA-search-results .kiA-evidence { margin-top: 0; }
+
+/* Restacked hit card: thumb 48 | main, footer row inside main. */
+.desktop-app .kiA-page--search .kiA-hit {
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 16px;
+}
+.desktop-app .kiA-page--search .kiA-hit-foot {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(151, 190, 204, 0.1);
+}
+.desktop-app .kiA-page--search .kiA-hit-num {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: #8496a5;
+}
+.desktop-app .kiA-page--search .kiA-hit-open {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #65e5d2;
+}
+.desktop-app .kiA-page--search .kiA-hit-matches {
+  font-size: 11px;
+  color: #b0bec8;
+}
+.desktop-app .kiA-page--search .kiA-hit-strength {
+  margin-left: auto;
+  font-size: 11px;
+  color: #d8ab69;
+  white-space: nowrap;
+}
+
+/* Live preview pane: real server-rendered page image of the
+   selected hit's match page, title, meta, matched passage (only
+   when the backend provides one — title matches show an honest
+   "Title match" note instead), match-strength explanation
+   (matchReason — never a fabricated %), open action. */
+.desktop-app .kiA-search-preview {
+  position: sticky;
+  top: 88px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid rgba(151, 190, 204, 0.14);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #101f2c, #0a1723);
+}
+.desktop-app .kiA-preview-eyebrow {
+  margin: 0;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: #65e5d2;
+}
+.desktop-app .kiA-preview-img {
+  overflow: hidden;
+  border: 1px solid rgba(151, 190, 204, 0.14);
+  border-radius: 8px;
+  background: #0a1723;
+}
+.desktop-app .kiA-preview-img img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.desktop-app .kiA-preview-title {
+  margin: 0;
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 20px;
+  line-height: 1.15;
+  color: #f1f0ea;
+}
+.desktop-app .kiA-preview-meta {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #b0bec8;
+}
+.desktop-app .kiA-preview-passage {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(241, 240, 234, 0.75);
+}
+.desktop-app .kiA-preview-passage .kiA-mark {
+  background: rgba(101, 229, 210, 0.25);
+  color: #65e5d2;
+}
+.desktop-app .kiA-preview-strength {
+  margin: 0;
+  font-size: 11px;
+  color: #d8ab69;
+}
+.desktop-app .kiA-preview-open { margin-top: 4px; }
+.desktop-app .kiA-preview-empty {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #8496a5;
+}
+
+/* Below 1280px: preview stacks below the results as a horizontal
+   panel (image left, text right); filters narrow to 200px.
+   ROUND H (critiqueC H-04): stack breakpoint 1320 -> 1279 so the
+   three-zone layout holds from 1280 up; stacked preview gets a
+   400px minimum height. */
+@media (max-width: 1279px) {
+  .desktop-app .kiA-search-zones {
+    grid-template-columns: 200px minmax(0, 1fr);
+  }
+  .desktop-app .kiA-search-preview {
+    grid-column: 1 / -1;
+    position: static;
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    column-gap: 20px;
+    align-items: start;
+    min-height: 400px;
+  }
+  .desktop-app .kiA-search-preview .kiA-preview-eyebrow {
+    grid-column: 1 / -1;
+  }
+  .desktop-app .kiA-search-preview .kiA-preview-img {
+    grid-row: 2 / span 5;
+  }
+}
+
+/* ------------------------------------------------------------------
+ * G5 — REACT BITS (restrained, spec §5).
+ * ------------------------------------------------------------------ */
+/* BlurText headline (Overview, once on entry, two lines). BlurText
+   renders a <p> of word spans; the line wrapper carries the
+   display size. Line 2 is the accent: italic serif, cyan, larger. */
+.desktop-app .de-blurline {
+  display: block;
+  overflow: hidden;
+}
+.desktop-app .de-blurline p {
+  margin: 0;
+  font: inherit;
+  letter-spacing: inherit;
+}
+.desktop-app .de-blurline--accent {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-style: italic;
+  font-size: clamp(72px, 6.5vw, 102px);
+  line-height: 1.02;
+  color: #65e5d2;
+}
+/* StarBorder primary CTA (Overview "Explore the archive"): the
+   component's own padding/font are overridden at higher
+   specificity so it reads as the site's primary button. */
+.desktop-app .de-star-cta.star-border {
+  padding: 14px 22px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+/* DotGrid layer inside the FIS hero art only: gold dots, ~5%
+   opacity (the opacity prop), radial fade, no mouse/click. The
+   glyph stays above it. Reduced-motion users get no DotGrid at
+   all (LibraryPage skips rendering it). */
+.desktop-app .de-dotgrid-fis {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.desktop-app .kiA-ed-hero-art--fis .kiA-ed-hero-glyph {
+  position: relative;
+  z-index: 1;
+}
+/* GlareHover on Recent shelf covers: block wrapper, full width. */
+.desktop-app .de-glare-block {
+  display: block;
+  width: 100%;
+}
+
+/* ==================================================================
+ * ROUND H — 2026-11-09 (critiqueC-2026-11-09.md, desktop 9.30/10,
+ * target 9.6+). REFINEMENT round, not a redesign. DESKTOP ONLY —
+ * every rule lives under .desktop-app or .reader-shell.kiA-v2.kiA-v2.
+ * Mobile (.mobile-shell) never matches. Imported LAST in App.tsx.
+ *
+ * VERIFIED LIVE BEFORE WRITING (probe_pre.json, 2026-11-09, bundle
+ * index-omqBBM2C.js, 1440x900 unless noted): hero 80.64px, stats
+ * 40px + 11px labels, constellation 360x300, plates 254x346, FIS
+ * hero 238px + title 52px + cards 260px/21px titles/13px descs,
+ * search zones 220/510/318 (Round A probe), hit title 21px,
+ * hit passage 12.5px, hit meta 11.5px, match label 9.5px,
+ * hit padding 16px 20px, reader shell 58/794/48, workspace
+ * 76/1044/320, page 760px, identity 58px, console all 6 sections
+ * expanded, find input 42px, notes textarea 112px, tool-row
+ * min-height 44px, row-title 12.5px, console label 11px, section
+ * gap 0px, console scrollH 3331 > clientH 794 (independently
+ * scrollable), hide console -> workspace 76/1364/0 BUT the aside
+ * keeps a 37px sliver (living-archive 18px padding beats the
+ * no-right padding:0 rule), tall reader (1440x1600): page starts
+ * 287px below the identity strip — margin-block:auto on the pages
+ * column (field-edition "Fit Page vertical centring").
+ *
+ * DEVIATIONS FROM THE SPEC (evidence in probe_pre.json):
+ * - Hero 64px / stats 38px / FIS hero min 220px / FIS title 52px /
+ *   card titles 19px: NOT applied — live already meets or exceeds
+ *   every one (80.64 / 40 / 238 / 52 / 21). Shrinking would be a
+ *   downgrade; the critique's own panel text says the same.
+ * - Search card title 17px: NOT applied — live 21px already
+ *   exceeds it and the panel text says titles are too SMALL.
+ *   Passage 12.5 -> 14px, match label 9.5 -> 10px, padding
+ *   16 -> 18px, min-height 116px DO ship (live below spec).
+ * - Console inputs 38px / notes textarea min 100px: NOT applied —
+ *   live already 42px / 112px. Console label 11 -> 12px, row
+ *   title 12.5 -> 13px, hint 12.5 -> 13px, tool-row min-height
+ *   44 -> 54px, section gap 0 -> 20px DO ship.
+ * - FIS glyph: already opacity 0.07 (field-edition, last rule
+ *   wins) — "amber symbol decorative" already addressed; no change.
+ * - FIS chapter/document number system: already live (FIS-01
+ *   plateno on every card); DotGrid already opacity 0.05.
+ * - SpotlightCard: already on discipline plates (4) + FIS cards
+ *   (4), restrained (intensity 0.15 plates / 0.075 FIS). NO new
+ *   addition. Deviation: plates keep per-subject spotlight colours
+ *   (identity) instead of the spec's uniform engineering teal.
+ * - Search proportions: results use minmax(0, 460px) — at 1440 the
+ *   column lands at 460px (in the 430–460 range) with the preview
+ *   at ~398px; below ~1330px the results column flexes down so
+ *   the 380px preview minimum never overflows.
+ * ================================================================== */
+
+/* ------------------------------------------------------------------
+ * H-01 — FULL-HEIGHT PDF TOP-ALIGNMENT (P0). The Round C 2026-11-08
+ * "Fit Page vertical centring" rule (field-edition.css:3834) gave
+ * .reader-document > div.flex margin-block:auto, centring the pages
+ * column when the content is shorter than the stage. Round H
+ * reverses it: the page must start at the canvas TOP, never
+ * vertically centred. Same specificity, imported last, so this wins.
+ * Canvas padding 24/32/48 (spec full-height CSS; was 32px all round).
+ * ------------------------------------------------------------------ */
+.reader-shell.kiA-v2.kiA-v2 .reader-document > div.flex {
+  margin-block: 0;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-document {
+  padding: 24px 32px 48px;
+}
+
+/* ------------------------------------------------------------------
+ * H-02 — CONSOLE HIERARCHY (P0). Headings 12px uppercase (was
+ * 11px), body 13px (row titles + hints were 12.5px), bookmark rows
+ * min 54px (was 44px), section spacing 20px (was 0 — modules
+ * touched). Inputs stay 42px and the notes textarea stays 112px
+ * (both already exceed the spec's 38px / 100px — not shrunk).
+ * The collapsed defaults live in PdfReader.tsx (Find collapsed,
+ * Bookmarks + Notes expanded, Highlights / Contents / Page context
+ * collapsed; typing a query or adding an annotation auto-expands
+ * its section).
+ * ------------------------------------------------------------------ */
+.reader-shell.kiA-v2.kiA-v2 .reader-console-label {
+  font-size: 12px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-tool-row {
+  min-height: 54px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-tool-row .row-title {
+  font-size: 13px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-hint {
+  font-size: 13px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-module {
+  margin-bottom: 20px;
+}
+
+/* ------------------------------------------------------------------
+ * H-03 — CONSOLE HIDE/SHOW (P0). The no-right / no-left padding:0
+ * rules in index.css lose to the living-archive / field-edition
+ * panel padding (higher specificity), leaving a 37px sliver of the
+ * console aside off-canvas when hidden (probe_pre.json readerHide).
+ * These rules out-specify them so the hidden panel is truly 0px and
+ * the canvas takes the freed width immediately.
+ * ------------------------------------------------------------------ */
+.reader-shell.kiA-v2.kiA-v2 .reader-workspace.no-right .reader-panel-right {
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-workspace.no-left .reader-panel-left {
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+}
+
+/* ------------------------------------------------------------------
+ * H-05 — MATCHED-PASSAGE PROMINENCE (P0). The preview passage was
+ * a bare 13px line at 0.75 opacity, visually equal to the meta.
+ * It is now the preview's dominant element: 14px/1.65 on a tinted
+ * block with a teal edge, brighter text, and a MATCHED PASSAGE
+ * eyebrow (added in SearchPage.tsx); the query mark inside it is
+ * stronger. The title-match note keeps the same block (it is the
+ * match-explanation zone) without the eyebrow.
+ * ------------------------------------------------------------------ */
+.desktop-app .kiA-preview-passage {
+  font-size: 14px;
+  line-height: 1.65;
+  color: rgba(241, 240, 234, 0.88);
+  background: rgba(101, 229, 210, 0.06);
+  border-left: 2px solid rgba(101, 229, 210, 0.55);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+.desktop-app .kiA-preview-passage .kiA-mark {
+  background: rgba(101, 229, 210, 0.35);
+  color: #65e5d2;
+  font-weight: 600;
+}
+.desktop-app .kiA-preview-passage-label {
+  margin: 0;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: #65e5d2;
+}
+
+/* ------------------------------------------------------------------
+ * H-06 — DESKTOP TYPOGRAPHY READABILITY (P0). The spec's global
+ * system is text #f1f0ea / #b0bec8 / #8496a5: the dimmest live text
+ * was #738695 / #6B7585 at 10–12px (console meta, filters eyebrow,
+ * hit numbers, empty states). The reader's --text-muted /
+ * --text-secondary are re-pointed under .reader-shell only (the
+ * mobile reader uses .ap-reader and never matches); the hardcoded
+ * living-archive instances were brightened in place above.
+ * Sidebar micro-labels: the sidebar's section labels (WORKSPACE /
+ * DISCIPLINES / ARCHIVE) were 10px — 11px now.
+ * ------------------------------------------------------------------ */
+.reader-shell.kiA-v2.kiA-v2 {
+  --text-muted: #8496a5;
+  --text-secondary: #b0bec8;
+}
+.desktop-app .kiA-sidebar .kiA-section-label {
+  font-size: 11px;
+}
+
+/* ------------------------------------------------------------------
+ * H-07 — CONSTELLATION DISCIPLINE-SELECTION INTERACTIVITY (P1).
+ * Node labels strengthened: code 9 -> 11px, count 10 -> 11px +
+ * brighter (at ≤1180px they revert to 9/10px so "SIGNALS" still
+ * fits the 240px field). When a discipline is selected — node
+ * hover/focus, or plate hover/focus driving the same state in
+ * Overview.tsx — the selected node stays full-strength and the
+ * others subdue to 0.5, with the selected glyph glowing (the
+ * centre + connecting line already lit via data-hover in
+ * field-edition.css). Nodes carry data-subj (Overview.tsx).
+ * ------------------------------------------------------------------ */
+.desktop-app .kiA-field-code {
+  font-size: 11px;
+}
+.desktop-app .kiA-field-count {
+  font-size: 11px;
+  color: #b0bec8;
+}
+@media (max-width: 1180px) {
+  .desktop-app .kiA-field-code {
+    font-size: 9px;
+  }
+  .desktop-app .kiA-field-count {
+    font-size: 10px;
+  }
+}
+.desktop-app .kiA-field[data-hover]:not([data-hover=""]) .kiA-field-node {
+  opacity: 0.5;
+}
+.desktop-app .kiA-field[data-hover="em2"] .kiA-field-node[data-subj="em2"],
+.desktop-app .kiA-field[data-hover="signals"] .kiA-field-node[data-subj="signals"],
+.desktop-app .kiA-field[data-hover="fis"] .kiA-field-node[data-subj="fis"],
+.desktop-app .kiA-field[data-hover="digital"] .kiA-field-node[data-subj="digital"] {
+  opacity: 1;
+}
+.desktop-app .kiA-field[data-hover="em2"] .kiA-field-node[data-subj="em2"] .kiA-field-glyph,
+.desktop-app .kiA-field[data-hover="signals"] .kiA-field-node[data-subj="signals"] .kiA-field-glyph,
+.desktop-app .kiA-field[data-hover="fis"] .kiA-field-node[data-subj="fis"] .kiA-field-glyph,
+.desktop-app .kiA-field[data-hover="digital"] .kiA-field-node[data-subj="digital"] .kiA-field-glyph {
+  text-shadow:
+    0 0 12px color-mix(in srgb, var(--node) 85%, transparent),
+    0 0 48px color-mix(in srgb, var(--node) 60%, transparent);
+}
+
+/* ------------------------------------------------------------------
+ * H-08 — STATS HIERARCHY (P1). Numerals stay 40px (already above
+ * the spec's 38px). The labels were 11px #8C9CAC and read too
+ * quiet — 12px + secondary #b0bec8.
+ * ------------------------------------------------------------------ */
+.desktop-app .kiA-stat-label {
+  font-size: 12px;
+  color: #b0bec8;
+}
+
+/* ------------------------------------------------------------------
+ * H-09 — FIS HERO + CARDS (P1). Hero 238px / title 52px already
+ * exceed spec (min 220 / 52) — untouched. Glyph already opacity
+ * 0.07, DotGrid already 0.05, chapter/document numbers already
+ * live (FIS-01 plateno) — untouched. What ships: card descriptions
+ * 13px/1.55 at 0.62 opacity -> 1.6 at 0.82 (the "title-to-
+ * description contrast weak" fix), and the hero subline
+ * 13 -> 14px (spec subtitle 14px; live was 13px via a (0,3,0)
+ * field-edition rule, so this override carries the same
+ * specificity and wins by import order).
+ * ------------------------------------------------------------------ */
+.desktop-app[data-subject="fis"] .kiA-ed-card-desc {
+  line-height: 1.6;
+  color: rgba(214, 225, 226, 0.82);
+}
+.desktop-app .kiA-head--surfaced .kiA-ed-subline {
+  font-size: 14px;
+}
+
+/* ------------------------------------------------------------------
+ * H-12 — SEARCH CARDS (P1). Passage 12.5 -> 14px and brighter,
+ * match label 9.5 -> 10px, padding 16 -> 18px vertical,
+ * min-height 116px. Title stays 21px (already above the spec's
+ * 17px; the panel text says titles are too small, not too big).
+ * Metadata stays 11.5px (above the spec's 11px). The end-of-
+ * results marker (SearchPage.tsx) closes the column so the space
+ * below short result lists reads finished, not abandoned.
+ * ------------------------------------------------------------------ */
+.desktop-app .kiA-page--search .kiA-hit {
+  padding: 18px 20px;
+  min-height: 116px;
+}
+.desktop-app .kiA-page--search .kiA-hit-preview {
+  font-size: 14px;
+  color: rgba(214, 225, 226, 0.78);
+}
+.desktop-app .kiA-page--search .kiA-match {
+  font-size: 10px;
+}
+.desktop-app .kiA-hits-end {
+  margin: 4px 0 0;
+  padding: 10px 0 2px;
+  text-align: center;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: #8496a5;
+}

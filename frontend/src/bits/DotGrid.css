@@ -1,0 +1,17 @@
+/* vendored VERBATIM from React Bits, registry DotGrid-TS-CSS, 2026-11-09.
+   sha256 DotGrid.tsx a2a0050345b96d2311878277e91063b92d548e6f9887438046955f2d18aac50f
+   sha256 DotGrid.css  41da475e62d101909c5f958569214c38cf20441223059d07a3e56b4e9a176a51 */
+.dot-grid {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.dot-grid__canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
