@@ -39,6 +39,10 @@ export interface SearchPageProps {
   selected: number;
   onSelect: (i: number) => void;
   onOpen: (hit: SearchHit) => void;
+  /** ROUND I 2026-11-10 (critiqueA Panel 2): open at the document
+      start (page 1) — the preview's primary OPEN DOCUMENT action,
+      distinct from onOpen, which opens at the match page. */
+  onOpenStart: (hit: SearchHit) => void;
   inputRef: React.RefObject<HTMLInputElement | null>;
   searchError: boolean;
   onRetry: () => void;
@@ -195,10 +199,11 @@ function ConnectionMap({ wrapRef, results, selected }: {
  *  match-strength explanation (matchReason — never a fabricated
  *  %) and an open action. When nothing is selected, a quiet
  *  placeholder. */
-function SearchPreview({ hit, query, onOpen }: {
+function SearchPreview({ hit, query, onOpen, onOpenStart }: {
   hit: SearchHit | null;
   query: string;
   onOpen: (h: SearchHit) => void;
+  onOpenStart: (h: SearchHit) => void;
 }) {
   if (!hit) {
     return (
@@ -242,9 +247,18 @@ function SearchPreview({ hit, query, onOpen }: {
         <p className="kiA-preview-passage">Title match — the query appears in the document title, so there is no text passage to show.</p>
       )}
       <p className="kiA-preview-strength">{matchReason(hit, query)}</p>
-      <button type="button" className="de-btn-primary kiA-preview-open" onClick={() => onOpen(hit)}>
-        Open document · p. {pg} →
-      </button>
+      {/* ROUND I 2026-11-10 (critiqueA Panel 2): two actions —
+          OPEN DOCUMENT starts at page 1; OPEN AT MATCH jumps to
+          the matching page (the old single button always opened
+          at the match). */}
+      <div className="kiA-preview-actions">
+        <button type="button" className="de-btn-primary kiA-preview-open" onClick={() => onOpenStart(hit)}>
+          Open document →
+        </button>
+        <button type="button" className="de-btn-secondary kiA-preview-open-match" onClick={() => onOpen(hit)}>
+          Open at match · p. {pg} →
+        </button>
+      </div>
     </aside>
   );
 }
@@ -255,7 +269,7 @@ export default function SearchPage(props: SearchPageProps) {
     counts, total, searchSubject, onSubjectChange,
     typeFilter, onTypeFilterChange, resultSections,
     sortMode, onSortModeChange,
-    selected, onSelect, onOpen, inputRef,
+    selected, onSelect, onOpen, onOpenStart, inputRef,
     searchError, onRetry,
   } = props;
 
@@ -499,6 +513,33 @@ export default function SearchPage(props: SearchPageProps) {
         >
           <kbd>⌘K</kbd>
         </button>
+        {/* ROUND I 2026-11-10 (critiqueA Panel 2): active filters
+            as removable chips, immediately below the field. */}
+        {(searchSubject !== 'all' || typeFilter !== 'all') && (
+          <div className="kiA-active-chips" aria-label="Active filters">
+            {searchSubject !== 'all' && (
+              <button
+                type="button"
+                className="kiA-chip kiA-chip--active"
+                style={{ ['--chip-subj' as string]: v2SubjectColor(searchSubject) } as CSSProperties}
+                onClick={() => onSubjectChange('all')}
+                aria-label={`Clear subject filter ${subjectOf(searchSubject)?.code ?? searchSubject}`}
+              >
+                {subjectOf(searchSubject)?.code ?? searchSubject} ✕
+              </button>
+            )}
+            {typeFilter !== 'all' && (
+              <button
+                type="button"
+                className="kiA-chip kiA-chip--active"
+                onClick={() => onTypeFilterChange('all')}
+                aria-label={`Clear type filter ${sectionLabel(typeFilter)}`}
+              >
+                {sectionLabel(typeFilter)} ✕
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ROUND A 2026-11-09 (critiqueA G3): three-zone search —
@@ -729,7 +770,7 @@ export default function SearchPage(props: SearchPageProps) {
         </div>
       )}
       </div>
-      <SearchPreview hit={previewHit} query={query} onOpen={onOpen} />
+      <SearchPreview hit={previewHit} query={query} onOpen={onOpen} onOpenStart={onOpenStart} />
       </div>
     </div>
   );

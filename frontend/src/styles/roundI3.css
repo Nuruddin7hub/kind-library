@@ -1,0 +1,257 @@
+/* ==================================================================
+ * ROUND I.3 — 2026-11-11 (critiqueA-1420-2026-11-11.md, desktop
+ * 9.43/10, target 9.60+). SURGICAL finishing pass — 5 items only,
+ * no redesign, no new React Bits components. DESKTOP ONLY. Every
+ * rule lives under .desktop-app or .reader-shell.kiA-v2.kiA-v2.
+ * Mobile (.mobile-shell) never matches. Imported LAST in App.tsx,
+ * after roundI2.css. NO new architecture. Backend untouched (Flask).
+ *
+ * BASELINE (probe_pre.json, 2026-11-11, bundle index-CoZpT3HJ.js):
+ * 1440/1366 (1024-1500 band) — hero 300px, grid 1fr/320px gap 32,
+ * title 54px/590px, field 320x230, stats margin-top 24px (already),
+ * disciplines margin 32px, plates top 644px (124px visible), cell
+ * 220px, plate 220px/padding 26px, NO top border, NO data-subject,
+ * bento glow single cyan (101,229,210) for all cards. Search —
+ * laplace 3 hits; title 21px/1.25, ls -0.015em (already spec),
+ * margin-bottom 6px; meta 10px/0.10em/opacity 0.72/margin-top 0;
+ * preview 11px/1.45/opacity 1/margin-top 10px (already spec);
+ * selected padding 22px, cyan border + wash, NO spine. Reader —
+ * stage 1068px, page 1000px, centre offset 0, shadow
+ * 0 30px 80px rgba(0,0,0,0.34) + 1px ring; console opacity 0.92,
+ * color #edeae2; labels 9px/0.16em/0.58; doc 9px/0.16em/opacity 1
+ * #8c9cac; nav-pos 11px/0.08em/opacity 1 #8c9cac; module borders
+ * rgba(151,190,210,0.08) (already); tab/nav/head buttons have
+ * NO border (0px — nothing to quiet); find input border #273449.
+ * Tall 1440x1600 — stage padding 28/40/44, page 988, stage
+ * background-image none (field-edition:2913 wiped the contour
+ * layers). FIS — titles 25px Cormorant/1.04/-0.01em (already
+ * spec); desc 12px/1.55 max-width 38ch (304px); meta 10px/0.12em/
+ * opacity 1/margin-top 0, gold rgba(232,170,72,0.75).
+ *
+ * DELIBERATE DEVIATIONS (pre-probe measured):
+ * (a) Search title stays 21px, not 18px — carried from Round I.2
+ *     deviation (a), rewarded +0.13 this round. Live title:meta
+ *     ratio is 21:10 = 2.10; 18px would cut it to 1.80, against
+ *     "titles dominate". The spec's 1.18 leading and -0.015em
+ *     tracking ARE applied (tracking was already -0.015em live).
+ * (b) Discipline-card hover lift lives on the MagicBento CARD, not
+ *     the plate: the plate is height:100% inside an overflow:hidden
+ *     card, so translating the plate -3px would clip its top 3px
+ *     (including the accent border). The card's own transform is
+ *     reproduced verbatim (perspective/tilt/press vars) plus
+ *     translateY(-3px), with the spec's 220ms ease. The top border
+ *     itself sits on the plate (static, at the card's top edge).
+ * (c) MagicBento per-card glow colours NOT implemented: the bento
+ *     takes ONE glowColor prop (Overview.tsx #65e5d2) and the
+ *     engine's Settings.glow is a single RGB array shared by every
+ *     card's spotlight/border canvas. Per-card glow needs a
+ *     card-system rewrite — explicitly out of scope per the spec
+ *     notes. The CSS accent identity (top border + lift) plus the
+ *     existing per-subject --subj glyph/go colours deliver the
+ *     subject identity without it.
+ * (d) 1366 discipline-card min-height 150px is applied literally
+ *     in §5 but measures as a NO-OP: the card height is fixed by
+ *     MagicBento's rowHeight=220px prop, and the plate content
+ *     exactly fills 220px (clientH == scrollH == 220, foot flush
+ *     at the 26px padding). A 150px row would clip ~70px of plate
+ *     content. Landing 150px needs a plate redesign in the band,
+ *     not a min-height tweak — deferred, not faked.
+ * (e) Reader stage light well + page shadow (§4) are scoped to
+ *     tall viewports (min-height 1100px AND min-width 1400px),
+ *     as Round I.2 scoped its stage padding: at normal heights
+ *     the 9.34-scored reader keeps Round I.2's shadow.
+ * (f) Console "secondary" (§3) maps to the real secondary text:
+ *     doc line, nav position, label counts, page-context meta and
+ *     numbers, row-meta, section labels, hints. Tab buttons are
+ *     primary navigation, not secondary — untouched. "Control"
+ *     maps to the Find input, the ONLY bordered console control
+ *     (tab/nav/head buttons measure border-width 0px); module
+ *     borders were already 0.08 in Round I.2. Panel opacity 0.92
+ *     is KEPT, so the spec values compound with it (effective:
+ *     main text 0.72, labels 0.44, secondary 0.51).
+ * ================================================================== */
+
+/* ------------------------------------------------------------------
+ * §1 — DISCIPLINE CARDS (spec P0). Per-subject accent identity:
+ * a 1px top border in the subject accent at 45% (color-mix),
+ * 220ms transitions, hover lift -3px. Accent hexes are the
+ * spec's, distinct from the V2 --subj colours used by the glyph
+ * and "Explore" (those stay). data-subject lands in Overview.tsx
+ * (DisciplinePlate root). See header deviations (b) + (c).
+ * ------------------------------------------------------------------ */
+.desktop-app .kiI-plate[data-subject="em2"] {
+  --subject-accent: #57e6d2;
+}
+.desktop-app .kiI-plate[data-subject="signals"] {
+  --subject-accent: #8b9dff;
+}
+.desktop-app .kiI-plate[data-subject="fis"] {
+  --subject-accent: #ffc777;
+}
+.desktop-app .kiI-plate[data-subject="digital"] {
+  --subject-accent: #a8e6a3;
+}
+.desktop-app .kiI-plate {
+  box-sizing: border-box;
+  border-top: 1px solid color-mix(
+    in srgb,
+    var(--subject-accent) 45%,
+    transparent
+  );
+  transition:
+    transform 220ms ease,
+    border-color 220ms ease,
+    background 220ms ease;
+}
+/* Hover lift on the MagicBento card (see header (b)): the card's
+   engine transform is reproduced verbatim so tilt/press vars keep
+   working, with translateY(-3px) folded into the translate3d. */
+.desktop-app .kiA-bento-plates .magic-bento__card {
+  transition: transform 220ms ease;
+}
+.desktop-app .kiA-bento-plates .magic-bento__card:hover {
+  transform:
+    perspective(900px)
+    translate3d(var(--mb-tx, 0px), calc(var(--mb-ty, 0px) - 3px), 0)
+    rotateX(var(--mb-rx, 0deg))
+    rotateY(var(--mb-ry, 0deg))
+    scale(var(--mb-press, 1));
+}
+
+/* ------------------------------------------------------------------
+ * §2 — SEARCH RESULTS (spec P0). Titles dominate metadata.
+ * Title 21px KEPT (header (a)): leading tightened to the spec's
+ * 1.18, tracking already -0.015em live. Meta: 8px top margin,
+ * 0.08em tracking, opacity 0.58. Match passage: 10px top margin
+ * (already live), opacity 0.72. Selected result: thin cyan
+ * vertical spine — a 2px left border in place of the 1px one,
+ * no extra glow (Round I.1's cyan border + wash stay).
+ * ------------------------------------------------------------------ */
+.desktop-app .kiA-page--search .kiA-hit-title {
+  font-size: 21px;
+  line-height: 1.18;
+  letter-spacing: -0.015em;
+}
+.desktop-app .kiA-page--search .kiA-hit-meta {
+  margin-top: 8px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  opacity: 0.58;
+}
+.desktop-app .kiA-page--search .kiA-hit-preview {
+  margin-top: 10px;
+  font-size: 11px;
+  line-height: 1.45;
+  opacity: 0.72;
+}
+.desktop-app .kiA-page--search .kiA-hit--selected {
+  border-left: 2px solid rgba(84, 229, 209, 0.85);
+}
+
+/* ------------------------------------------------------------------
+ * §3 — READER CONSOLE (spec P0). 20-25% quieter, functionality
+ * untouched. Console colour rgba(220,235,240,0.78) on the panel
+ * (panel opacity 0.92 kept — see header (f)); labels 9px at
+ * 0.48 (was 0.58); secondary text 0.55; the Find input — the
+ * only bordered console control — gets the 0.08 border. The
+ * :focus cyan border is untouched (field-edition outranks this
+ * rule on :focus, so keyboard users keep a visible focus ring).
+ * ------------------------------------------------------------------ */
+.reader-shell.kiA-v2.kiA-v2 .reader-panel-right {
+  color: rgba(220, 235, 240, 0.78);
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-label {
+  font-size: 9px;
+  opacity: 0.48;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-doc,
+.reader-shell.kiA-v2.kiA-v2 .reader-console-nav-pos,
+.reader-shell.kiA-v2.kiA-v2 .reader-console-label .reader-console-count,
+.reader-shell.kiA-v2.kiA-v2 .reader-page-context-meta,
+.reader-shell.kiA-v2.kiA-v2 .reader-page-context-nums span,
+.reader-shell.kiA-v2.kiA-v2 .reader-tool-row .row-meta,
+.reader-shell.kiA-v2.kiA-v2 .reader-sec-label,
+.reader-shell.kiA-v2.kiA-v2 .reader-hint {
+  opacity: 0.55;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-find input {
+  border-color: rgba(151, 190, 210, 0.08);
+}
+
+/* ------------------------------------------------------------------
+ * §4 — FULL-HEIGHT READER (spec P1). Stage light well + deeper
+ * page shadow, scoped to tall viewports (header (e)). The stage
+ * background-image is currently none (field-edition:2913 wiped
+ * the contour layers), so the light well adds a single layer
+ * without disturbing anything. The 1px page-edge ring is kept.
+ * ------------------------------------------------------------------ */
+@media (min-height: 1100px) and (min-width: 1400px) {
+  .reader-shell.kiA-v2.kiA-v2 .reader-document {
+    background-image:
+      radial-gradient(
+        ellipse at 50% 45%,
+        rgba(48, 104, 118, 0.055) 0%,
+        rgba(4, 12, 22, 0) 58%
+      );
+  }
+  .reader-shell.kiA-v2.kiA-v2 .reader-doc-page .ke-reader-page {
+    box-shadow:
+      0 24px 70px rgba(0, 0, 0, 0.38),
+      0 0 0 1px rgba(255, 255, 255, 0.08);
+  }
+}
+
+/* ------------------------------------------------------------------
+ * §5 — FIS SECONDARY CARDS (spec panel 5 delta). Titles already
+ * 25px Cormorant from Round I.2. Remaining delta: description
+ * measure 38ch -> 40ch; meta margin-top 18px, 9px/0.15em/0.5.
+ * ------------------------------------------------------------------ */
+.desktop-app[data-subject="fis"] .kiA-ed-card-desc {
+  max-width: 40ch;
+}
+.desktop-app[data-subject="fis"] .kiA-ed-card-meta {
+  margin-top: 18px;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  opacity: 0.5;
+}
+
+/* ------------------------------------------------------------------
+ * §6 — OVERVIEW 1366 (1024-1500px, spec P1). Dedicated spatial
+ * ratio, not a scaled-down 1920 layout: hero 290px, 1fr/300px
+ * grid, 53px title (570px), stats + disciplines margins 24px.
+ * The constellation column shrinks 320 -> 300px, so the field
+ * follows (300x230; height kept). Cards min-height 150px is
+ * literal but a no-op — see header (d).
+ * ------------------------------------------------------------------ */
+@media (min-width: 1024px) and (max-width: 1500px) {
+  .desktop-app .kiA-hero {
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 32px;
+    min-height: 290px;
+  }
+  .desktop-app .kiA-hero-title {
+    font-size: 53px;
+    max-width: 570px;
+  }
+  .desktop-app .de-blurline--accent {
+    font-size: 53px;
+  }
+  .desktop-app .kiA-field {
+    width: 300px;
+    height: 230px;
+    min-height: 230px;
+  }
+  .desktop-app .kiA-stats {
+    min-height: 88px;
+    margin-top: 24px;
+  }
+  /* (0,3,0): field-edition + living-archive both set
+     .kiA-section margin-top at (0,3,0) — as in roundI2 §6. */
+  .desktop-app .kiA .kiA-section--disciplines {
+    margin-top: 24px;
+  }
+  .desktop-app .kiI-plate {
+    min-height: 150px;
+  }
+}

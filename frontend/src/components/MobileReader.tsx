@@ -476,7 +476,10 @@ export default function MobileReader(props: Props) {
   // wraps the PDF with 8px padding + 1px border = 18px total. FIT
   // geometry reserves it, or the framed page would overflow the stage
   // by 18px and force a horizontal scrollbar at FIT PAGE / FIT WIDTH.
-  const FRAME = 18;
+  // Round B 2026-11-11 (critiqueB-1420): frame padding 8px -> 10px
+  // (+2px breathing room, styles/roundB.css §6) — FRAME 18 -> 22
+  // in lockstep, or FIT geometry breaks.
+  const FRAME = 22;
   const frameW = Math.max(0, fitW - FRAME);
   const frameH = Math.max(0, fitH - FRAME);
   let baseW = frameW, baseH = frameW / Math.max(0.2, imgAR);

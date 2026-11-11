@@ -1,0 +1,236 @@
+/* ==================================================================
+ * ROUND I.2 — 2026-11-11 (critiqueA-2026-11-11.md, desktop 9.27/10,
+ * target 9.60+). PRECISION polish, NOT a redesign. Six items only.
+ * DESKTOP ONLY. Every rule lives under .desktop-app or
+ * .reader-shell.kiA-v2.kiA-v2. Mobile (.mobile-shell) never
+ * matches. Imported LAST in App.tsx, after roundI1.css.
+ * NO new React Bits components. NO new background. NO new
+ * architecture. Backend untouched (Flask).
+ *
+ * BASELINE (probe_pre.json + fis_reprobe.json, 2026-11-11, bundle
+ * index-BmEgc1Rt.js): 1920 — hero title 64px/650px, hero 390px,
+ * grid 1fr/390px gap 40px, field 390x280, plate 210px/padding
+ * 24px, disciplines margin 40px. 1440 — title 52px/560px, hero
+ * 320px, field 300x240, stats 96px, disciplines margin 44px.
+ * 1366 — title 52px, hero 320px, gap 24px (roundI <=1400 band),
+ * field 300x240, stats 96px, disciplines margin 44px, plates
+ * top 676px (92px visible). Search — hit title 21px Inter/1.25
+ * (Round I.1, rewarded +0.20), plate 10px/0.10em, meta 11px
+ * opacity 1 (wraps 2 lines), preview 13.5px/1.65 (Round I.1),
+ * hit padding 18px 20px, min-height 116px, no preview element
+ * on title matches. Reader — stage 1068px, page 980px (cap),
+ * console 300px opacity 1, label 12px/0.12em opacity 1, module
+ * border rgba(119,181,201,0.10), stage padding 24px, page
+ * shadow 0 12px 48px rgba(0,0,0,0.35) + 1px ring, img
+ * transition transform/box-shadow only, no H-overflow.
+ * FIS — all 4 card titles 24px Cormorant/1.05 (Round I.1's
+ * featured fix DID land; the old probe_post.json was stale),
+ * desc 12px/1.55 max-width none, type 10px/0.16em gold, meta
+ * 10px.
+ *
+ * DELIBERATE DEVIATIONS (pre-probe measured, see §2/§3 notes):
+ * (a) Search title stays 21px — ChatGPT's 17px is a collage
+ *     estimate; live is already 21px and shrinking to 17px
+ *     would cut the title:meta ratio 1.91 -> 1.70, against
+ *     "titles dominate". Everything else in §2 is literal.
+ * (b) Reader page cap 980 -> 1000 (top of the allowed range).
+ *     Measured gains: 1440: 980 -> 1000 (+2.0%); 1366: 946 ->
+ *     946 (content-bound — the cap was never the binder there;
+ *     +3-5% needs narrower padding/console, out of scope);
+ *     tall 1440: 988 (+0.8% with the 40px stage padding).
+ *     The full 3-5% is unreachable at 1440 without exceeding
+ *     the 1000 cap the spec itself sets (would need 1009+).
+ * (c) Full-height stage padding is scoped to tall AND wide
+ *     viewports (min-height 1100px AND min-width 1400px): at
+ *     normal heights the 40px side padding would shrink the
+ *     page (1440: content 1020 -> 988; 1366: 946 -> 914) and
+ *     fight §3's width gain. The 1440x1600 capture gets it.
+ * ================================================================== */
+
+/* ------------------------------------------------------------------
+ * §1 — OVERVIEW >=1501px (spec item 1). Hero +8-12%: 430px
+ * min-height, 1fr/420px grid, 48px gap, 68px title (700px
+ * max-width), 420x300 constellation. The accent line
+ * ("connection.") carries its own size — 68px to match.
+ * Discipline plates: min-height 220px, padding 26px (all
+ * desktop widths; rowHeight 210 -> 220 lives in Overview.tsx
+ * so the MagicBento grid floor matches).
+ * ------------------------------------------------------------------ */
+@media (min-width: 1501px) {
+  .desktop-app .kiA-hero {
+    min-height: 430px;
+    grid-template-columns: minmax(0, 1fr) 420px;
+    gap: 48px;
+  }
+  .desktop-app .kiA-hero-title {
+    font-size: 68px;
+    max-width: 700px;
+  }
+  .desktop-app .de-blurline--accent {
+    font-size: 68px;
+  }
+  .desktop-app .kiA-field {
+    width: 420px;
+    height: 300px;
+    min-height: 300px;
+  }
+}
+.desktop-app .kiI-plate {
+  min-height: 220px;
+  padding: 26px;
+}
+
+/* ------------------------------------------------------------------
+ * §2 — SEARCH (spec item 2). Titles dominate metadata.
+ * Title 21px KEPT (see header deviation (a)): 21px Inter at
+ * 1.25 already dominates the quieted 10px metadata; the 6px
+ * bottom margin is applied. Type plate 10px/0.14em, meta
+ * 10px/opacity 0.72 (the 2-line meta was the loudest element),
+ * match passage 11px/1.45. Selected result: 22px vertical
+ * padding (was 18px) — more breathing room, no extra glow
+ * (Round I.1's cyan border + wash stay exactly as-is).
+ * ------------------------------------------------------------------ */
+.desktop-app .kiA-page--search .kiA-hit-title {
+  font-size: 21px;
+  line-height: 1.25;
+  margin-bottom: 6px;
+}
+.desktop-app .kiA-page--search .kiA-hit-plate {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+.desktop-app .kiA-page--search .kiA-hit-meta {
+  font-size: 10px;
+  opacity: 0.72;
+}
+.desktop-app .kiA-page--search .kiA-hit-preview {
+  font-size: 11px;
+  line-height: 1.45;
+}
+.desktop-app .kiA-page--search .kiA-hit--selected {
+  padding: 22px 20px;
+}
+
+/* ------------------------------------------------------------------
+ * §3 — READER console (spec item 3). Quieter, not weaker:
+ * whole console 0.92, section labels 9px/0.16em/0.58, section
+ * borders rgba(151,190,210,0.08) — including the Find module,
+ * whose :has rule outranks the plain module rule. Functionality
+ * untouched (tabs, find, notes, bookmarks, highlights all stay).
+ * The page-width gain itself lives in PdfReader.tsx (cap 980 ->
+ * 1000, stageW now the stage CONTENT width so the page stays
+ * centred and never overflows the content box).
+ * ------------------------------------------------------------------ */
+.reader-shell.kiA-v2.kiA-v2 .reader-panel-right {
+  opacity: 0.92;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-label {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  opacity: 0.58;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-module {
+  border-bottom-color: rgba(151, 190, 210, 0.08);
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-module:has(.reader-find) {
+  border-bottom-color: rgba(151, 190, 210, 0.08);
+}
+/* ROUND I.2 geometry fix (found by the post-probe, 2026-11-11):
+   the page wrapper was capped at 900px by living-archive.css:214,
+   which beats field-edition.css:3520's 1100px on import order —
+   so the 980px page sat 40px right of centre (wrapper centred,
+   image overflowing its right edge) and the 1000px page overflowed
+   the stage by 16px (scrollWidth 1084 > clientWidth 1068). This
+   rule, imported last, restores the 1100px cap: the wrapper equals
+   the content width (1020px at 1440, 988px tall) and the page
+   centres inside it with no horizontal overflow. */
+.reader-shell.kiA-v2.kiA-v2 .reader-doc-page {
+  max-width: min(100%, 1100px);
+}
+
+/* ------------------------------------------------------------------
+ * §4 — READER full-height staging (spec item 4). The stage
+ * padding is scoped to tall+wide viewports (see header
+ * deviation (c)) — the 1440x1600 composition ChatGPT judged.
+ * The shadow + width/transform transition apply to the reader
+ * generally: a softer, deeper page shadow (0.35 -> 0.34 alpha,
+ * 48px -> 80px blur) with the 1px page-edge ring kept, and the
+ * page image now animates width/transform over 280ms so the
+ * console open/close re-scale glides instead of snapping.
+ * ------------------------------------------------------------------ */
+@media (min-height: 1100px) and (min-width: 1400px) {
+  .reader-shell.kiA-v2.kiA-v2 .reader-document {
+    padding: 28px 40px 44px;
+  }
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-doc-page .ke-reader-page {
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.34),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+  transition: width 280ms ease, transform 280ms ease, box-shadow 280ms ease;
+}
+
+/* ------------------------------------------------------------------
+ * §5 — FIS typography (spec item 5). Chapter titles gain
+ * authority: 24 -> 25px Cormorant Garamond, 1.04 leading,
+ * -0.01em tracking. Descriptions get the editorial measure:
+ * max-width 38ch at the existing 12px/1.55. NO more gold —
+ * the gold type label + gold top edge stay exactly as-is.
+ * The featured card needs its own override (its title has
+ * higher-specificity rules in living-archive/field-edition).
+ * ------------------------------------------------------------------ */
+.desktop-app[data-subject="fis"] .kiA-ed-card-title {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 25px;
+  line-height: 1.04;
+  letter-spacing: -0.01em;
+}
+.desktop-app[data-subject="fis"] .kiA-ed-card-desc {
+  max-width: 38ch;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.desktop-app[data-subject="fis"] .kiA-grid--fis-featured > .spotlight-card:first-child .kiA-ed-card-title {
+  font-size: 25px;
+  line-height: 1.04;
+  letter-spacing: -0.01em;
+}
+
+/* ------------------------------------------------------------------
+ * §6 — OVERVIEW 1366 (1024-1500px, spec item 6). Own geometry,
+ * not a scaled-down 1920 layout: hero 300px, 1fr/320px grid,
+ * 32px gap, 54px title (590px max-width), 320x230 field,
+ * 88px stats band, disciplines pulled up (margin 32px) so the
+ * first viewport reads hero -> metrics -> disciplines. This
+ * band sits after roundI1.css, so it overrides roundI1's
+ * 320px/52px/300px values and roundI's <=1400px band (340px
+ * hero, 54px title, 330px field, 24px gap) inside its range.
+ * ------------------------------------------------------------------ */
+@media (min-width: 1024px) and (max-width: 1500px) {
+  .desktop-app .kiA-hero {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 32px;
+    min-height: 300px;
+  }
+  .desktop-app .kiA-hero-title {
+    font-size: 54px;
+    max-width: 590px;
+  }
+  .desktop-app .de-blurline--accent {
+    font-size: 54px;
+  }
+  .desktop-app .kiA-field {
+    width: 320px;
+    height: 230px;
+    min-height: 230px;
+  }
+  .desktop-app .kiA-stats {
+    min-height: 88px;
+  }
+  /* (0,3,0): field-edition + living-archive both set
+     .kiA-section margin-top at (0,3,0) (56px / 40px) — a
+     (0,2,0) rule here would lose, as in roundI1. */
+  .desktop-app .kiA .kiA-section--disciplines {
+    margin-top: 32px;
+  }
+}

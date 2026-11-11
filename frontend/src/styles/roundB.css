@@ -1,0 +1,116 @@
+/* ==================================================================
+ * ROUND B — 2026-11-11 (critiqueB-1420-2026-11-11.md, mobile
+ * 9.63 -> 9.65/10, APPROVED — LOCK MOBILE). Preservation pass ONLY:
+ * the 5 legitimate micro-fixes + the Reader frame refinement.
+ * MOBILE ONLY. Every rule lives under .mobile-shell (mobile renders
+ * .mobile-shell; desktop renders .desktop-app and never matches).
+ * Imported LAST in App.tsx, after roundI3.css. NO new React Bits
+ * components, no structural changes, no redesign. Backend untouched
+ * (Flask).
+ *
+ * SPEC-SELECTOR MAP (ChatGPT's class names do not exist live — the
+ * live equivalents below were verified in the components first):
+ *   .library-list        -> .ml-list            (MobileLibrary.tsx)
+ *   .search-result       -> .ms-card            (MobileSearch.tsx)
+ *   .digital-feature-card-> .msi-feat-spot      (MobileSubjectIndex.tsx;
+ *                          the visual card — .msi-feat itself is a
+ *                          transparent button wrapper)
+ *   .fis-question-card   -> .msi-qcard          (MobileSubjectIndex.tsx)
+ *   .fis-question-card__title -> .msi-qcard-q
+ *   .fis-question-card__description -> .msi-qcard-desc
+ *   .mobile-hero__metrics-> .hero-metrics .mh-stats-strip (MobileHome.tsx)
+ *   .mobile-hero__description -> .mh-supporting
+ *   reader page frame    -> .mr-stage-frame     (MobileReader.tsx/css)
+ *
+ * BASELINE (live bundle index-B9xW9ZK0.js, loop25 baselines):
+ *   .ml-list padding-bottom calc(108px + safe-area) [108px kept since
+ *     Round C 2026-11-06 P1 — already exceeds the old 104px ask]
+ *   .ms-card: 12px gap between rows + 1px bottom divider
+ *     rgba(150,170,195,0.13); NO top border
+ *   digital .msi-feat-spot: border rgba(255,255,255,0.08),
+ *     bg #0D1521 + radial accent wash (16% subject accent)
+ *   .msi-qcard: padding 14px 16px (featured 18px, compact 12px 14px;
+ *     Q02 padding-top 20px, Q03 padding-top 22px); .msi-qcard-q
+ *     margin 0 (6px flex gap); .msi-qcard-desc line-height 1.55
+ *   .mh-supporting: 13.5px/1.55, max-width 30ch; .mh-stat-num serif
+ *     23px no letter-spacing; .mh-stat-label mono 9px/0.16em
+ *   .mr-stage-frame: padding 8px + 1px border = 18px (FRAME = 18 in
+ *     MobileReader.tsx)
+ *
+ * DELIBERATE DEVIATION:
+ * (a) FIS description line-height stays 1.55, NOT the spec's 1.5.
+ *     Live is already 1.55 (Round B 1420 P1 spec, measured) — MORE
+ *     spacious than the spec's 1.5. Setting 1.5 would TIGHTEN the
+ *     description against the spec's own "increase internal spacing"
+ *     intent. ChatGPT's 1.5 is a collage estimate (same pattern as
+ *     Round I.2 deviation (a): live 21px title kept over spec 17px).
+ *     Everything else in §4 is literal.
+ * ================================================================== */
+
+/* §1 — P1 Library: bottom scroll padding so the final row never
+ * visually meets the bottom nav. Spec formula, literal:
+ * 88px + safe-area + 24px = 112px (was 108px, +4px). Row design
+ * untouched. Applies to Library + Saved (both render .ml-list). */
+.mobile-shell .ml-list {
+  padding-bottom: calc(88px + env(safe-area-inset-bottom) + 24px);
+}
+
+/* §2 — P2 Search: slightly stronger vertical separation between
+ * result rows. Spec rule, literal, mapped to the live .ms-card.
+ * Rows already have a 12px gap + a 1px bottom divider, so this adds
+ * a 0.08-alpha top line on every card after the first (ChatGPT:
+ * comfortable shipping without it — applied anyway, exactly this
+ * subtle). */
+.mobile-shell .ms-card + .ms-card {
+  border-top: 1px solid rgba(151, 190, 210, 0.08);
+}
+
+/* §3 — P2 Digital index: featured document card only, stronger
+ * Digital identity. Spec values, literal, scoped to the Digital
+ * subject page. Replaces the generic white 0.08 border + the radial
+ * accent wash with the spec's teal linear gradient. */
+.mobile-shell .msi[data-subject="digital"] .msi-feat-spot {
+  border-color: rgba(84, 229, 209, 0.22);
+  background: linear-gradient(
+    135deg,
+    rgba(84, 229, 209, 0.08),
+    rgba(8, 20, 32, 0.72)
+  );
+}
+
+/* §4 — P2 FIS index: question cards, slightly more internal
+ * spacing. Spec values, literal — EXCEPT the description
+ * line-height, which stays 1.55 (deviation (a) above). Uniform
+ * 22px block padding supersedes the featured 18px / compact 12px
+ * and the Q02/Q03 progressive top padding (20px/22px) — the spec
+ * is one rule for all three cards. Cards NOT simplified: content,
+ * clamps, gold palette, featured treatment all untouched. */
+.mobile-shell .msi[data-subject="fis"] .msi-qcard {
+  padding-block: 22px;
+}
+.mobile-shell .msi[data-subject="fis"] .msi-qcard-q {
+  margin-block: 8px 10px;
+}
+
+/* §5 — P3 Hero: tiny typography polish. Description: 30ch -> 34ch,
+ * line-height 1.55 -> 1.45 (spec, literal). Metrics: 0.08em
+ * letter-spacing on the strip — the serif numbers inherit it; the
+ * mono labels keep their explicit 0.16em. */
+.mobile-shell .mh-supporting {
+  max-width: 34ch;
+  line-height: 1.45;
+}
+.mobile-shell .hero-metrics .mh-stats-strip {
+  letter-spacing: 0.08em;
+}
+
+/* §6 — Reader (panel 3, "only genuine refinement"): ~2-3px more
+ * breathing room around the outer frame of the PDF page on very
+ * narrow devices. Frame padding 8px -> 10px (+2px each side).
+ * MUST stay in lockstep with FRAME in MobileReader.tsx (18 -> 22)
+ * or FIT PAGE / FIT WIDTH geometry breaks. The mobile reader IS
+ * the very-narrow-device context, so no extra media query. No
+ * animations, no React Bits. */
+.mobile-shell .mr-reader .mr-stage-frame {
+  padding: 10px;
+}

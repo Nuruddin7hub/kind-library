@@ -45,6 +45,38 @@ import './styles/field-edition.css';
 // Overview/FIS + G5 React Bits restraint) — imported LAST so its
 // rules win. Desktop-only; mobile (.mobile-shell) never matches.
 import './styles/living-archive.css';
+// ROUND I (ChatGPT Round A desktop, 2026-11-10, critiqueA spec:
+// "THE LIVING ARCHIVE — FIELD ATLAS") — imported LAST so its rules
+// win. Desktop-only; mobile (.mobile-shell) never matches.
+import './styles/roundI.css';
+// ROUND I.1 (ChatGPT Round A desktop, 2026-11-10, critiqueA-1420
+// §9: precision round — typography hierarchy, reader PDF scale,
+// discipline plates, search results, 1366 composition, FIS
+// typography) — imported after roundI.css so its rules win.
+// Desktop-only; mobile (.mobile-shell) never matches.
+import './styles/roundI1.css';
+// ROUND I.2 (ChatGPT Round A desktop re-score, 2026-11-11,
+// critiqueA-2026-11-11.md: desktop 9.27/10, target 9.60+ —
+// precision polish, NOT a redesign: overview >=1501px hero
+// +8-12%, search title dominance, quieter reader console,
+// full-height reader staging, FIS chapter titles, 1366
+// composition) — imported LAST so its rules win. Desktop-only;
+// mobile (.mobile-shell) never matches.
+import './styles/roundI2.css';
+// ROUND I.3 (ChatGPT Round A desktop re-score, 2026-11-11,
+// critiqueA-1420-2026-11-11.md: desktop 9.43/10, target 9.60+ —
+// SURGICAL finishing pass, 5 items only: discipline-card accent
+// identity, search title dominance, quieter reader console,
+// full-height reader light well, 1366 composition + FIS delta)
+// — imported LAST so its rules win. Desktop-only;
+// mobile (.mobile-shell) never matches.
+import './styles/roundI3.css';
+// ROUND B (ChatGPT Round B mobile re-score, 2026-11-11,
+// critiqueB-1420-2026-11-11.md: mobile 9.63 -> 9.65/10, APPROVED —
+// LOCK MOBILE. Preservation pass ONLY: 5 micro-fixes + the Reader
+// frame refinement) — imported LAST so its rules win. MOBILE ONLY;
+// every rule lives under .mobile-shell. Desktop never matches.
+import './styles/roundB.css';
 // React Bits Noise — global film grain, opacity 0.025 (critiqueA
 // 2026-11-07 §Global: 4-layer background, mix-blend screen).
 // Desktop only; the component is position:fixed + pointer-events:none.
@@ -841,7 +873,18 @@ export default function App() {
           {/* LAYER 2 — house-written Topography contour field (slow
               drift). Opacity prop scales the baked 0.10 stroke alpha:
               0.55 → effective 0.055 (critiqueC P0). Skipped on the
-              Overview and Search, where Web Threads is the field. */}
+              Overview and Search, where Web Threads is the field.
+              ROUND I 2026-11-10 (critiqueA §B): Topography IS the
+              Overview texture too now — very subtle (opacity 0.8 →
+              0.08 effective, inside the spec's 8–12%), mounted as
+              its own fixed layer so it never stacks with the
+              library's global one. Search keeps Web Threads only. */}
+          {view === 'overview' && (
+            <TopographyLayer
+              className="de-topo-overview"
+              opacity={0.8}
+            />
+          )}
           {view !== 'overview' && view !== 'search' && (
             <TopographyLayer
               className="de-topo-global"
@@ -912,6 +955,7 @@ export default function App() {
                 selected={searchSelected}
                 onSelect={setSearchSelected}
                 onOpen={openSearchHit}
+                onOpenStart={(hit) => openSearchHit(hit, 1)}
                 inputRef={searchInputRef}
                 searchError={searchError}
                 onRetry={() => setSearchRetry(n => n + 1)}

@@ -426,6 +426,25 @@
   white-space: nowrap;
   color: rgba(237, 239, 245, 0.38);
   pointer-events: none; /* the whole row is the tap target */
+  /* Round B 2026-11-10 P2: the visible OPEN label now occupies a 44x44
+   * box (same pattern as the 44x44 bookmark above it) while the text
+   * stays 8px — small visual appearance, 44px hit-area footprint.
+   * The right rail grid column is already 44px; the rail stays
+   * 44 + 6 + 44 = 94px tall, under the 104px card minimum. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  /* Hit-area trick (same idea as the bookmark, but the rail can't grow):
+   * the 44px box would push the rail 44+6+44 = 94px tall and stretch
+   * every result row 104 -> ~125px — the brief forbids enlarging the
+   * row. Negative margins collapse the box's layout footprint back to
+   * its old 12px, so the rail stays 44+6+12 = 62px and the card height
+   * stays content-driven; the 44x44 border box itself is unchanged
+   * (it overflows the rail's layout box by 16px top and bottom, inside
+   * the card) and the 8px text stays centred exactly where it was. */
+  margin: -16px 0;
 }
 /* bookmark: Round B 2026-11-08 P1 — 44×44 touch target (was 32×32).
  * The visible star stays small (20px glyph, unchanged); only the

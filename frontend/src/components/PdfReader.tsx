@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import type { ReactNode } from 'react';
 import { consumeReaderStartPage } from '../readerStart';
 import { v2SubjectColor } from '../shared';
 import AnimatedContent from '../bits/AnimatedContent';
@@ -179,29 +178,24 @@ export default function PdfReader({
   const [findResults, setFindResults] = useState<Array<{ page_number: number; snippet: string; match_count: number }>>([]);
   const [findSearching, setFindSearching] = useState(false);
 
-  /* ROUND H 2026-11-09 (critiqueC H-02): console context-aware
-     defaults — Find collapsed (it is a tool, not the reading
-     surface), Bookmarks + Notes expanded (the annotation controls
-     a study session opens with), Highlights / Contents / Page
-     context collapsed. Typing a find query auto-expands Find (see
-     the findQ effect below); adding a bookmark / note / highlight
-     auto-expands its section. In-memory only, per document open. */
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
-    find: true, highlights: true, contents: true, context: true,
-  });
-  const toggleSection = (id: string) =>
-    setCollapsed(prev => ({ ...prev, [id]: !prev[id] }));
-  const sectionHead = (id: string, label: ReactNode) => (
-    <button
-      type="button"
-      className="reader-console-head-btn"
-      onClick={() => toggleSection(id)}
-      aria-expanded={!collapsed[id]}
-    >
-      <span className="reader-console-label">{label}</span>
-      <span className="reader-console-chevron" aria-hidden="true">{collapsed[id] ? '▸' : '▾'}</span>
-    </button>
-  );
+  /* ROUND I 2026-11-10 (critiqueA Panel 3): the console is a
+     tabbed workspace — Contents, Bookmarks, Notes, Highlights,
+     Page context — each tab its own layout. Find stays a
+     collapsible tool above the tabs (it is a tool, not a reading
+     surface). Adding a note / bookmark / highlight switches to
+     its tab so the new item is visible. The old stacked
+     collapsible modules (Round H) are replaced, not kept in
+     parallel. */
+  type ConsoleTab = 'contents' | 'bookmark' | 'notes' | 'highlights' | 'context';
+  const CONSOLE_TABS: Array<{ id: ConsoleTab; label: string; glyph: string }> = [
+    { id: 'contents', label: 'Contents', glyph: '☰' },
+    { id: 'bookmark', label: 'Bookmarks', glyph: '★' },
+    { id: 'notes', label: 'Notes', glyph: '✎' },
+    { id: 'highlights', label: 'Highlights', glyph: '◆' },
+    { id: 'context', label: 'Context', glyph: 'ℹ' },
+  ];
+  const [consoleTab, setConsoleTab] = useState<ConsoleTab>('notes');
+  const [findCollapsed, setFindCollapsed] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const total = file.pages || 1;
   const restored = useRef(false);
@@ -284,11 +278,11 @@ export default function PdfReader({
   }, [file.key]);
 
   // find in document — debounced /api/search, this document only
-  // ROUND H 2026-11-09 (critiqueC H-02): Find defaults collapsed,
-  // so typing a query expands it — otherwise the matches would
-  // render into a hidden section.
+  // ROUND I 2026-11-10: Find defaults collapsed, so typing a query
+  // expands it — otherwise the matches would render into a hidden
+  // section.
   useEffect(() => {
-    if (findQ.trim().length >= 2) setCollapsed(prev => ({ ...prev, find: false }));
+    if (findQ.trim().length >= 2) setFindCollapsed(false);
   }, [findQ]);
   useEffect(() => {
     const q = findQ.trim();
@@ -426,43 +420,45 @@ export default function PdfReader({
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    const update = () => setStageW(el.clientWidth);
+    // ROUND I.2 2026-11-11: stageW is the stage CONTENT width —
+    // clientWidth minus the .reader-document horizontal padding
+    // (24px/side normally, 40px/side in tall viewports per
+    // roundI2.css §4) — so the page never exceeds the content box
+    // or drifts off-centre when the cap binds. The old
+    // clientWidth-minus-48 estimate broke the moment the padding
+    // changed (tall viewports would have overflowed right).
+    const update = () => {
+      const cs = getComputedStyle(el);
+      const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+      setStageW(el.clientWidth - padX);
+    };
     update();
     if (typeof ResizeObserver === 'undefined') return;
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
   }, [file.key]);
-  /* ROUND A 2026-11-09 (critiqueA G2): the page is a book page —
-     max 760px wide at 100% (min 560), so it sits whole in the
-     stage; in tall viewports (innerHeight >= 1200) the cap is
-     900px (the spec's full-height page). Collapsing the console
-     or entering reading mode no longer grows the page past the
-     cap — the Round E behaviour is traded for the G2 cap. */
-  const [viewportH, setViewportH] = useState(() =>
-    typeof window !== 'undefined' ? window.innerHeight : 900);
-  useEffect(() => {
-    const onResize = () => setViewportH(window.innerHeight);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-  const pageCap = viewportH >= 1200 ? 900 : 760;
-  const pageW = Math.max(560, Math.min(pageCap, stageW - 72)) * (zoom / 100);
-
-  /* ROUND H 2026-11-09 (critiqueC H-01): entering/leaving the
-     full-height layout — the viewport crossing 1200px (e.g. the
-     fullscreen toggle) — flips the page cap 760 <-> 900 and
-     re-flows every page. Re-assert the current page at the stage
-     top after the re-flow so the reading position survives the
-     switch; a no-op when the cap did not change. */
-  const prevPageCap = useRef(pageCap);
-  useEffect(() => {
-    if (prevPageCap.current === pageCap) return;
-    prevPageCap.current = pageCap;
-    if (!restored.current) return;
-    const t = window.setTimeout(() => goToPage(visiblePage), 120);
-    return () => window.clearTimeout(t);
-  }, [pageCap, visiblePage, goToPage]);
+  /* ROUND I 2026-11-10 (critiqueA Panel 3): the page is a book page
+     — max 900px wide at 100% (was 760, 900 only in tall viewports).
+     The critique's "document too small vs space" fix: with the
+     console open the 900px page fills the stage at both 1440 and
+     1366 (stage 1044/970 → page 900/898, ≥32px side margins).
+     ROUND I.1 2026-11-10 (critiqueA §9 P0): cap 900 -> 980 and the
+     stage margin 72 -> 48 (the critique's pseudo-code:
+     pageWidth = min(availableWidth - 48, 980)). At 1440 the page
+     is now 980px with the console open; collapsing the console
+     grows the stage and the page re-scales up to the same 980
+     cap via the ResizeObserver above.
+     ROUND I.2 2026-11-11 (critiqueA-2026-11-11 §3): cap 980 ->
+     1000 (top of the allowed 980-1000 range) and stageW is now
+     the CONTENT width (see the effect above), so pageW =
+     min(1000, contentWidth). Measured: 1440: 980 -> 1000
+     (+2.0%); 1366 stays 946 (content-bound — the cap was never
+     the binder there); tall 1440: 988 (+0.8% with the 40px
+     stage padding). The full 3-5% is unreachable at 1440
+     without exceeding the 1000 cap. */
+  const pageCap = 1000;
+  const pageW = Math.max(560, Math.min(pageCap, stageW)) * (zoom / 100);
 
   const goFullscreen = useCallback(() => {
     const el = document.documentElement;
@@ -474,7 +470,8 @@ export default function PdfReader({
    *  controls include FIT PAGE). At 100% the page already fills the
    *  stage when the stage is narrower than the cap. */
   const fitPage = useCallback(() => {
-    const avail = stageW - 72;
+    // ROUND I.2: stageW is already the content width.
+    const avail = stageW;
     const z = avail > pageCap ? Math.min(200, Math.round((avail / pageCap) * 100)) : 100;
     setZoom(z);
   }, [stageW, pageCap]);
@@ -484,27 +481,27 @@ export default function PdfReader({
     if (!text) return;
     setNotes(prev => [...prev, { page: visiblePage, text, ts: Date.now() }]);
     setNoteDraft('');
-    // ROUND H (H-02): adding a note reveals the Notes section if
-    // the reader had collapsed it.
-    setCollapsed(prev => ({ ...prev, notes: false }));
+    // ROUND I (Panel 3): adding a note switches to the Notes tab
+    // so the new note is visible.
+    setConsoleTab('notes');
   }, [noteDraft, visiblePage]);
 
   const addPageBookmark = useCallback(() => {
     setPageBms(prev => prev.some(b => b.page === visiblePage)
       ? prev
       : [...prev, { page: visiblePage, ts: Date.now() }].sort((a, b) => a.page - b.page));
-    // ROUND H (H-02): adding a page bookmark reveals the Bookmark
-    // section if the reader had collapsed it.
-    setCollapsed(prev => ({ ...prev, bookmark: false }));
+    // ROUND I (Panel 3): adding a page bookmark switches to the
+    // Bookmarks tab so the new bookmark is visible.
+    setConsoleTab('bookmark');
   }, [visiblePage]);
 
   const addHighlight = useCallback(() => {
     const label = hlDraft.trim() || `Page ${visiblePage}`;
     setHighlights(prev => [...prev, { page: visiblePage, label, color: hlColor, ts: Date.now() }]);
     setHlDraft('');
-    // ROUND H (H-02): Highlights defaults collapsed — adding one
-    // reveals the section so the new highlight is visible.
-    setCollapsed(prev => ({ ...prev, highlights: false }));
+    // ROUND I (Panel 3): adding a highlight switches to the
+    // Highlights tab so the new highlight is visible.
+    setConsoleTab('highlights');
   }, [hlDraft, visiblePage, hlColor]);
 
   const saveNoteEdit = useCallback(() => {
@@ -589,8 +586,13 @@ export default function PdfReader({
         </div>
       )}
 
-      {/* workspace: pages panel · document · study tools */}
-      <div className={`reader-workspace${showLeft ? '' : ' no-left'}${showRight ? '' : ' no-right'}`}>
+      {/* workspace: pages panel · document · study tools.
+          ROUND I 2026-11-10 (critiqueA Panel 3): a closed console
+          is a 64px icon rail (console-collapsed), not a 0px
+          sliver — the rail's icons reopen the console on the
+          matching tab. Reading mode still hides both panels
+          entirely (no-right). */}
+      <div className={`reader-workspace${showLeft ? '' : ' no-left'}${showRight ? '' : panelsHidden ? ' no-right' : ' console-collapsed'}`}>
         <aside className="reader-panel reader-panel-left" aria-label="Page thumbnails">
           {showLeft && (
             <AnimatedContent
@@ -642,13 +644,13 @@ export default function PdfReader({
             {Array.from({ length: total }, (_, i) => i + 1).map(p => (
               <div key={p} id={`kl-page-${p}`} className="reader-doc-page">
                 {/* No maxWidth on the img: pageW is already clamped
-                    to stageW-72 (cap 760, 900 in tall viewports) so
-                    the image can never overflow the stage;
+                    to the stage CONTENT width (cap 1000, ROUND I.2)
+                    so the image can never overflow the stage;
                     maxWidth:'100%' + the shrink-to-fit
-                    .reader-doc-page wrapper pinned the rendered width
-                    to the pre-collapse 980px even after the cap went
-                    to 1100 (probe_debug: style 1100px, rect 980px;
-                    natural image is 1500px wide). */}
+                    .reader-doc-page wrapper pinned the rendered
+                    width to the pre-collapse 980px even after the
+                    cap went to 1100 (probe_debug: style 1100px,
+                    rect 980px; natural image is 1500px wide). */}
                 <img
                   src={pageImageUrl(file.subj, file.file, p, total)}
                   alt={`Page ${p}`}
@@ -665,7 +667,7 @@ export default function PdfReader({
         </div>
 
         <aside className="reader-panel reader-panel-right" aria-label="Study console">
-          {showRight && (
+          {showRight ? (
             <AnimatedContent
               trigger="mount"
               direction="horizontal"
@@ -692,40 +694,36 @@ export default function PdfReader({
               </div>
               {/* FIND IN DOCUMENT — real full-text matches (backend
                   text index), this document only; click a match to
-                  jump to its page. Round C: Find is the primary
-                  console module — its own spec-param entrance. */}
-              <AnimatedContent
-                trigger="mount"
-                distance={18}
-                duration={0.48}
-                ease="power3.out"
-                initialOpacity={0}
-                blur={0}
-                threshold={0.12}
-                once
-              >
+                  jump to its page. ROUND I: Find stays a collapsible
+                  tool above the tabbed workspace. */}
               <div className="reader-console-module">
-                {sectionHead('find', 'Find in document')}
-                {!collapsed.find && (
-<div className="reader-find">
-                <input
-                  type="search"
-                  value={findQ}
-                  onChange={e => setFindQ(e.target.value)}
-                  placeholder="Find in document…"
-                  aria-label="Find in document"
-                />
-                {findQ.trim() && (
-                  <button type="button" className="reader-find-clear" onClick={() => setFindQ('')} aria-label="Clear find">
-                    ✕
-                  </button>
+                <button
+                  type="button"
+                  className="reader-console-head-btn"
+                  onClick={() => setFindCollapsed(v => !v)}
+                  aria-expanded={!findCollapsed}
+                >
+                  <span className="reader-console-label">Find in document</span>
+                  <span className="reader-console-chevron" aria-hidden="true">{findCollapsed ? '▸' : '▾'}</span>
+                </button>
+                {!findCollapsed && (
+                  <div className="reader-find">
+                    <input
+                      type="search"
+                      value={findQ}
+                      onChange={e => setFindQ(e.target.value)}
+                      placeholder="Find in document…"
+                      aria-label="Find in document"
+                    />
+                    {findQ.trim() && (
+                      <button type="button" className="reader-find-clear" onClick={() => setFindQ('')} aria-label="Clear find">
+                        ✕
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
-                )}
-              </div>
-              </AnimatedContent>
-              {findQ.trim().length >= 2 ? (
-                !collapsed.find && (
+              {findQ.trim().length >= 2 && !findCollapsed && (
                 <div className="reader-tab-body">
                   {findSearching ? (
                     <p className="reader-hint">Searching…</p>
@@ -749,26 +747,29 @@ export default function PdfReader({
                     </>
                   )}
                 </div>
-                )
-              ) : (
-              /* Round C P1: the console modules enter on spec params
-                 (distance 18, duration 0.48, stagger 0.06, once) —
-                 Bookmark, Notes, Highlights, Contents, page context,
-                 doc nav stagger in as one choreography. */
-              <AnimatedContent
-                trigger="mount"
-                distance={18}
-                duration={0.48}
-                ease="power3.out"
-                initialOpacity={0}
-                blur={0}
-                threshold={0.12}
-                stagger={0.06}
-                once
-              >
-              <div className="reader-console-module">
-                {sectionHead('bookmark', 'Bookmark')}
-                {!collapsed.bookmark && (
+              )}
+              {/* ROUND I — TABBED WORKSPACE (critiqueA Panel 3):
+                  Contents / Bookmarks / Notes / Highlights / Context.
+                  One tab visible at a time; the Find results above
+                  stay visible while finding. Counts ride on the tab
+                  labels (Notes · n, Highlights · n). */}
+              <div className="reader-tabs reader-console-tabs" role="tablist" aria-label="Study console sections">
+                {CONSOLE_TABS.map(t => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={consoleTab === t.id}
+                    className={consoleTab === t.id ? 'active' : ''}
+                    onClick={() => setConsoleTab(t.id)}
+                  >
+                    {t.label}
+                    {t.id === 'notes' && notes.length > 0 ? ` · ${notes.length}` : ''}
+                    {t.id === 'highlights' && highlights.length > 0 ? ` · ${highlights.length}` : ''}
+                  </button>
+                ))}
+              </div>
+              {consoleTab === 'bookmark' && (
                 <div className="reader-tab-body">
                   <button className="reader-tool-row" onClick={addPageBookmark}
                     disabled={pageBms.some(b => b.page === visiblePage)}>
@@ -824,11 +825,8 @@ export default function PdfReader({
                     </>
                   )}
                 </div>
-                )}
-              </div>
-              <div className="reader-console-module">
-                {sectionHead('notes', <>Notes <span className="reader-console-count">· {notes.length}</span></>)}
-                {!collapsed.notes && (
+              )}
+              {consoleTab === 'notes' && (
                 <div className="reader-tab-body">
                   <div className="reader-note-form">
                     <textarea
@@ -888,11 +886,8 @@ export default function PdfReader({
                     })
                   )}
                 </div>
-                )}
-              </div>
-              <div className="reader-console-module">
-                {sectionHead('highlights', <>Highlights <span className="reader-console-count">· {highlights.length}</span></>)}
-                {!collapsed.highlights && (
+              )}
+              {consoleTab === 'highlights' && (
                 <div className="reader-tab-body">
                   <div className="reader-note-form">
                     <input
@@ -951,11 +946,8 @@ export default function PdfReader({
                     </>
                   )}
                 </div>
-                )}
-              </div>
-              <div className="reader-console-module">
-                {sectionHead('contents', 'Contents')}
-                {!collapsed.contents && (
+              )}
+              {consoleTab === 'contents' && (
                 <div className="reader-tab-body">
                   {!tocLoaded ? (
                     <p className="reader-hint">Loading contents…</p>
@@ -1008,29 +1000,40 @@ export default function PdfReader({
                     ))
                   )}
                 </div>
-                )}
-              </div>
-              <hr className="reader-console-divider" />
-              <div className="reader-console-module">
-                {sectionHead('context', 'Page context')}
-                {!collapsed.context && (
+              )}
+              {consoleTab === 'context' && (
                 <div className="reader-page-context">
                   <span className="reader-page-context-nums">{visiblePage} <span>/ {total}</span></span>
                   {/* ROUND A 2026-11-07 (spec §P3.3 PAGE INFORMATION):
                       current page / total pages / zoom. */}
                   <span className="reader-page-context-meta">{sectionLabel} / {subjectLabel} · <span className="reader-zoom">{zoom}% zoom</span></span>
                 </div>
-                )}
-              </div>
+              )}
               <div className="reader-console-nav">
                 <button type="button" onClick={() => onPrev?.()} disabled={!onPrev}>← Previous</button>
                 <span className="reader-console-nav-pos">{docIndex + 1} / {docTotal}</span>
                 <button type="button" onClick={() => onNext?.()} disabled={!onNext}>Next →</button>
               </div>
-              </AnimatedContent>
-              )}
             </AnimatedContent>
-          )}
+          ) : !panelsHidden ? (
+            /* ROUND I (Panel 3): collapsed 64px rail — each icon
+               reopens the console on its tab. In reading mode the
+               panels hide entirely instead (no-right). */
+            <div className="reader-console-rail" aria-label="Study console — collapsed">
+              {CONSOLE_TABS.map(t => (
+                <button
+                  key={t.id}
+                  type="button"
+                  className={`reader-console-rail-btn${consoleTab === t.id ? ' reader-console-rail-btn--active' : ''}`}
+                  aria-label={`Open ${t.label}`}
+                  title={t.label}
+                  onClick={() => { setConsoleTab(t.id); toggleRight(); }}
+                >
+                  <span aria-hidden="true">{t.glyph}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
         </aside>
       </div>
 

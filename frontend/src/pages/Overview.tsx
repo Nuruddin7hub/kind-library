@@ -4,7 +4,7 @@ import Particles from '../bits/Particles';
 import BlurText from '../bits/BlurText';
 import StarBorder from '../bits/StarBorder';
 import AnimatedContent from '../bits/AnimatedContent';
-import SpotlightCard from '../bits/SpotlightCard';
+import MagicBento from '../bits/MagicBento';
 import GlareHover from '../bits/GlareHover';
 import {
   SUBJECTS,
@@ -176,62 +176,51 @@ function DisciplineField({
 /* Overview page — THE GRAND ARCHIVE (ATLAS edition, 2026-11-05)       */
 /* ------------------------------------------------------------------ */
 
-/* Per-subject card visuals (critiqueA 2026-11-07 P2): each discipline
- * its own tiny behaviour — EM2 contour lines, Signals waveform, FIS
- * orbit network, Digital binary grid. Pure SVG, subject-coloured. */
-function DisciplineVisual({ id }: { id: string }) {
-  if (id === 'em2') {
-    return (
-      <svg viewBox="0 0 120 56" fill="none" stroke="currentColor" strokeWidth="1" aria-hidden="true">
-        <ellipse cx="60" cy="28" rx="54" ry="24" opacity="0.9" />
-        <ellipse cx="62" cy="28" rx="40" ry="17" opacity="0.65" />
-        <ellipse cx="58" cy="28" rx="26" ry="11" opacity="0.45" />
-        <ellipse cx="60" cy="28" rx="12" ry="5" opacity="0.3" />
-      </svg>
-    );
-  }
-  if (id === 'signals') {
-    return (
-      <svg viewBox="0 0 120 56" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-        <path d="M0 28 Q 15 6, 30 28 T 60 28 T 90 28 T 120 28" />
-        <path d="M0 40 Q 15 22, 30 40 T 60 40 T 90 40 T 120 40" opacity="0.55" strokeWidth="1" />
-        <path d="M0 16 Q 15 -4, 30 16 T 60 16 T 90 16 T 120 16" opacity="0.55" strokeWidth="1" />
-      </svg>
-    );
-  }
-  if (id === 'fis') {
-    return (
-      <svg viewBox="0 0 120 56" fill="none" stroke="currentColor" aria-hidden="true">
-        <ellipse cx="60" cy="28" rx="52" ry="20" strokeWidth="1" opacity="0.9" />
-        <ellipse cx="60" cy="28" rx="34" ry="13" strokeWidth="1" opacity="0.6" transform="rotate(28 60 28)" />
-        <circle cx="60" cy="28" r="3" fill="currentColor" stroke="none" />
-        <circle cx="98" cy="18" r="2.2" fill="currentColor" stroke="none" />
-        <circle cx="28" cy="40" r="2.2" fill="currentColor" stroke="none" />
-        <circle cx="76" cy="44" r="2.2" fill="currentColor" stroke="none" />
-      </svg>
-    );
-  }
+/* ------------------------------------------------------------------ */
+/* Compact discipline plate (ROUND I 2026-11-10, critiqueA §D): the  */
+/* Magic Bento card content — glyph + code, name, tagline, document  */
+/* count, entry action. Sized for the bento's fixed 190px rows      */
+/* (roundI.css .kiI-plate*). The per-subject SVG visuals of the old */
+/* SpotlightCard plates are retired with them — the glyph carries   */
+/* the discipline identity at this size.                             */
+/* ------------------------------------------------------------------ */
+function DisciplinePlate({
+  s,
+  n,
+  loaded,
+  lit,
+  onHover,
+}: {
+  s: (typeof SUBJECTS)[number];
+  n: number;
+  loaded: boolean;
+  lit: boolean;
+  onHover: (subj: string | null) => void;
+}): ReactNode {
+  const color = v2SubjectColor(s.id);
   return (
-    <svg viewBox="0 0 120 56" fill="currentColor" aria-hidden="true">
-      {Array.from({ length: 20 }, (_, i) => {
-        const col = i % 5;
-        const row = Math.floor(i / 5);
-        return (
-          <circle
-            key={i}
-            cx={14 + col * 23}
-            cy={10 + row * 12}
-            r={i % 4 === 0 ? 2.4 : 1.5}
-            opacity={i % 3 === 0 ? 0.9 : 0.45}
-          />
-        );
-      })}
-      <g stroke="currentColor" strokeWidth="1" opacity="0.5">
-        <line x1="14" y1="10" x2="60" y2="22" />
-        <line x1="60" y1="22" x2="106" y2="10" />
-        <line x1="37" y1="34" x2="83" y2="34" />
-      </g>
-    </svg>
+    <div
+      className={`kiI-plate${lit ? ' kiI-plate--lit' : ''}`}
+      data-subject={s.id}
+      style={{ '--subj': color } as CSSProperties}
+      onMouseEnter={() => onHover(s.id)}
+      onMouseLeave={() => onHover(null)}
+      onFocus={() => onHover(s.id)}
+      onBlur={() => onHover(null)}
+    >
+      <span className="kiI-plate-top">
+        <span className="kiI-plate-glyph" aria-hidden="true">{disciplineGlyph(s.id)}</span>
+        <span className="kiI-plate-code">{s.code}</span>
+      </span>
+      <h3 className="kiI-plate-name">{s.name}</h3>
+      <p className="kiI-plate-tag">{s.tagline}</p>
+      <span className="kiI-plate-foot">
+        <span className="kiI-plate-count">
+          {loaded ? `${String(n).padStart(2, '0')} DOCUMENTS` : '— DOCUMENTS'}
+        </span>
+        <span className="kiI-plate-go" aria-hidden="true">Explore →</span>
+      </span>
+    </div>
   );
 }
 
@@ -451,76 +440,58 @@ export default function Overview({ files, onOpenReader, onGoSubject, onGoSearch 
         stagger={0.06}
         once
       >
-      <section className="kiA-section">
+      <section className="kiA-section kiA-section--disciplines">
         <p className="kiA-eyebrow">Your disciplines</p>
-        <h2 className="kiA-display kiA-section-title">Choose your discipline.</h2>
-        {/* Spotlight Card instruments (Round A 2026-11-08 spec §3):
-            the four discipline plates are React Bits Spotlight Cards
-            — pointer-following illumination, no tilt, no bento.
-            Each card: symbol, name, doc count, one-line description,
-            micro archive-share signal (real counts: n / 100).
-            Subject accent stays 5–8% of the card. The section keeps
-            its AnimatedContent entrance (stagger 0.06). */}
-        <div className="de-spot-plates" role="list">
-          {SUBJECTS.map((s) => {
-            const color = v2SubjectColor(s.id);
+        <h2 className="kiA-display kiA-section-title">Four fields. One connected archive.</h2>
+        {/* ROUND I 2026-11-10 (critiqueA §D): the four discipline
+            cards are a React Bits Magic Bento — columns 4, rowHeight
+            210, gap 16, radius 16, dark, border glow + spotlight
+            (radius 180), no stars/tilt/magnetism. Each card: subject,
+            document count, short description, entry action. The
+            bento glow is the archive cyan (one glow colour for the
+            whole bento); per-subject colours live in the plate
+            content. The section keeps its AnimatedContent entrance
+            (stagger 0.06). ROUND I.1 2026-11-10 (critiqueA §9 P0):
+            rowHeight 190 -> 210 — the plates are the main content
+            of the archive, not four little cards at the bottom.
+            ROUND I.2 2026-11-11 (critiqueA-2026-11-11 §1):
+            rowHeight 210 -> 220 + plate padding 26px (roundI2.css)
+            so the plates read as destinations. */}
+        <MagicBento
+          className="de-bento-plates kiA-bento-plates"
+          columns={4}
+          rowHeight={220}
+          gap={16}
+          radius={16}
+          theme="dark"
+          glowColor="#65e5d2"
+          enableBorderGlow
+          enableSpotlight
+          spotlightRadius={180}
+          enableStars={false}
+          enableTilt={false}
+          enableMagnetism={false}
+          clickEffect
+          textAutoHide={false}
+          intro
+          items={SUBJECTS.map((s) => {
             const n = counts[s.id] ?? 0;
-            return (
-              <SpotlightCard
-                key={s.id}
-                className={`de-spot-plate${fieldHover === s.id ? ' kiA-platecard--lit' : ''}`}
-                spotlightColor={color}
-                intensity={0.15}
-                spotlightSize={220}
-                softness={0.8}
-                borderGlow={0.3}
-                proximity={120}
-                flare={false}
-                grain={0}
-                theme="dark"
-                // The wrapper carries the surface (solid deep archive
-                // blue) so the pointer spotlight washes the card;
-                // the inner plate goes transparent (field-edition.css).
-                style={{ '--spotlight-card-surface': '#0d1c2b' } as CSSProperties}
-              >
-                <div
-                  role="button"
-                  className="kiA-platecard-btn"
-                  style={{ '--subj': color } as CSSProperties}
-                  onClick={() => onGoSubject(s.id)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onGoSubject(s.id); } }}
-                  tabIndex={0}
-                  /* ROUND H 2026-11-09 (critiqueC H-07): the field
-                     responds to discipline selection both ways —
-                     hovering/focusing a plate lights its field node
-                     (and subdues the others) via the shared
-                     fieldHover state, mirroring node -> plate. */
-                  onMouseEnter={() => setFieldHover(s.id)}
-                  onMouseLeave={() => setFieldHover(null)}
-                  onFocus={() => setFieldHover(s.id)}
-                  onBlur={() => setFieldHover(null)}
-                  aria-label={`${s.name} — ${n} documents`}
-                >
-                  <span className="de-plate-visual" aria-hidden="true">
-                    <DisciplineVisual id={s.id} />
-                  </span>
-                  <span className="kiA-platecard-glyph" aria-hidden="true">{disciplineGlyph(s.id)}</span>
-                  <h3 className="kiA-platecard-name">{s.name}</h3>
-                  <p className="kiA-platecard-tag">{s.tagline}</p>
-                  <span className="kiA-platecard-share" aria-label={`${n} of ${totalDocs} documents in the archive`}>
-                    {String(n).padStart(2, '0')} / {String(totalDocs).padStart(3, '0')} ARCHIVE SHARE
-                  </span>
-                  <span className="kiA-platecard-foot">
-                    <span className="kiA-platecard-count">
-                      <strong>{loaded ? n : '—'}</strong> documents
-                    </span>
-                    <span className="kiA-platecard-arrow" aria-hidden="true">Explore discipline →</span>
-                  </span>
-                </div>
-              </SpotlightCard>
-            );
+            return {
+              id: s.id,
+              title: `${s.name} — ${n} documents`,
+              onClick: () => onGoSubject(s.id),
+              content: (
+                <DisciplinePlate
+                  s={s}
+                  n={n}
+                  loaded={loaded}
+                  lit={fieldHover === s.id}
+                  onHover={setFieldHover}
+                />
+              ),
+            };
           })}
-        </div>
+        />
       </section>
       </AnimatedContent>
 

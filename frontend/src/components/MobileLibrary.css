@@ -110,10 +110,26 @@
   -ms-overflow-style: none;
   scroll-behavior: smooth;
   overscroll-behavior-x: contain;
-  scroll-snap-type: x proximity;
+  scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
   -webkit-mask-image: linear-gradient(to right, transparent 0, black 28px, black calc(100% - 28px), transparent 100%);
   mask-image: linear-gradient(to right, transparent 0, black 28px, black calc(100% - 28px), transparent 100%);
+}
+/* Round B 2026-11-10 P1: edge fade only where more filters exist.
+ * MobileLibrary.tsx sets data-fade on scroll (right = more to the right,
+ * left = more to the left, both = middle, none = everything fits).
+ * No attribute (first paint) keeps the both-sides fade above. */
+.ml-rail[data-fade="left"] {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, black 28px, black 100%);
+  mask-image: linear-gradient(to right, transparent 0, black 28px, black 100%);
+}
+.ml-rail[data-fade="right"] {
+  -webkit-mask-image: linear-gradient(to right, black 0, black calc(100% - 28px), transparent 100%);
+  mask-image: linear-gradient(to right, black 0, black calc(100% - 28px), transparent 100%);
+}
+.ml-rail[data-fade="none"] {
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 .ml-rail::-webkit-scrollbar { display: none; }
 .ml-pill {

@@ -1,0 +1,239 @@
+/* ==================================================================
+ * ROUND I.1 — 2026-11-10 (critiqueA-1420-2026-11-10.md §9, desktop
+ * 9.08/10, target 9.60+). PRECISION round, not a redesign.
+ * DESKTOP ONLY. Every rule lives under .desktop-app or
+ * .reader-shell.kiA-v2.kiA-v2. Mobile (.mobile-shell) never
+ * matches. Imported LAST in App.tsx, after roundI.css.
+ *
+ * Priority order (§9): P0 typography hierarchy, P0 reader PDF scale,
+ * P0 overview discipline plates, P1 search results, P1 1366
+ * composition, P1 FIS typography. NO new React Bits components.
+ * The contour-field background stays; MagicBento stays restrained
+ * to the discipline cards only. Backend untouched (Flask).
+ *
+ * BASELINE (probe_pre.json, 2026-11-10, bundle index-DPVQMgfk.js,
+ * 1440x900 unless noted): hero title 64px / hero 390px / stats
+ * 112px / section title 32px / plate name 22px, tag 13px/1.5 /
+ * bento row 190px / reader stage 1068px, page 900px (cap 900,
+ * still 900 with console collapsed), console 300px, console bg
+ * rgba(6,12,20,0.96) / identity strip 58px, title 15px /
+ * inter-page gap 32px (Tailwind gap-8 beats reader-env 24px) /
+ * FIS card title 21px Instrument Serif, type 12px gold, desc
+ * 13px/1.6, meta 11px / 1366 hero 340px min-height but 373px
+ * content-tall, title 54px, plates top 741px (27px visible).
+ * Search baseline NOT captured pre-change (probe_pre search
+ * never resolved — /api/search slow through the relay);
+ * hit title 19px Inter is a cascade read (field-edition wins
+ * over obsidian-atlas), to be confirmed live in probe_post.
+ * Sidebar "00": CAPTURE ARTIFACT, not a defect — /api/library
+ * took 16.4-25.3s on the cold first load; sidebar counts flip
+ * 00 -> 21/47/04/28 the moment it resolves (probe_pre.json
+ * sidebar_timeline). No fix shipped for it.
+ * ================================================================== */
+
+/* ------------------------------------------------------------------
+ * T0 — TYPOGRAPHY HIERARCHY (spec §7, four levels).
+ * L1 editorial: hero headline (64px, untouched) + library/search
+ * edition titles (untouched). L2 content: document + discipline +
+ * search-result + FIS titles, bigger. L3 interface: controls,
+ * untouched. L4 instrument metadata: quieter, smaller, tighter.
+ * Descriptions get more line-height everywhere they carry prose.
+ * ------------------------------------------------------------------ */
+/* L2 — document titles: recent shelf, resume card, quick-access
+   rows, library list rows, reader identity strip. */
+.desktop-app .kiA-strip-title {
+  font-size: 20px;
+  line-height: 1.25;
+}
+.desktop-app .kiA-activity-title {
+  font-size: 28px;
+}
+.desktop-app .kiA-qa-row-title {
+  font-size: 14px;
+}
+.desktop-app .kiA-row-title {
+  font-size: 21px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-identity-title {
+  font-size: 18px;
+}
+/* L4 — quieter micro-labels: search hit metadata drops a size and
+   tightens its tracking; the plate code stays 10px (identity). */
+.desktop-app .kiA-page--search .kiA-hit-meta {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+
+/* ------------------------------------------------------------------
+ * P0 — OVERVIEW DISCIPLINE PLATES (spec §1).
+ * MagicBento rowHeight 190 -> 210 lives in Overview.tsx (prop).
+ * Plates get the spec's 24px padding, a 24px name, and a 1.55
+ * description rhythm; the foot gains breathing room so title +
+ * count read immediately. The section header is untouched — the
+ * plates, not more chrome, carry the section now.
+ * ------------------------------------------------------------------ */
+.desktop-app .kiI-plate {
+  padding: 24px;
+}
+.desktop-app .kiI-plate-glyph {
+  font-size: 30px;
+}
+.desktop-app .kiI-plate-name {
+  font-size: 24px;
+  line-height: 1.1;
+}
+.desktop-app .kiI-plate-tag {
+  line-height: 1.55;
+}
+.desktop-app .kiI-plate-foot {
+  padding-top: 16px;
+}
+
+/* ------------------------------------------------------------------
+ * P0 — READER PDF SCALE (spec §3/§4).
+ * Page cap 900 -> 980 and the stage margin 72 -> 48 live in
+ * PdfReader.tsx (pageW = min(980, stageW - 48)); the collapse
+ * re-scale already works via the ResizeObserver on the stage, so
+ * collapsing the console now grows the page to the 980 cap.
+ * Console stays ~300px (roundI grid) but becomes a quiet
+ * instrument panel: translucent + hairline border, per the spec.
+ * Less empty vertical space: stage padding 36 -> 24px, inter-page
+ * gap 24 -> 16px, identity strip 58 -> 52px.
+ * ------------------------------------------------------------------ */
+.reader-shell.kiA-v2.kiA-v2 .reader-panel-right {
+  background: rgba(7, 17, 30, 0.62);
+  border-left: 1px solid rgba(151, 190, 210, 0.10);
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-document {
+  padding: 24px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-document > div {
+  gap: 16px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-identity {
+  height: 52px;
+}
+
+/* ------------------------------------------------------------------
+ * P1 — SEARCH RESULTS (spec §2).
+ * Selected result unmistakable: cyan border + cyan wash gradient
+ * (spec values). Title larger (19 -> 21px, same Inter family the
+ * cascade already resolves to). The match passage becomes the
+ * third hierarchy level: larger, roomier, brighter than the old
+ * 13px/1.6 faint line.
+ * ------------------------------------------------------------------ */
+.desktop-app .kiA-page--search .kiA-hit--selected {
+  border-color: rgba(84, 229, 209, 0.55);
+  background:
+    linear-gradient(
+      90deg,
+      rgba(84, 229, 209, 0.08),
+      rgba(84, 229, 209, 0.015)
+    );
+}
+.desktop-app .kiA-page--search .kiA-hit-title {
+  font-size: 21px;
+  line-height: 1.25;
+}
+.desktop-app .kiA-page--search .kiA-hit-preview {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: #a4b5c8;
+}
+
+/* ------------------------------------------------------------------
+ * P1 — FIS TYPOGRAPHY (spec §5).
+ * Editorial chapter titles: 24px serif, 1.05 leading. Type label
+ * and metadata shrink to the instrument level (10px, wide
+ * tracking); descriptions drop to 12px/1.55 with more vertical
+ * rhythm. Gold identity untouched (roundI gold type + gold top
+ * edge stay). Scoped to [data-subject="fis"] — .kiA-ed-card is
+ * the shared library card, so other subjects keep their type.
+ * ------------------------------------------------------------------ */
+.desktop-app[data-subject="fis"] .kiA-ed-card-type {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.desktop-app[data-subject="fis"] .kiA-ed-card-title {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 24px;
+  line-height: 1.05;
+  margin-bottom: 8px;
+}
+.desktop-app[data-subject="fis"] .kiA-ed-card-desc {
+  font-size: 12px;
+  line-height: 1.55;
+}
+.desktop-app[data-subject="fis"] .kiA-ed-card-meta {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+.desktop-app[data-subject="fis"] .kiA-ed-card-top {
+  margin-bottom: 18px;
+}
+.desktop-app[data-subject="fis"] .kiA-ed-card-desc {
+  margin-bottom: 16px;
+}
+/* Featured card (spans 2-3 cols): its title has its own rules in
+   living-archive:179 + field-edition:3808 (21px/20px at higher
+   specificity than the plain card rule above), so it needs the
+   same override at the featured selector or it stays 21px while
+   the other cards go 24px (measured live 2026-11-10). */
+.desktop-app[data-subject="fis"] .kiA-grid--fis-featured > .spotlight-card:first-child .kiA-ed-card-title {
+  font-size: 24px;
+  line-height: 1.05;
+}
+
+/* ------------------------------------------------------------------
+ * P1 — 1366 COMPOSITION (spec §6).
+ * Own geometry at <=1500px, not a scaled-down 1920 layout: hero
+ * grid 1fr/300px, 52px title (max-width 560px), 320px hero,
+ * 96px stats band, disciplines pulled up so the first viewport
+ * reads identity -> scale -> disciplines. This band sits after
+ * roundI.css, so it also overrides roundI's <=1400px values
+ * (340px hero, 54px title, 330px field) inside its range.
+ * The 320px hero only binds if the copy fits: field-edition
+ * gives .kiA-hero-copy 52px/64px padding (measured hero 373px
+ * at 1366 against a 340px min-height), so the band tightens
+ * the copy padding + sub/CTA margins too, and pulls the stats
+ * band (34 -> 24px margin) and the disciplines section
+ * (56 -> 44px) up with it.
+ * ------------------------------------------------------------------ */
+@media (min-width: 1024px) and (max-width: 1500px) {
+  .desktop-app .kiA-hero {
+    grid-template-columns: minmax(0, 1fr) 300px;
+    min-height: 320px;
+  }
+  .desktop-app .kiA-hero-copy {
+    padding: 24px 0 28px;
+  }
+  .desktop-app .kiA-hero-title {
+    font-size: 52px;
+    max-width: 560px;
+  }
+  .desktop-app .de-blurline--accent {
+    font-size: 52px;
+  }
+  .desktop-app .kiA-hero-sub {
+    margin-top: 14px;
+  }
+  .desktop-app .kiA-hero-cta {
+    margin-top: 24px;
+  }
+  .desktop-app .kiA-field {
+    width: 300px;
+    height: 240px;
+    min-height: 240px;
+  }
+  .desktop-app .kiA-stats {
+    min-height: 96px;
+    margin-top: 24px;
+  }
+  /* (0,3,0): field-edition:3419 + living-archive:98 both set
+     .kiA-section margin-top at (0,3,0) (56px / 40px) — a (0,2,0)
+     rule here would lose to both, as measured live (40px). */
+  .desktop-app .kiA .kiA-section--disciplines {
+    margin-top: 44px;
+  }
+}

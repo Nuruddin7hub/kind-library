@@ -121,6 +121,36 @@ export default function MobileLibrary(props: MobileLibraryProps) {
     }
   }, [indexSubject]);
 
+  // Round B 2026-11-10 P1: edge fade only where more filters exist.
+  // data-fade drives the mask in MobileLibrary.css (right/left/both/none).
+  // Passive scroll listener; no attribute before first run = both-sides
+  // fade, i.e. the previous look. Chip dimensions untouched.
+  useEffect(() => {
+    const rail = railRef.current;
+    if (!rail) return;
+    const update = () => {
+      // Rect-based: "more to the left" means the first chip is cut off,
+      // "more to the right" means the last chip is cut off. At the
+      // leftmost snap position the first chip sits at the rail's left
+      // edge (scrollLeft is the 18px padding, not 0) — so a scrollLeft
+      // threshold would wrongly keep the left fade on.
+      const pills = rail.querySelectorAll('.ml-pill');
+      const rr = rail.getBoundingClientRect();
+      const first = pills[0]?.getBoundingClientRect();
+      const last = pills[pills.length - 1]?.getBoundingClientRect();
+      const atStart = !first || first.left >= rr.left - 0.5;
+      const atEnd = !last || last.right <= rr.right + 0.5;
+      rail.dataset.fade = atStart && atEnd ? 'none' : atStart ? 'right' : atEnd ? 'left' : 'both';
+    };
+    update();
+    rail.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => {
+      rail.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, []);
+
   // Temp filter-sheet state — committed to parent setters on Apply.
   // (Round B 2026-11-04, 1420 loop: Subject / Type / Saved only / Sort /
   // Clear / Apply — ONE sheet, no separate sort control.)
