@@ -6,6 +6,14 @@ import StarBorder from '../bits/StarBorder';
 import AnimatedContent from '../bits/AnimatedContent';
 import MagicBento from '../bits/MagicBento';
 import GlareHover from '../bits/GlareHover';
+// ROUND I.4 2026-11-12 (critiqueA spec I4-7): SpotlightCard on the
+// four discipline plates — per-subject pointer light, restrained
+// (intensity 0.10, size 180, borderGlow 0.2, no flare/ambient).
+// The MagicBento outer spotlight stays; this is the inner,
+// per-subject treatment. roundI4.css neutralises the component's
+// own card chrome (padding/background/radius/shadow) so the plate
+// geometry is unchanged.
+import SpotlightCard from '../bits/SpotlightCard';
 import {
   SUBJECTS,
   disciplineGlyph,
@@ -199,10 +207,20 @@ function DisciplinePlate({
 }): ReactNode {
   const color = v2SubjectColor(s.id);
   return (
-    <div
+    <SpotlightCard
       className={`kiI-plate${lit ? ' kiI-plate--lit' : ''}`}
       data-subject={s.id}
       style={{ '--subj': color } as CSSProperties}
+      spotlightColor={color}
+      intensity={0.10}
+      spotlightSize={180}
+      softness={0.7}
+      borderGlow={0.2}
+      proximity={80}
+      smoothing={0.3}
+      ambient={false}
+      flare={false}
+      grain={0}
       onMouseEnter={() => onHover(s.id)}
       onMouseLeave={() => onHover(null)}
       onFocus={() => onHover(s.id)}
@@ -220,7 +238,7 @@ function DisciplinePlate({
         </span>
         <span className="kiI-plate-go" aria-hidden="true">Explore →</span>
       </span>
-    </div>
+    </SpotlightCard>
   );
 }
 

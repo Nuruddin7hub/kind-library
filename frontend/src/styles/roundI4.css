@@ -1,0 +1,418 @@
+/* ==================================================================
+ * ROUND I.4 — 2026-11-12 (critiqueA-2026-11-12.md, desktop
+ * 9.43 -> 9.45/10, target 9.60+). Precision desktop art-direction
+ * pass — 7 items in ChatGPT's priority order. DESKTOP ONLY.
+ * Every rule lives under .desktop-app / .kiA-desktop /
+ * .reader-shell.kiA-v2.kiA-v2. Mobile (.mobile-shell) never
+ * matches. Imported LAST in App.tsx, after roundB.css. Backend
+ * untouched (Flask).
+ *
+ * BASELINE (probe_pre.json, 2026-11-12, bundle index-DSvh5T4U.js):
+ * 1440 — hero 296.8px (min-height 290, grid 1fr/300px gap 32),
+ * title 53px/0.98/-0.055em, max-width 570px; field 300x230;
+ * stats margin-top 24px, min-height 88px; disciplines margin 24px;
+ * plates top 633px / bottom 853px; eyebrow 11px/600/0.12em;
+ * section title 32px. Search — zones 220/416/420 gap 20,
+ * preview 420px, hit title 21px/1.18, hit meta 10px/0.08em/0.58,
+ * laplace 3 hits. Reader — workspace 72/1068/300, page 1000px,
+ * console 300px padding 18 opacity .92, doc line 9px/0.16em/0.55,
+ * console title 15px/500, tabs 3-col grid (5 tabs, 2 rows),
+ * tab buttons 9px/0.04em. FIS — hero 239.7px, title 52px,
+ * subline 14px, stats margin-top 18px, NO editorial statement.
+ * 1366x768 — hero 296.8px, title 53px, plates top 633 / bottom
+ * 853 (85px cut below the 768 fold); DIGITAL node bottom 352.6
+ * vs field-detail top 333.4 (19px overlap, PRE-EXISTING).
+ * Background — .kiA-desktop::before is the 64px grid lines
+ * (0.035 alpha, masked fade); no .desktop-shell class exists.
+ * BlurText hero (trigger load, delay 100/400, stepDuration 0.35,
+ * once) and CountUp stats (0.9s, trigger load) ALREADY live per
+ * spec — no change; both settle <1.5s, shot scripts wait 6s.
+ *
+ * SPEC-SELECTOR MAP (ChatGPT's class names do not exist live):
+ * .overviewHero -> .kiA-hero; .overviewHero h1 -> .kiA-hero-title
+ * (+ .de-blurline--accent, roundI3 sets it separately);
+ * .overviewStats -> .kiA-stats; .disciplineGrid ->
+ * .kiA-bento-plates (MagicBento, rowHeight 220 prop);
+ * .searchGrid -> .kiA-search-zones; .searchResult -> .kiA-hit;
+ * .previewPanel -> .kiA-search-preview; .desktop-shell::before
+ * -> .kiA-desktop::before (same element as .desktop-app);
+ * .section-label -> .kiA-eyebrow; .meta -> .kiA-hit-meta.
+ * Reader console: DOCUMENT = .reader-console-doc line +
+ * .reader-console-title (already there); NAVIGATION/ANNOTATION/
+ * CONTEXT = new grouped tablist in PdfReader.tsx (CONSOLE_GROUPS).
+ * Page rail = .reader-panel-left (already there, 72px).
+ *
+ * DELIBERATE DEVIATIONS (pre-probe measured):
+ * (a) I4-2 literal numbers NOT applied. The spec's 1366 block
+ *     (hero min-height 360px, h1 56px, stats margin-top 28px,
+ *     discipline margin-top 28px, hero padding 52/40/36 + 42/28)
+ *     assumes the field-edition hero (390px min-height, title
+ *     ~68px). Live roundI3 values are ALREADY more compact than
+ *     the spec's targets (290 < 360, 53 < 56, 24 < 28, hero
+ *     padding 0). Applying them literally would push the plates
+ *     FURTHER below the fold (plates already bottom 853 vs the
+ *     768 viewport). Instead §8 compacts the stack above the
+ *     plates with live-measured levers, scoped to short
+ *     viewports (max-height:800px, min-width:1100px), targeting
+ *     plates bottom <= 768.
+ * (b) I4-4 three-zone reader composition ALREADY EXISTS: page
+ *     rail 72px | PDF 1000px | study console 300px (visible in
+ *     loop26 desktop-reader.png / desktop-reader-tall.png).
+ *     The tall-viewport bottom emptiness is intrinsic to a
+ *     1-page document at the 1000px width cap (the page cannot
+ *     grow wider than the stage); no restructuring fakes it.
+ *     Instead §9 makes the console use the vertical space in
+ *     tall viewports (min-height:1100px): the tab body stretches
+ *     and the notes textarea grows, so the console holds
+ *     document context instead of ending mid-panel.
+ * (c) I4-7 SpotlightCard on the discipline plates: applied, but
+ *     the MagicBento outer spotlight stays (enableSpotlight,
+ *     radius 180, cyan) — the plate SpotlightCard is a second,
+ *     per-subject inner treatment at low intensity (0.10).
+ *     Verified visually post-change; if it reads doubled/muddy
+ *     it reverts to the deviation (MagicBento already provides
+ *     the spotlight) in the next round.
+ * (d) Search AnimatedContent: live distance 18 / duration 0.48 /
+ *     stagger 0.2 -> spec 8 / 0.28 / stagger 0.06 (stagger not
+ *     specified; 0.06 matches the Overview plates and keeps the
+ *     settle short). SearchPage.tsx.
+ * (e) 1366 DIGITAL-node/footer collision: LEFT AS-IS per the
+ *     task — the §8 compaction does not fix it (field-internal
+ *     geometry: node bottom at 74% + 45.5px vs detail top at
+ *     H-33px overlaps for any field height < 302px). Pre-existing,
+ *     present at 1440 too, not a regression.
+ * (f) Background radials: the spec's .desktop-shell::before does
+ *     not exist; the layers land on .kiA-desktop::before (same
+ *     element as .desktop-app). Per-layer background-size/repeat
+ *     are set explicitly — the existing rule's 64px size would
+ *     otherwise tile the radials. The selector is raised to
+ *     .desktop-app.kiA-desktop::before (0,2,1): field-edition:119
+ *     sets the live grid at the same specificity and would
+ *     otherwise win the background-image. The grid layers repeat
+ *     field-edition's values (rgba(95,160,180,0.045)) so the grid
+ *     itself is unchanged. The existing mask (fade to bottom)
+ *     still applies, so the lower glows are partially masked.
+ *     On the search view, field-edition:1885
+ *     (.desktop-app[data-view="search"].kiA-desktop::before,
+ *     0,3,1) still wins — the radials do not land there; search
+ *     keeps its own WebThreads identity. Not a regression.
+ * (j) Specificity raises (found in the built CSS, probe A):
+ *     section titles are set at (0,4,0) by
+ *     .desktop-app .kiA .kiA-section .kiA-section-title (32px),
+ *     and the console doc line at (0,5,0) by
+ *     .reader-console-head .reader-console-doc (9px/#8c9cac) —
+ *     the first-pass (0,2,0)/(0,4,0) rules lost on those two
+ *     properties only (eyebrow, opacity, border all landed).
+ *     Both selectors are raised to match; nothing else changes.
+ * (g) FIS card title/desc/meta: not re-probed pre-change (the
+ *     probe's selectors missed the SpotlightCard-wrapped grid);
+ *     the statement is verified by text + screenshot post-change.
+ * ================================================================== */
+
+/* ------------------------------------------------------------------
+ * §0 — TYPE TOKENS (spec I4-1). Defined on .desktop-app so they
+ * inherit to desktop descendants only; mobile never matches.
+ * ------------------------------------------------------------------ */
+.desktop-app {
+  --type-display: 78px;
+  --type-title: 34px;
+  --type-section: 12px;
+  --type-meta: 10px;
+  --tracking-display: -0.045em;
+  --tracking-section: 0.16em;
+  --tracking-meta: 0.12em;
+}
+
+/* ------------------------------------------------------------------
+ * §1 — TYPOGRAPHY HIERARCHY (spec I4-1). Three unmistakable
+ * levels. Level 2 section labels: 11px/600/0.16em (live was
+ * 0.12em). Level 1-adjacent section titles: 32 -> 34px (spec
+ * --type-title). Level 3 metadata: tracking 0.08 -> 0.10em
+ * (spec .meta; size 10px and opacity 0.58 already live).
+ * ------------------------------------------------------------------ */
+.desktop-app .kiA-eyebrow {
+  letter-spacing: var(--tracking-section);
+}
+.desktop-app .kiA .kiA-section .kiA-section-title {
+  font-size: var(--type-title);
+}
+.desktop-app .kiA-page--search .kiA-hit-meta {
+  letter-spacing: 0.1em;
+}
+
+/* ------------------------------------------------------------------
+ * §2 — BACKGROUND LAYERING (spec Background). Three extremely-low-
+ * opacity radial glows prepended to the existing 64px grid lines
+ * on .kiA-desktop::before. Per-layer size/repeat are explicit:
+ * radials cover the viewport once (no-repeat, auto); grid lines
+ * keep their 64px repeat. The existing mask (fade to bottom)
+ * still applies — see header (f).
+ * ------------------------------------------------------------------ */
+.desktop-app.kiA-desktop::before {
+  background-image:
+    radial-gradient(circle at 72% 18%, rgba(62, 224, 211, 0.055), transparent 32%),
+    radial-gradient(circle at 18% 72%, rgba(87, 117, 255, 0.045), transparent 34%),
+    radial-gradient(circle at 58% 50%, rgba(255, 188, 92, 0.025), transparent 28%),
+    linear-gradient(rgba(95, 160, 180, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(95, 160, 180, 0.045) 1px, transparent 1px);
+  background-size: auto, auto, auto, 64px 64px, 64px 64px;
+  background-repeat: no-repeat, no-repeat, no-repeat, repeat, repeat;
+}
+
+/* ------------------------------------------------------------------
+ * §3 — OVERVIEW HERO, EDITORIAL COMPOSITION (spec I4-4).
+ * Wide desktop only (min-width:1401px) so the 1366 composition
+ * in §8 governs short viewports. Hero becomes a genuine
+ * editorial composition: 430px min-height, 72/48/52 padding,
+ * 1.25fr/.75fr grid (field column ~399px at 1440, the 300px
+ * field centres in it with room to breathe), headline
+ * clamp(54px, 5vw, 78px) / 0.92 / max-width 720px. The copy's
+ * own 28px vertical padding is zeroed so the spec padding
+ * governs. The accent line needs its own rule: roundI3 sets it
+ * to 53px separately from the h1.
+ * ------------------------------------------------------------------ */
+@media (min-width: 1401px) {
+  .desktop-app .kiA-hero {
+    min-height: 430px;
+    padding: 72px 48px 52px;
+    grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+  }
+  .desktop-app .kiA-hero-copy {
+    padding: 0;
+  }
+  .desktop-app .kiA-hero-title {
+    max-width: 720px;
+    font-size: clamp(54px, 5vw, 78px);
+    line-height: 0.92;
+    letter-spacing: var(--tracking-display);
+  }
+  .desktop-app .de-blurline--accent {
+    font-size: clamp(54px, 5vw, 78px);
+    line-height: 0.92;
+  }
+}
+
+/* ------------------------------------------------------------------
+ * §4 — SEARCH RESULT DOMINANCE (spec I4-5). Filters narrow
+ * 220 -> 170px, results widen (min 360 -> 420px), preview
+ * narrows 420 -> max 380px. Selected result gets the strongest
+ * treatment: .55 cyan border + the spec's shadow (the roundI3
+ * 2px left spine stays, at the .55 alpha).
+ * ------------------------------------------------------------------ */
+.desktop-app .kiA-search-zones {
+  grid-template-columns: 170px minmax(420px, 1fr) minmax(320px, 0.78fr);
+  gap: 24px;
+}
+.desktop-app .kiA-page--search .kiA-hit {
+  min-height: 116px;
+}
+.desktop-app .kiA-search-preview {
+  max-width: 380px;
+}
+.desktop-app .kiA-page--search .kiA-hit--selected {
+  border-color: rgba(80, 232, 214, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(80, 232, 214, 0.08),
+    0 18px 60px rgba(0, 0, 0, 0.28);
+}
+
+/* ------------------------------------------------------------------
+ * §5 — READER CONSOLE HIERARCHY (spec I4-3). DOCUMENT: the
+ * existing "DOCUMENT / DIGITAL" line is promoted from a quiet
+ * 9px label to a Level 2 structural anchor (11px/600/0.16em,
+ * full opacity, rule underneath). NAVIGATION / ANNOTATION /
+ * CONTEXT: the tablist is regrouped in PdfReader.tsx
+ * (CONSOLE_GROUPS); each group gets a Level 2 header and its
+ * tabs in a raised mini tab bar (the old single bordered panel
+ * look, per group). Tab button styles are untouched.
+ * ------------------------------------------------------------------ */
+.reader-shell.kiA-v2.kiA-v2 .reader-console-head .reader-console-doc {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  opacity: 1;
+  color: #a9b8c6;
+  border-bottom: 1px solid rgba(151, 190, 210, 0.14);
+  padding-bottom: 10px;
+  margin-bottom: 4px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-sec {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #a9b8c6;
+  margin: 0 0 8px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-tabrow {
+  display: flex;
+  gap: 4px;
+  background: var(--surface-raised, #141c2a);
+  border: 1px solid var(--border, #273449);
+  border-radius: 10px;
+  padding: 4px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-tabrow button {
+  flex: 1 1 0;
+  min-width: 0;
+}
+/* GlareHover wrappers on the console tab bodies (spec I4-7):
+   block, full width — the component's own root is inline-grid. */
+.reader-shell.kiA-v2.kiA-v2 .reader-console-glare {
+  display: block;
+  width: 100%;
+}
+
+/* ------------------------------------------------------------------
+ * §6 — FIS EDITORIAL STATEMENT (spec I4-6). Under the hero
+ * stats, FIS only (gated in LibraryPage.tsx on subject === 'fis'
+ * and scoped here to [data-subject="fis"]): the kicker line +
+ * the serif statement.
+ * ------------------------------------------------------------------ */
+.desktop-app[data-subject="fis"] .kiA-ed-statement {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(216, 171, 105, 0.25);
+}
+.desktop-app[data-subject="fis"] .kiA-ed-statement-kicker {
+  margin: 0 0 8px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(232, 170, 72, 0.9);
+}
+.desktop-app[data-subject="fis"] .kiA-ed-statement-line {
+  margin: 0;
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-style: italic;
+  font-size: 20px;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: #f1f0e9;
+  max-width: 560px;
+}
+
+/* ------------------------------------------------------------------
+ * §7 — REACT BITS: SPOTLIGHTCARD ON DISCIPLINE PLATES (spec
+ * I4-7). The plate root IS the SpotlightCard (Overview.tsx).
+ * Neutralise the component's own card chrome so the plate
+ * geometry is unchanged: padding back to the live 26px, no
+ * background (the MagicBento card behind provides it), no
+ * radius, no shadow. The pointer light + edge stay (per-subject
+ * colour, intensity 0.10, size 180, borderGlow 0.2 in TSX).
+ * BlurText (hero) and CountUp (stats) already live per spec —
+ * no rules here.
+ * ------------------------------------------------------------------ */
+.desktop-app .kiI-plate.spotlight-card {
+  padding: 26px;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ------------------------------------------------------------------
+ * §8 — 1366 / SHORT-VIEWPORT COMPOSITION (spec I4-2, adapted —
+ * see header (a)). Dedicated composition for height-constrained
+ * desktops: the stack above the discipline plates compacts with
+ * live-measured levers so the plates fit the 768px fold (live:
+ * plates bottom 853 vs viewport 768). Copy padding 28 -> 4,
+ * eyebrow margin 18 -> 10, title 53 -> 48, sub margin 14 -> 8,
+ * CTA margin 36 -> 20, hero min-height 290 -> 240, stats
+ * margin 24 -> 16 + padding-bottom 0, disciplines margin
+ * 24 -> 16, section-title margin 20 -> 8. Estimated plates
+ * top ~540, bottom ~760 — verified by probe, not assumed.
+ * ------------------------------------------------------------------ */
+@media (max-height: 800px) and (min-width: 1100px) {
+  .desktop-app .kiA-hero {
+    min-height: 240px;
+  }
+  .desktop-app .kiA-hero-copy {
+    padding: 4px 0;
+  }
+  .desktop-app .kiA-hero .kiA-eyebrow {
+    margin-bottom: 10px;
+  }
+  .desktop-app .kiA-hero-title {
+    font-size: 48px;
+  }
+  .desktop-app .de-blurline--accent {
+    font-size: 48px;
+  }
+  .desktop-app .kiA-hero-sub {
+    margin-top: 8px;
+  }
+  .desktop-app .kiA-hero-cta {
+    margin-top: 20px;
+  }
+  .desktop-app .kiA-stats {
+    margin-top: 16px;
+    padding-bottom: 0;
+  }
+  .desktop-app .kiA .kiA-section--disciplines {
+    margin-top: 16px;
+  }
+  .desktop-app .kiA .kiA-section .kiA-section-title {
+    margin-bottom: 8px;
+  }
+}
+
+/* ------------------------------------------------------------------
+ * §9 — TALL READER: CONSOLE USES THE VERTICAL SPACE (spec
+ * I4-4, tall viewports only). The three zones already exist
+ * (see header (b)); here the study console stretches to fill
+ * the tall panel: panel + AnimatedContent wrapper become a
+ * flex column, the active tab body (or its GlareHover wrapper)
+ * flexes to fill, long lists scroll inside the body, and the
+ * notes textarea grows. The Context body is exempt (a 60px
+ * strip must not stretch). Scoped to min-height:1100px so the
+ * normal-height reader is untouched.
+ * ------------------------------------------------------------------ */
+@media (min-height: 1100px) and (min-width: 1400px) {
+  .reader-shell.kiA-v2.kiA-v2 .reader-panel-right {
+    display: flex;
+    flex-direction: column;
+  }
+  .reader-shell.kiA-v2.kiA-v2 .reader-panel-right .reader-panel-anim {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .reader-shell.kiA-v2.kiA-v2 .reader-panel-right .reader-tab-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .reader-shell.kiA-v2.kiA-v2 .reader-console-glare:not(.reader-console-glare--context) {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .reader-shell.kiA-v2.kiA-v2 .reader-console-glare:not(.reader-console-glare--context) > .reader-tab-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .reader-shell.kiA-v2.kiA-v2 .reader-note-form {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .reader-shell.kiA-v2.kiA-v2 .reader-note-form textarea {
+    flex: 1 1 auto;
+    min-height: 140px;
+  }
+}

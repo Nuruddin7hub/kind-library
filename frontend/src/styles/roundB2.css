@@ -1,0 +1,60 @@
+/* ==================================================================
+ * ROUND B2 — 2026-11-12 (critiqueB-2026-11-12.md, mobile
+ * 9.65 -> 9.68/10, FINAL APPROVAL — LOCK IT). P3 micro-fixes ONLY:
+ * the 3 tiny spacing corrections ChatGPT permits under the lock.
+ * MOBILE ONLY. Every rule lives under .mobile-shell (mobile renders
+ * .mobile-shell; desktop renders .desktop-app and never matches).
+ * Imported LAST in App.tsx, after roundI4.css. NO redesign, NO new
+ * React Bits components, no structural changes, no desktop changes.
+ * Backend untouched (Flask).
+ *
+ * SPEC-SELECTOR MAP (ChatGPT's class names do not exist live — the
+ * live equivalents below were verified in the components first):
+ *   .mobile-hero__archive -> .mh-section--tiles (MobileHome.tsx;
+ *                          the EXPLORE THE ARCHIVE section directly
+ *                          below the hero metrics strip)
+ *   .subject-scroll       -> .ml-rail (MobileLibrary.tsx) — SKIPPED,
+ *                          see (b) below
+ *   Digital featured title/meta -> .msi-feat-title / .msi-feat-meta
+ *                          inside .msi[data-subject="digital"]
+ *                          .msi-feat-body (MobileSubjectIndex.tsx)
+ *
+ * BASELINE (live bundle index-C9LDriEQ.js, loop26-implA):
+ *   .mh-section margin-top 26px; .mh-hero padding-bottom 2px
+ *   .ml-rail: overflow-x auto, 28px mask-image edge fade both sides,
+ *     data-fade right/left/both/none (Round B 2026-11-10 P1)
+ *   .msi-feat-body: flex column, gap 6px (all subjects);
+ *     digital title 20px/1.3, meta 9px mono
+ *
+ * SKIPPED:
+ * (b) Fix 2 — subject rail edge fade — NOT implemented. The live rail
+ *     ALREADY communicates scrollability exactly as the spec asks:
+ *     a 28px edge fade (mask-image, both sides by default) plus a
+ *     scroll listener in MobileLibrary.tsx that sets data-fade to
+ *     right/left/both/none so the fade appears only where more chips
+ *     exist (Round B 2026-11-10 P1). ChatGPT's own condition was
+ *     "Only do this if the actual implementation doesn't already
+ *     communicate scrollability" — it does, with the spec's own 28px
+ *     value. Adding a ::after gradient overlay would double-darken
+ *     the edge and add nothing. Chip sizing untouched either way.
+ *     Verified live in probe_pre.json (data-fade + mask-image +
+ *     pill overflow).
+ * ================================================================== */
+
+/* §1 — P3 Hero: 4–8px more separation into the archive. Spec literal
+ * (+8px) applied to the live selector: the tiles section's margin-top
+ * goes 26px -> 34px. Only the first archive section moves; hero
+ * internals, tiles, resume and recent sections untouched. */
+.mobile-shell .mh-section--tiles {
+  margin-top: 34px;
+}
+
+/* §2 — P3 Digital featured card: ~4px more gap between the featured
+ * title ("8. LAB REPORT...") and its metadata. .msi-feat-body is a
+ * flex column with gap 6px; a 4px margin-top on the meta (digital
+ * only) takes the title->meta gap 6px -> 10px without touching the
+ * eyebrow/title or meta/cta gaps and without enlarging the card.
+ * Other subjects untouched — their meta keeps the 6px flex gap. */
+.mobile-shell .msi[data-subject="digital"] .msi-feat-meta {
+  margin-top: 4px;
+}

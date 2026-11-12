@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { consumeReaderStartPage } from '../readerStart';
 import { v2SubjectColor } from '../shared';
 import AnimatedContent from '../bits/AnimatedContent';
+import GlareHover from '../bits/GlareHover';
 import DarkVeil from '../bits/DarkVeil';
 import '../styles/reader-env.css';
 
@@ -193,6 +194,17 @@ export default function PdfReader({
     { id: 'notes', label: 'Notes', glyph: '✎' },
     { id: 'highlights', label: 'Highlights', glyph: '◆' },
     { id: 'context', label: 'Context', glyph: 'ℹ' },
+  ];
+  /* ROUND I.4 2026-11-12 (critiqueA spec I4-3): the console is an
+     explicit information hierarchy, not a stack of controls.
+     DOCUMENT is the head (doc line + title, promoted in CSS);
+     the tabs group under NAVIGATION / ANNOTATION / CONTEXT
+     section headers. Same five tabs, same behaviour — only the
+     grouping changes. */
+  const CONSOLE_GROUPS: Array<{ label: string; ids: ConsoleTab[] }> = [
+    { label: 'Navigation', ids: ['contents', 'bookmark'] },
+    { label: 'Annotation', ids: ['notes', 'highlights'] },
+    { label: 'Context', ids: ['context'] },
   ];
   const [consoleTab, setConsoleTab] = useState<ConsoleTab>('notes');
   const [findCollapsed, setFindCollapsed] = useState(true);
@@ -754,22 +766,37 @@ export default function PdfReader({
                   stay visible while finding. Counts ride on the tab
                   labels (Notes · n, Highlights · n). */}
               <div className="reader-tabs reader-console-tabs" role="tablist" aria-label="Study console sections">
-                {CONSOLE_TABS.map(t => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={consoleTab === t.id}
-                    className={consoleTab === t.id ? 'active' : ''}
-                    onClick={() => setConsoleTab(t.id)}
-                  >
-                    {t.label}
-                    {t.id === 'notes' && notes.length > 0 ? ` · ${notes.length}` : ''}
-                    {t.id === 'highlights' && highlights.length > 0 ? ` · ${highlights.length}` : ''}
-                  </button>
+                {CONSOLE_GROUPS.map(g => (
+                  <div key={g.label} className="reader-console-group" role="presentation">
+                    <span className="reader-console-sec">{g.label}</span>
+                    <div className="reader-console-tabrow" role="presentation">
+                      {g.ids.map(id => {
+                        const t = CONSOLE_TABS.find(x => x.id === id)!;
+                        return (
+                          <button
+                            key={t.id}
+                            type="button"
+                            role="tab"
+                            aria-selected={consoleTab === t.id}
+                            className={consoleTab === t.id ? 'active' : ''}
+                            onClick={() => setConsoleTab(t.id)}
+                          >
+                            {t.label}
+                            {t.id === 'notes' && notes.length > 0 ? ` · ${notes.length}` : ''}
+                            {t.id === 'highlights' && highlights.length > 0 ? ` · ${highlights.length}` : ''}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 ))}
               </div>
               {consoleTab === 'bookmark' && (
+                /* ROUND I.4 2026-11-12 (critiqueA spec I4-7): GlareHover
+                   on the reader console cards (Notes, Bookmarks, Page
+                   context) — one soft sheen sweep on entry (playOnce),
+                   never on the PDF. Contents/Highlights stay plain. */
+                <GlareHover className="reader-console-glare" glareColor="#ffffff" glareOpacity={0.12} variant="sheen" playOnce>
                 <div className="reader-tab-body">
                   <button className="reader-tool-row" onClick={addPageBookmark}
                     disabled={pageBms.some(b => b.page === visiblePage)}>
@@ -825,8 +852,10 @@ export default function PdfReader({
                     </>
                   )}
                 </div>
+                </GlareHover>
               )}
               {consoleTab === 'notes' && (
+                <GlareHover className="reader-console-glare" glareColor="#ffffff" glareOpacity={0.12} variant="sheen" playOnce>
                 <div className="reader-tab-body">
                   <div className="reader-note-form">
                     <textarea
@@ -886,6 +915,7 @@ export default function PdfReader({
                     })
                   )}
                 </div>
+                </GlareHover>
               )}
               {consoleTab === 'highlights' && (
                 <div className="reader-tab-body">
@@ -1002,12 +1032,14 @@ export default function PdfReader({
                 </div>
               )}
               {consoleTab === 'context' && (
+                <GlareHover className="reader-console-glare reader-console-glare--context" glareColor="#ffffff" glareOpacity={0.12} variant="sheen" playOnce>
                 <div className="reader-page-context">
                   <span className="reader-page-context-nums">{visiblePage} <span>/ {total}</span></span>
                   {/* ROUND A 2026-11-07 (spec §P3.3 PAGE INFORMATION):
                       current page / total pages / zoom. */}
                   <span className="reader-page-context-meta">{sectionLabel} / {subjectLabel} · <span className="reader-zoom">{zoom}% zoom</span></span>
                 </div>
+                </GlareHover>
               )}
               <div className="reader-console-nav">
                 <button type="button" onClick={() => onPrev?.()} disabled={!onPrev}>← Previous</button>

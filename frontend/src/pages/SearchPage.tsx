@@ -713,13 +713,13 @@ export default function SearchPage(props: SearchPageProps) {
             key={query + searchSubject + typeFilter + sortMode}
             className="kiA-hits"
             trigger="mount"
-            distance={18}
-            duration={0.48}
+            distance={8}
+            duration={0.28}
             ease="power3.out"
             initialOpacity={0}
             blur={0}
             threshold={0.12}
-            stagger={0.2}
+            stagger={0.06}
             once
           >
             {results.map((hit, i) => renderHit(hit, i))}

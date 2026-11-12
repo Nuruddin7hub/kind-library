@@ -77,6 +77,32 @@ import './styles/roundI3.css';
 // frame refinement) — imported LAST so its rules win. MOBILE ONLY;
 // every rule lives under .mobile-shell. Desktop never matches.
 import './styles/roundB.css';
+// ROUND I.4 (ChatGPT Round A desktop re-score, 2026-11-12,
+// critiqueA-2026-11-12.md: desktop 9.43 -> 9.45/10, target 9.60+ —
+// precision desktop art-direction pass, 7 items: typography
+// hierarchy, 1366 composition, reader console hierarchy, overview
+// hero composition, search result dominance, FIS editorial
+// statement, React Bits (BlurText/SpotlightCard/GlareHover/
+// AnimatedContent/CountUp only). Desktop-only; mobile frozen.
+// Imported LAST so its rules win.
+import './styles/roundI4.css';
+// ROUND B2 (ChatGPT Round B mobile re-score, 2026-11-12,
+// critiqueB-2026-11-12.md: mobile 9.65 -> 9.68/10, FINAL APPROVAL —
+// LOCK IT. P3 micro-fixes ONLY: hero/archive separation +8px,
+// Digital featured title->meta gap +4px; subject-rail edge fade
+// SKIPPED — already live, see roundB2.css) — imported LAST so its
+// rules win. MOBILE ONLY; every rule lives under .mobile-shell.
+// Desktop never matches.
+import './styles/roundB2.css';
+// ROUND I.5 (ChatGPT Round C desktop re-score, 2026-11-12,
+// critiqueC-2026-11-12.md: desktop 9.45 -> 9.58/10, target 9.60+ —
+// "Instrument Polish", 6 small items then STOP: reader console as
+// one instrument, atmospheric reader stage, search selected-hit
+// hierarchy, 1366 composition (measured: no change — spec values
+// looser than live I.4), FIS statement transition, low-contrast
+// micro-labels. Desktop-only; mobile frozen. Imported LAST so its
+// rules win.
+import './styles/roundI5.css';
 // React Bits Noise — global film grain, opacity 0.025 (critiqueA
 // 2026-11-07 §Global: 4-layer background, mix-blend screen).
 // Desktop only; the component is position:fixed + pointer-events:none.

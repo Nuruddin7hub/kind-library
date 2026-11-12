@@ -336,6 +336,16 @@ export default function LibraryPage(props: LibraryPageProps) {
               <span className="kiA-ed-stat-label">COLLECTIONS</span>
             </span>
           </div>
+          {/* ROUND I.4 2026-11-12 (critiqueA spec I4-6): one strong
+              editorial statement underneath the hero stats, FIS
+              only — the subject hero as the entrance to a
+              discipline, not just a filtered library. */}
+          {subject === 'fis' && (
+            <div className="kiA-ed-statement">
+              <p className="kiA-ed-statement-kicker">Arguments · Ideas · Knowledge</p>
+              <p className="kiA-ed-statement-line">A collection of questions about what it means to know, believe, and interpret the world.</p>
+            </div>
+          )}
           {subject === 'all' && (
             <p className="kiA-ed-subline">
               {baseFiltered.length} documents · {subjPages.toLocaleString('en-US')} pages · {subjCollections} collections

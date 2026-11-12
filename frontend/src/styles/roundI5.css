@@ -1,0 +1,230 @@
+/* ==================================================================
+ * ROUND I.5 — "Instrument Polish" — 2026-11-12 (critiqueC-2026-11-12.md,
+ * desktop 9.45 -> 9.58/10, ~0.02 short of 9.6). Precision polish ONLY:
+ * 6 small items, then STOP. No new React Bits. NO mobile changes
+ * (mobile LOCKED at 9.68). DESKTOP ONLY. Every rule lives under
+ * .desktop-app / .reader-shell.kiA-v2.kiA-v2. Mobile (.mobile-shell)
+ * never matches; the reader shell renders only on the desktop branch
+ * (App.tsx: readerFile && !isMobile). Imported LAST in App.tsx,
+ * after roundB2.css. Backend untouched (Flask).
+ *
+ * BASELINE (probe_pre_a/b/c/d.json, 2026-11-12, bundle index-CkBKM2mo.js):
+ * Reader console — doc line 11px/600/0.16em #a9b8c6, title 15px/500,
+ * group headers 11px/600/0.16em #a9b8c6 (margin-bottom 8px), tab
+ * buttons 9px/0.04em (inactive #65758a, active #f1eee6 on teal wash),
+ * tabrows are raised cards (#101a2a + 1px border + 10px radius + 4px
+ * padding), groups gap 14px, tab body gap to nav 1px (nav padding 14px),
+ * note textarea 13px, note button 13px, nav buttons 12px/700, nav pos
+ * 11px opacity 0.55, context nums 28px, context meta 10px opacity
+ * 0.55, Find label 9px opacity 0.48. Stage bg #080e17 (reader-env
+ * says #060B14; measured #080e17 wins), no border, page 1000px.
+ * Search (laplace, 3 hits) — selected hit: title 21px/550, meta 10px,
+ * NO preview element (title matches carry no excerpt), foot children
+ * (num/open/matches/strength) all 11px; hit heights 208/216/180px.
+ * 1366x768 — hero 240px (min-height 240, padding 0), grid 722/300px,
+ * title 48px, stats mt 16, disciplines mt 16, plates top 542.6 /
+ * bottom 762.6 (5.4px spare vs the 768 fold).
+ * FIS — statement "A collection for questions that don't resolve with
+ * a single answer."; statement bottom -> grid top gap 137px
+ * (header pad-bottom 18 + ~25px header space + libSplit mt 18 +
+ * controls row 44px + controls mb 32px).
+ * Contrast (overview, 1440) — worst micro-label 6.89:1 (#8997a8),
+ * all >= 6.89:1, i.e. the overview passes AA; the weak labels live
+ * in the READER console (see §6).
+ *
+ * SPEC-SELECTOR MAP (ChatGPT's sketch does not map 1:1 — real structure):
+ * STUDY CONSOLE = .reader-console-head .eyebrow; DOCUMENT =
+ * .reader-console-doc + .reader-console-title (header block);
+ * NAVIGATION / ANNOTATION / CONTEXT = the three .reader-console-group
+ * tab groups (Contents+Bookmarks / Notes+Highlights / Context);
+ * CONTEXT's "Page x/y, Previous/Next" = the Context tab body
+ * (.reader-page-context) + the bottom .reader-console-nav row — both
+ * already exist, no restructuring. FIND IN DOCUMENT stays a
+ * collapsible tool above the tabs (not a spec group).
+ * Search tiers: title = .kiA-hit-title; document metadata =
+ * .kiA-hit-meta; match explanation = .kiA-hit-preview (text matches)
+ * / .kiA-hit-strength (match reason, always present); tertiary
+ * metadata = .kiA-hit-num / .kiA-hit-matches / .kiA-hit-strength.
+ * 1366: .overview-hero -> .kiA-hero; .overview-stats -> .kiA-stats;
+ * .discipline-grid -> .kiA-section--disciplines.
+ *
+ * DELIBERATE DEVIATIONS (pre-probe measured):
+ * (a) I5-03 title 15px NOT applied. Live selected-hit title is 21px
+ *     and the critique praised the search hierarchy ("result cards
+ *     now have an obvious hierarchy... Keep this structure"). 15px
+ *     on the selected hit would make it SMALLER than unselected
+ *     hits (also 21px) — backwards — and applying it to all hits
+ *     would undo the I.4 title-dominance work behind the 9.61
+ *     score. The spec's tier ORDER is preserved and strengthened
+ *     instead: title 21 > explanation 11 > metadata 10 >
+ *     tertiary 9 (spec: 15 > 11 > 10 > 9).
+ * (b) I5-04 literal 1366 numbers NOT applied. Every one is LOOSER
+ *     than the live I.4 values (min-height 270 vs 240, stats 24 vs
+ *     16, disciplines 26 vs 16, hero padding 34/26 vs 0/0) — applying
+ *     them would add ~108px and push the plates to ~870px bottom,
+ *     below the 768 fold. The live I.4 §8 values already satisfy
+ *     the spec's intent (remove vertical waste, preserve type:
+ *     title already 48px, gaps already 16px, hero already 240px
+ *     against 225px of content). No 1366 change; see §4.
+ * (c) I5-01 tabrow flattening: the I.4 "raised mini tab bar" IS the
+ *     card-within-card the spec asks to remove, so the tabrow loses
+ *     its background/border/radius/padding. The buttons keep their
+ *     own active treatment (teal wash + inset rule, reader-env:483)
+ *     so the active tab stays legible without the card.
+ * (d) I5-05 tightening is -20px of the 137px gap (libSplit mt 18->10,
+ *     controls mb 32->20), FIS-scoped. The 44px controls row itself
+ *     stays — it is the library's functional toolbar (filter/sort/
+ *     saved/view/count), present on every subject; removing it on
+ *     FIS would break filtering. The text change carries the
+ *     transition; the spacing cut removes the dead air around it.
+ * (e) I5-06 is conservative by instruction: only labels with a
+ *     measured ratio below ~4.5:1 AND a primary/informational role
+ *     are raised. Secondary muted metadata (row-meta, hints,
+ *     placeholders, ~3.8:1) is a deliberate hierarchy choice and
+ *     stays — see §6 for the checked-and-left list.
+ * ================================================================== */
+
+/* ------------------------------------------------------------------
+ * §1 — READER CONSOLE: ONE INSTRUMENT (spec I5-01). Spacing and
+ * grouping, NOT components. Section labels 9–10px, active content
+ * 12–13px, group separation +16px (14 -> 30px), card-within-card
+ * tabrow flattened. DOCUMENT head: doc line 11 -> 10px, title
+ * 15 -> 13px. Tab buttons 9 -> 12px (they fit: 2-per-row groups,
+ * ~129px cells; "Highlights · 1" ≈ 87px at 12px).
+ * ------------------------------------------------------------------ */
+.reader-shell.kiA-v2.kiA-v2 .reader-console-head .eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-head .reader-console-doc {
+  font-size: 10px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-title {
+  font-size: 13px;
+  line-height: 1.35;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-sec {
+  font-size: 10px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-tabs {
+  gap: 30px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-tabrow {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-tabs button {
+  font-size: 12px;
+}
+
+/* ------------------------------------------------------------------
+ * §2 — READER STAGE: ATMOSPHERIC STAGE (spec I5-02). Exact spec
+ * gradient over #061018, plus a 1px atmospheric border around the
+ * document STAGE (.reader-document), not the PDF. The PDF is
+ * untouched (pageW cap 1000 stays); the inset vignette from
+ * reader-env.css still applies (box-shadow not overridden here).
+ * ------------------------------------------------------------------ */
+.reader-shell.kiA-v2.kiA-v2 .reader-document {
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(43, 220, 204, 0.035) 0%, rgba(43, 220, 204, 0) 48%),
+    #061018;
+  border: 1px solid rgba(89, 222, 211, 0.10);
+}
+
+/* ------------------------------------------------------------------
+ * §3 — SEARCH: SELECTED-RESULT INTERNAL HIERARCHY (spec I5-03,
+ * adapted — see header (a)). Selected hit only: metadata 10px
+ * (already live, locked in), match explanation 11px (preview on
+ * text matches; strength is the always-present match reason),
+ * tertiary metadata 9px (num / matches / strength). OPEN DOCUMENT
+ * stays 11px — it is the action, not metadata. Title stays 21px.
+ * Card height does not grow (foot items shrink 11 -> 9px).
+ * ------------------------------------------------------------------ */
+.desktop-app .kiA-page--search .kiA-hit--selected .kiA-hit-meta {
+  font-size: 10px;
+}
+.desktop-app .kiA-page--search .kiA-hit--selected .kiA-hit-preview {
+  font-size: 11px;
+}
+.desktop-app .kiA-page--search .kiA-hit--selected .kiA-hit-num,
+.desktop-app .kiA-page--search .kiA-hit--selected .kiA-hit-matches,
+.desktop-app .kiA-page--search .kiA-hit--selected .kiA-hit-strength {
+  font-size: 9px;
+}
+
+/* ------------------------------------------------------------------
+ * §4 — 1366 OVERVIEW (spec I5-04): NO CHANGE — see header (b).
+ * The spec's literal values are all looser than the live I.4 §8
+ * values; there is no remaining vertical waste to remove without
+ * shrinking type (hero 240px vs 225px content, gaps already 16px,
+ * plates bottom 762.6 vs the 768 fold). This section is
+ * intentionally empty so the decision is recorded in the CSS.
+ * ------------------------------------------------------------------ */
+
+/* ------------------------------------------------------------------
+ * §5 — FIS: STATEMENT -> COLLECTION TRANSITION (spec I5-05).
+ * Text change is in LibraryPage.tsx (new statement). Spacing:
+ * tighten the two FIS-scoped gaps below the statement by 20px
+ * total (libSplit mt 18 -> 10, controls mb 32 -> 20) — see
+ * header (d). No widget, no animation, no graphic.
+ * ------------------------------------------------------------------ */
+.desktop-app[data-subject="fis"] .kiA-lib-split {
+  margin-top: 10px;
+}
+.desktop-app[data-subject="fis"] .kiA-lib-field .kiA-controls-row {
+  margin-bottom: 20px;
+}
+
+/* ------------------------------------------------------------------
+ * §6 — GLOBAL MICRO-LABELS (spec I5-06, conservative — see
+ * header (e)). Desktop only; only clear-cut low-contrast cases:
+ *   - console nav position "n / N": 11px at 0.55 opacity ≈ 2.5:1
+ *     -> full opacity (color #8c9cac ≈ 5.9:1 on the panel).
+ *   - context meta line: 10px at 0.55 opacity ≈ 2.5:1 -> full.
+ *   - Find-in-document label: 9px at 0.48 opacity -> 0.85.
+ *   - inactive console tabs: #65758a ≈ 3.4:1 on the tabrow ->
+ *     #8c9cac; the active tab keeps its ivory + teal wash.
+ *   - "STUDY CONSOLE" eyebrow: var(--text-muted) #6B7585 ≈ 3.5:1
+ *     -> #a9b8c6, the console's own label colour.
+ *   - FIS card meta ("32 pages"): amber rgba(232,170,72,0.75) at
+ *     0.5 opacity ≈ 3.09:1 -> opacity 0.85 (FIS-scoped; the muted
+ *     amber character stays, it just stops being illegible).
+ *   - reader bottom-bar "PAGE" label: var(--muted) #65758a ≈ 3.98:1
+ *     -> #8c9cac (a form label for the page input, not decoration).
+ * CHECKED AND LEFT ALONE (measured, deliberate hierarchy):
+ *   - overview micro-labels: worst 6.89:1 — all pass AA.
+ *   - reader row-meta / hints / placeholders (#6B7585, ~3.8:1):
+ *     secondary metadata by design; raising them would flatten
+ *     the console's information hierarchy.
+ *   - topbar "/" separators (0.7 opacity): decorative punctuation.
+ *   - hit plate / badge / OPEN DOCUMENT: 10–11px, >= 9:1.
+ *   - disabled reader ‹/› doc buttons (≈2.1:1): a disabled state,
+ *     intentionally dimmed and non-interactive — not a label.
+ * ------------------------------------------------------------------ */
+.reader-shell.kiA-v2.kiA-v2 .reader-console-nav-pos {
+  opacity: 1;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-page-context-meta {
+  opacity: 1;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-label {
+  opacity: 0.85;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-tabs button:not(.active) {
+  color: #8c9cac;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-head .eyebrow {
+  color: #a9b8c6;
+}
+/* FIS card meta: amber at 0.5 opacity was 3.09:1 — raise to 0.85.
+   The muted amber character stays; only the legibility changes. */
+.desktop-app[data-subject="fis"] .kiA-ed-card-meta {
+  opacity: 0.85;
+}
+/* Reader bottom-bar "PAGE" label: the goto input's form label. */
+.reader-shell.kiA-v2.kiA-v2 .reader-page-label {
+  color: #8c9cac;
+}
