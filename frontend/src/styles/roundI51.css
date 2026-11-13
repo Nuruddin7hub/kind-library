@@ -1,0 +1,206 @@
+/* ==================================================================
+ * ROUND I.5.1 — "Precision Cleanup" — 2026-11-13 (critiqueA-2026-11-13.md,
+ * desktop re-score 9.58 -> 9.63/10, TARGET 9.6 PASSED — redesign
+ * series OVER: FREEZE, only the 3 tiny precision fixes in the spec,
+ * no new React Bits, no redesign, no mobile changes). DESKTOP ONLY.
+ * Every rule lives under .desktop-app / .reader-shell.kiA-v2.kiA-v2.
+ * Mobile (.mobile-shell) never matches; the reader shell renders
+ * only on the desktop branch (App.tsx: readerFile && !isMobile).
+ * Imported LAST in App.tsx, after roundI5.css. Backend untouched
+ * (Flask).
+ *
+ * BASELINE (probe_pre.json + probe_focus.json, 2026-11-13, bundle
+ * index-CXSljKPV.js, live via relay):
+ * Overview 1440 — hero 430px (min-height 430, padding 72/52),
+ * stats mt 24, disciplines mt 24, bento gap 16px (prop), plates
+ * 768.6-988.6, cards 255x220 (rowHeight 220).
+ * Search "laplace" — 3 results, "3 RESULTS · 3 TITLE MATCHES".
+ * Unselected hits: title 21px/1.18, meta 10px/0.08em, padding
+ * 18px/18px, heights [208.3, 208.3, 180.3]. Selected hit (after
+ * ArrowDown): title 21px, meta 10px, padding 22px/22px (roundI2
+ * padding: 22px 20px), height 216.3. Tertiary num/matches/
+ * strength 9px (I.5). No preview element (title matches only).
+ * Reader — shell 100dvh (900px at 900vh), stage .reader-document
+ * 1068x794 (100dvh-106 via shell grid rows 54/1fr/52), display
+ * flex, padding 24/24. Identity strip 1018px wide (stage 1068px
+ * minus 2x25px insets) — essentially full-width. Pages column
+ * 1018px, page image 1000x800 (naturalWidth 1500). Console groups:
+ * .reader-console-tabs gap 30px (I.5), groups margin 0/0,
+ * .reader-console-sec 10px, margin-bottom 8px. No
+ * .reader-console-section class exists in the DOM.
+ * Overview 1366x768 — hero 240px (min-height 240, padding 0/0),
+ * title 48px, stats mt 16, disciplines mt 16, plates 542.6-762.6
+ * (5.4px spare vs the 768 fold). Hero content: copy 225px
+ * (eyebrow 15.4 + title 94.1 + sub 24.5 + cta 45 + margins),
+ * field 230px — the field is the tallest child (230px).
+ *
+ * SPEC-SELECTOR MAP (ChatGPT's sketch does not map 1:1 — real structure):
+ * .overview-disciplines -> .desktop-app .kiA .kiA-section--disciplines
+ *   (margin-top; the grid itself is MagicBento, gap via the gap={} prop
+ *   in Overview.tsx — no CSS gap rule exists to override).
+ * .discipline-grid -> .kiA-bento-plates (MagicBento root; gap is an
+ *   inline style from the component, so the prop changes, not CSS).
+ * .search-result -> .kiA-hit; .is-selected -> .kiA-hit--selected;
+ *   .search-result-title -> .kiA-hit-title; .search-result-meta ->
+ *   .kiA-hit-meta (both under .kiA-page--search).
+ * .reader-console-section -> .reader-console-group (the three tab
+ *   groups inside .reader-console-tabs; there is no
+ *   .reader-console-section class in the DOM). Groups are separated
+ *   by the flex gap on .reader-console-tabs, not by margins.
+ * .reader-console-section-label -> .reader-console-sec.
+ * .reader-stage -> .reader-document (the scroll stage inside the
+ *   fixed 100dvh .reader-shell grid: rows 54px / 1fr / 52px, so the
+ *   stage height is already 100dvh - 106px by construction).
+ * .overview-hero -> .kiA-hero; .overview-stats -> .kiA-stats.
+ *
+ * DELIBERATE DEVIATIONS (pre-probe measured):
+ * (a) §2 title 15px: APPLIED (uniform rule — see §2). Live selected
+ *     and unselected titles are both 21px from the SAME rule
+ *     (roundI1/I2/I3 .kiA-page--search .kiA-hit-title), so one
+ *     uniform 15px rule can never make the selected title smaller
+ *     than an unselected one. This is the condition the spec's
+ *     CAUTION sets; it is met.
+ * (b) §3 sections: the spec's margin-bottom: 18px is applied as
+ *     the flex gap on .reader-console-tabs (30 -> 18) — the gap IS
+ *     the section separation in this DOM. A margin-bottom on the
+ *     groups would double-count on top of the flex gap. Groups
+ *     already have margin-top 0 (sibling rule is a no-op safeguard).
+ * (c) §4 display:grid + place-items:start center NOT applied.
+ *     The stage is a flex column whose pages div already centres
+ *     via items-center, and justify-items:center on a grid would
+ *     shrink the sticky .reader-identity strip (measured 1018px
+ *     wide in a 1068px stage — essentially full-width, background
+ *     #080f19) to its content width. min-height + padding-top ARE
+ *     applied; the height system (shell 100dvh grid) is untouched.
+ * (d) §6 hero padding 30/20px NOT applied. Live hero content is
+ *     230px tall (field) against min-height 240 and padding 0 —
+ *     there is no 50px of padding to "compress" from. Adding 50px
+ *     of padding would grow the hero to 280px and push the plates
+ *     to ~809px bottom, 41px BELOW the 768 fold — the opposite of
+ *     the spec's "vertical compression only" intent (same situation
+ *     as I.5-04). What IS applied: min-height 240 -> 220 (-20px,
+ *     the spec's own cap) so the hero renders 230px (content-bound),
+ *     plus stats mt 18 and disciplines mt 20 — net plates bottom
+ *     ~759px, still inside the fold.
+ * (e) §1 grid gap 16 -> 12 is a PROP change (Overview.tsx
+ *     gap={16} -> gap={12}). MagicBento computes cell width as
+ *     (container - gap*(n-1))/n, so cards widen 255 -> 258px
+ *     (+3px); height stays 220px (rowHeight prop untouched) —
+ *     the cards are not enlarged in the sense the spec means
+ *     (no taller/bigger plates), but the 3px width change is
+ *     inherent to the spec's own gap value and is recorded here.
+ * ================================================================== */
+
+/* ------------------------------------------------------------------
+ * §1 — OVERVIEW 1440: DISCIPLINES SEPARATION (spec item 1).
+ * Section margin-top 24 -> 30px. Grid gap 16 -> 12px is a PROP
+ * change (Overview.tsx gap={16} -> gap={12}) — MagicBento sets gap
+ * as an inline style, so no CSS rule can override it. Cards are
+ * NOT enlarged: rowHeight stays 220px (prop, untouched).
+ * ------------------------------------------------------------------ */
+.desktop-app .kiA .kiA-section--disciplines {
+  margin-top: 30px;
+}
+
+/* ------------------------------------------------------------------
+ * §2 — SEARCH: SELECTED-RESULT VERTICAL AUTHORITY (spec item 2).
+ * Live: unselected padding 18px, selected 22px (roundI2 padding:
+ * 22px 20px). Spec: selected 16px, unselected 13px — the same 3px
+ * selected-unselected delta, tighter overall. Title 15px/1.25 and
+ * meta 9px/0.12em apply to ALL result titles/metas uniformly
+ * (single rule, no selected-only title rule exists — live selected
+ * and unselected titles are both 21px from the same rule), so the
+ * selected title is never smaller than an unselected one (see
+ * header (a)). Tier order after: title 15 > preview 11 > meta 9 =
+ * tertiary 9 (I.5 set preview 11 / tertiary 9 on the selected
+ * hit; those rules stay). The meta selector carries .kiA-hit so it
+ * is (0,5,0) and beats I.5's selected-meta 10px rule (also
+ * (0,5,0), imported earlier) — the spec's 9px applies to ALL
+ * metas uniformly; without this the selected meta would stay
+ * 10px while unselected went to 9px.
+ * ------------------------------------------------------------------ */
+.desktop-app .kiA-page--search .kiA-hit--selected {
+  padding-block: 16px;
+}
+.desktop-app .kiA-page--search .kiA-hit:not(.kiA-hit--selected) {
+  padding-block: 13px;
+}
+.desktop-app .kiA-page--search .kiA-hit-title {
+  font-size: 15px;
+  line-height: 1.25;
+}
+.desktop-app .kiA-page--search .kiA-hit .kiA-hit-meta {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+}
+
+/* ------------------------------------------------------------------
+ * §3 — READER CONSOLE COHESION (spec item 3 — "last meaningful
+ * Reader issue"). The three console groups (.reader-console-group)
+ * live in the flex-column .reader-console-tabs; I.5 set its gap to
+ * 30px, the spec now wants 18px — the gap IS the section
+ * separation, so gap 30 -> 18 is the spec's margin-bottom: 18px
+ * applied through the actual mechanism (see header (b)). Groups
+ * carry no margin-top already (sibling margin-top: 0 is the live
+ * state, restated here as a safeguard). Group label
+ * (.reader-console-sec) margin-bottom 8 -> 7px.
+ * ------------------------------------------------------------------ */
+.reader-shell.kiA-v2.kiA-v2 .reader-console-tabs {
+  gap: 18px;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-group + .reader-console-group {
+  margin-top: 0;
+}
+.reader-shell.kiA-v2.kiA-v2 .reader-console-sec {
+  margin-bottom: 7px;
+}
+
+/* ------------------------------------------------------------------
+ * §4 — READER FULL-HEIGHT STAGE (spec item 4). The shell is
+ * position:fixed, height:100dvh, grid rows 54px / 1fr / 52px, so
+ * the stage height is already 100dvh - 106px by construction; the
+ * spec's min-height calc(100vh - 112px) is the equivalent value
+ * (6px under the stretched row height, so it never binds — the
+ * height system is NOT replaced). Padding-top 24 -> 22px.
+ * display:grid + place-items:start center is NOT applied (see
+ * header (c)): the stage is a flex column whose pages div already
+ * centres via items-center, and justify-items:center would shrink
+ * the sticky .reader-identity strip. The PDF is untouched (pageW
+ * cap 1000 stays; no size change).
+ * ------------------------------------------------------------------ */
+.reader-shell.kiA-v2.kiA-v2 .reader-document {
+  min-height: calc(100vh - 112px);
+  padding-top: 22px;
+}
+
+/* ------------------------------------------------------------------
+ * §5 — INDEX — FIS (spec item 5): NO CHANGE. "Don't add anything.
+ * Seriously." This section is intentionally empty so the decision
+ * is recorded in the CSS.
+ * ------------------------------------------------------------------ */
+
+/* ------------------------------------------------------------------
+ * §6 — OVERVIEW 1366 (spec item 6, <=1400px media query).
+ * Stats mt 16 -> 18, disciplines mt 16 -> 20 (spec values, both
+ * bands). Hero min-height 240 -> 220 (-20px, the spec's own cap)
+ * in the live short-viewport band (max-height:800px) that actually
+ * sets the 240px — the hero is content-bound at 230px (field),
+ * so it renders 230px. Net: plates bottom ~759px, still inside
+ * the 768 fold. Hero padding 30/20 NOT applied — see header (d):
+ * live padding is 0 and content is 230px, so 50px of padding
+ * would grow the hero to 280px and push the plates ~41px below
+ * the fold. No typography change, no content removed.
+ * ------------------------------------------------------------------ */
+@media (min-width: 1024px) and (max-width: 1400px) {
+  .desktop-app .kiA-stats {
+    margin-top: 18px;
+  }
+  .desktop-app .kiA .kiA-section--disciplines {
+    margin-top: 20px;
+  }
+}
+@media (max-height: 800px) and (min-width: 1100px) {
+  .desktop-app .kiA-hero {
+    min-height: 220px;
+  }
+}

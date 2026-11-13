@@ -479,7 +479,7 @@ export default function Overview({ files, onOpenReader, onGoSubject, onGoSearch 
           className="de-bento-plates kiA-bento-plates"
           columns={4}
           rowHeight={220}
-          gap={16}
+          gap={12}
           radius={16}
           theme="dark"
           glowColor="#65e5d2"

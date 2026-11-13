@@ -103,6 +103,15 @@ import './styles/roundB2.css';
 // micro-labels. Desktop-only; mobile frozen. Imported LAST so its
 // rules win.
 import './styles/roundI5.css';
+// ROUND I.5.1 (ChatGPT Round A desktop re-score, 2026-11-13,
+// critiqueA-2026-11-13.md: desktop 9.58 -> 9.63/10, TARGET 9.6
+// PASSED — redesign series OVER: FREEZE, precision cleanup only:
+// disciplines separation, search selected-hit authority, reader
+// console cohesion (gap 30 -> 18), reader stage min-height +
+// padding-top, 1366 compression (min-height 240 -> 220; hero
+// padding NOT applied — would push plates below the fold).
+// Desktop-only; mobile frozen. Imported LAST so its rules win.
+import './styles/roundI51.css';
 // React Bits Noise — global film grain, opacity 0.025 (critiqueA
 // 2026-11-07 §Global: 4-layer background, mix-blend screen).
 // Desktop only; the component is position:fixed + pointer-events:none.
